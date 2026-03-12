@@ -13,18 +13,18 @@ Aplicações que deixam alterar endpoints de API:
 De acordo com a [documentação oficial da Open Code](https://opencode.ai/docs/providers/), a integração é realizada através do ficheiro de configuração `opencode.json`.
 
 Para apontar para a OmniAI Gateway, a configuração deve ser feita da forma na ikmagem abaixo:
-<img src="docs/studyApplicationsE2E_scenario/OpenCodeConfig.png" alt="Descrição" width="500">
+<img src="OpenCodeConfig.png" alt="Descrição" width="500">
 
 Realizacao de um teste:
 
 1.  **Configuração do Cliente:** Preparação do ficheiro de configuração (`opencode.json`) para definir o endpoint da API como `http://localhost:8080/v1`.
-    <img src="docs/studyApplicationsE2E_scenario/OpenCodeConfig.png" alt="Descrição" width="500">
+    <img src="OpenCodeConfig.png" alt="Descrição" width="500">
 
 2.  **Simulação da Gateway:** Utilização da ferramenta **Netcat (`nc`)** no macOS para abrir a porta `8080` e escutar pedidos HTTP de entrada em tempo real.
-    <img src="docs/studyApplicationsE2E_scenario/enviopedido.png" alt="Descrição" width="500">
+    <img src="enviopedido.png" alt="Descrição" width="500">
 
 3.  **Execução e Validação:** Mandar um pe pedido estruturado via `curl`, replicando o comportamento de aplicações "Open Code", para intercetar o pedido JSON.
-    <img src="docs/studyApplicationsE2E_scenario/VerPedido.png" alt="Descrição" width="500">
+    <img src="VerPedido.png" alt="Descrição" width="500">
 
 
 No incio deu erro pq o pedido n estava estruturado seguido os pedidos que saibam openIa, mas depois de estruturar o pedido corretamente, o Netcat conseguiu receber o pedido JSON enviado pela Open Code.
