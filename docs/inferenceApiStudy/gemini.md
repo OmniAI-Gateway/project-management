@@ -1,6 +1,5 @@
----
 
-# Referência Rápida da API Google Gemini (cURL)
+# Referência Rápida da API Google Gemini
 
 ## Autenticação
 
@@ -8,6 +7,7 @@ Para a maioria dos pedidos, deve incluir a chave de API de uma das seguintes for
 
 * **Cabeçalho**: `x-goog-api-key: $GEMINI_API_KEY`
 * **Query String (URL)**: `?key=$GEMINI_API_KEY`
+
 
 ---
 
