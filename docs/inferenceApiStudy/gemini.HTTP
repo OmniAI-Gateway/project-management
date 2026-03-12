@@ -1,0 +1,309 @@
+###
+
+# curl "https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent"
+#  -H "x-goog-api-key: $GEMINI_API_KEY"
+#  -H 'Content-Type: application/json'
+#  -X POST
+#  -d '{
+#    "contents": [
+#      {
+#        "parts": [
+#          {
+#            "text": "How does AI work?"
+#          }
+#        ]
+#      }
+#    ]
+#  }'
+POST https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent
+x-goog-api-key: {{GEMINI_API_KEY}}
+Content-Type: application/json
+
+{
+  "contents": [
+    {
+      "parts": [
+        {
+          "text": "How does AI work?"
+        }
+      ]
+    }
+  ]
+}
+
+###
+
+# curl "https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent"
+#  -H "x-goog-api-key: $GEMINI_API_KEY"
+#  -H 'Content-Type: application/json'
+#  -X POST
+#  -d '{
+#    "contents": [
+#      {
+#        "parts": [
+#          {
+#            "text": "How does AI work?"
+#          }
+#        ]
+#      }
+#    ],
+#    "generationConfig": {
+#      "thinkingConfig": {
+#        "thinkingLevel": "low"
+#      }
+#    }
+#  }'
+POST https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent
+x-goog-api-key: {{GEMINI_API_KEY}}
+Content-Type: application/json
+
+{
+  "contents": [
+    {
+      "parts": [
+        {
+          "text": "How does AI work?"
+        }
+      ]
+    }
+  ],
+  "generationConfig": {
+    "thinkingConfig": {
+      "thinkingLevel": "low"
+    }
+  }
+}
+
+###
+
+# curl "https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent"
+#  -H "x-goog-api-key: $GEMINI_API_KEY"
+#  -H 'Content-Type: application/json'
+#  -d '{
+#    "system_instruction": {
+#      "parts": [
+#        {
+#          "text": "You are a cat. Your name is Neko."
+#        }
+#      ]
+#    },
+#    "contents": [
+#      {
+#        "parts": [
+#          {
+#            "text": "Hello there"
+#          }
+#        ]
+#      }
+#    ]
+#  }'
+POST https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent
+x-goog-api-key: {{GEMINI_API_KEY}}
+Content-Type: application/json
+
+{
+  "system_instruction": {
+    "parts": [
+      {
+        "text": "You are a cat. Your name is Neko."
+      }
+    ]
+  },
+  "contents": [
+    {
+      "parts": [
+        {
+          "text": "Hello there"
+        }
+      ]
+    }
+  ]
+}
+
+###
+
+# curl https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent
+#  -H "x-goog-api-key: $GEMINI_API_KEY"
+#  -H 'Content-Type: application/json'
+#  -X POST
+#  -d '{
+#    "contents": [
+#      {
+#        "parts": [
+#          {
+#            "text": "Explain how AI works"
+#          }
+#        ]
+#      }
+#    ],
+#    "generationConfig": {
+#      "stopSequences": [
+#        "Title"
+#      ],
+#      "temperature": 1.0,
+#      "topP": 0.8,
+#      "topK": 10
+#    }
+#  }'
+POST https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent
+x-goog-api-key: {{GEMINI_API_KEY}}
+Content-Type: application/json
+
+{
+  "contents": [
+    {
+      "parts": [
+        {
+          "text": "Explain how AI works"
+        }
+      ]
+    }
+  ],
+  "generationConfig": {
+    "stopSequences": [
+      "Title"
+    ],
+    "temperature": 1.0,
+    "topP": 0.8,
+    "topK": 10
+  }
+}
+
+
+###
+POST https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent
+x-goog-api-key: {{GEMINI_API_KEY}}
+Content-Type: application/json
+
+{
+  "contents": [
+    {
+      "role": "user",
+      "parts": [
+        {
+          "text": "Schedule a meeting with Bob and Alice for 03/27/2025 at 10:00 AM about the Q3 planning."
+        }
+      ]
+    }
+  ],
+  "tools": [
+    {
+      "functionDeclarations": [
+        {
+          "name": "schedule_meeting",
+          "description": "Schedules a meeting with specified attendees at a given time and date.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "attendees": {
+                "type": "array",
+                "items": { "type": "string" },
+                "description": "List of people attending the meeting."
+              },
+              "date": {
+                "type": "string",
+                "description": "Date of the meeting (e.g., '2024-07-29')"
+              },
+              "time": {
+                "type": "string",
+                "description": "Time of the meeting (e.g., '15:00')"
+              },
+              "topic": {
+                "type": "string",
+                "description": "The subject or topic of the meeting."
+              }
+            },
+            "required": ["attendees", "date", "time", "topic"]
+          }
+        }
+      ]
+    }
+  ]
+}
+
+###
+
+# curl "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-pro-preview:generateContent"
+#  -H "x-goog-api-key: $GEMINI_API_KEY"
+#  -H 'Content-Type: application/json'
+#  -X POST
+#  -d '{
+#    "contents": [{
+#      "parts": [{"text": "Search for all details for the latest Euro."}]
+#    }],
+#    "tools": [
+#      {"googleSearch": {}},
+#      {"urlContext": {}}
+#    ],
+#    "generationConfig": {
+#        "responseMimeType": "application/json",
+#        "responseJsonSchema": {
+#            "type": "object",
+#            "properties": {
+#                "winner": {"type": "string", "description": "The name of the winner."},
+#                "final_match_score": {"type": "string", "description": "The final score."},
+#                "scorers": {
+#                    "type": "array",
+#                    "items": {"type": "string"},
+#                    "description": "The name of the scorer."
+#                }
+#            },
+#            "required": ["winner", "final_match_score", "scorers"]
+#        }
+#    }
+#  }'
+POST https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-pro-preview:generateContent
+x-goog-api-key: {{GEMINI_API_KEY}}
+Content-Type: application/json
+
+{
+  "contents": [
+    {
+      "parts": [
+        {
+          "text": "Search for all details for the latest Euro."
+        }
+      ]
+    }
+  ],
+  "tools": [
+    {
+      "googleSearch": {}
+    },
+    {
+      "urlContext": {}
+    }
+  ],
+  "generationConfig": {
+    "responseMimeType": "application/json",
+    "responseJsonSchema": {
+      "type": "object",
+      "properties": {
+        "winner": {
+          "type": "string",
+          "description": "The name of the winner."
+        },
+        "final_match_score": {
+          "type": "string",
+          "description": "The final score."
+        },
+        "scorers": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "The name of the scorer."
+        }
+      },
+      "required": [
+        "winner",
+        "final_match_score",
+        "scorers"
+      ]
+    }
+  }
+}
+
+###
+
+
