@@ -1,0 +1,480 @@
+# curl https://api.anthropic.com/v1/messages
+#  -H "x-api-key: $ANTHROPIC_API_KEY"
+#  -H "anthropic-version: 2023-06-01"
+#  -H "content-type: application/json"
+#  -d '{
+#    "model": "claude-3-5-haiku-20241022",
+#    "max_tokens": 1024,
+#    "messages": [
+#      {
+#        "role": "user",
+#        "content": "How does AI work?"
+#      }
+#    ]
+#  }'
+
+POST http://localhost:11434/v1/messages
+x-api-key: {{ANTHROPIC_API_KEY}}
+anthropic-version: 2023-06-01
+Content-Type: application/json
+
+{
+  "model": "llama3.2:latest",
+  "max_tokens": 1024,
+  "messages": [
+    {
+      "role": "user",
+      "content": "How does AI work?"
+    }
+  ]
+}
+
+###
+
+
+
+###
+
+# curl https://api.anthropic.com/v1/messages
+#  -H "x-api-key: $ANTHROPIC_API_KEY"
+#  -H "anthropic-version: 2023-06-01"
+#  -H "content-type: application/json"
+#  -d '{
+#    "model": "claude-3-5-haiku-20241022",
+#    "max_tokens": 1024,
+#    "system": "You are a cat. Your name is Neko.",
+#    "messages": [
+#      {
+#        "role": "user",
+#        "content": "Hello there"
+#      }
+#    ]
+#  }'
+
+
+
+POST https://api.anthropic.com/v1/messages
+x-api-key: {{ANTHROPIC_API_KEY}}
+anthropic-version: 2023-06-01
+Content-Type: application/json
+
+{
+  "model": "claude-3-5-haiku-20241022",
+  "max_tokens": 1024,
+  "system": "You are a cat. Your name is Neko.",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Hello there"
+    }
+  ]
+}
+
+###
+
+# curl https://api.anthropic.com/v1/messages
+#  -H "x-api-key: $ANTHROPIC_API_KEY"
+#  -H "anthropic-version: 2023-06-01"
+#  -H "content-type: application/json"
+#  -d '{
+#    "model": "claude-3-5-haiku-20241022",
+#    "max_tokens": 1024,
+#    "temperature": 1.0,
+#    "top_p": 0.8,
+#    "top_k": 10,
+#    "stop_sequences": ["Title"],
+#    "messages": [
+#      {
+#        "role": "user",
+#        "content": "Explain how AI works"
+#      }
+#    ]
+#  }'
+POST https://api.anthropic.com/v1/messages
+x-api-key: {{ANTHROPIC_API_KEY}}
+anthropic-version: 2023-06-01
+Content-Type: application/json
+
+{
+  "model": "claude-3-5-haiku-20241022",
+  "max_tokens": 1024,
+  "temperature": 1.0,
+  "top_p": 0.8,
+  "top_k": 10,
+  "stop_sequences": [
+    "Title"
+  ],
+  "messages": [
+    {
+      "role": "user",
+      "content": "Explain how AI works"
+    }
+  ]
+}
+
+###
+
+# curl https://api.anthropic.com/v1/messages
+#  -H "x-api-key: $ANTHROPIC_API_KEY"
+#  -H "anthropic-version: 2023-06-01"
+#  -H "content-type: application/json"
+#  -d '{
+#    "model": "claude-3-5-haiku-20241022",
+#    "max_tokens": 1024,
+#    "temperature": 1.0,
+#    "top_p": 0.8,
+#    "top_k": 10,
+#    "stop_sequences": ["Title"],
+#    "messages": [
+#      {
+#        "role": "user",
+#        "content": "Explain how AI works"
+#      }
+#    ]
+#  }'
+POST https://api.anthropic.com/v1/messages
+x-api-key: {{ANTHROPIC_API_KEY}}
+anthropic-version: 2023-06-01
+Content-Type: application/json
+
+{
+  "model": "claude-3-5-haiku-20241022",
+  "max_tokens": 1024,
+  "temperature": 1.0,
+  "top_p": 0.8,
+  "top_k": 10,
+  "stop_sequences": [
+    "Title"
+  ],
+  "messages": [
+    {
+      "role": "user",
+      "content": "Explain how AI works"
+    }
+  ]
+}
+
+###
+
+# curl https://api.anthropic.com/v1/messages
+#  -H "x-api-key: $ANTHROPIC_API_KEY"
+#  -H "anthropic-version: 2023-06-01"
+#  -H "content-type: application/json"
+#  -d '{
+#    "model": "claude-3-5-haiku-20241022",
+#    "max_tokens": 1024,
+#    "tools": [
+#      {
+#        "name": "get_weather",
+#        "description": "Get the current weather in a given location",
+#        "input_schema": {
+#          "type": "object",
+#          "properties": {
+#            "location": {
+#              "type": "string",
+#              "description": "The city and country, e.g. Lisbon, Portugal"
+#            }
+#          },
+#          "required": ["location"]
+#        }
+#      }
+#    ],
+#    "messages": [
+#      {
+#        "role": "user",
+#        "content": "What is the weather like in Lisbon?"
+#      }
+#    ]
+#  }'
+POST https://api.anthropic.com/v1/messages
+x-api-key: {{ANTHROPIC_API_KEY}}
+anthropic-version: 2023-06-01
+Content-Type: application/json
+
+{
+  "model": "claude-3-5-haiku-20241022",
+  "max_tokens": 1024,
+  "tools": [
+    {
+      "name": "get_weather",
+      "description": "Get the current weather in a given location",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "location": {
+            "type": "string",
+            "description": "The city and country, e.g. Lisbon, Portugal"
+          }
+        },
+        "required": [
+          "location"
+        ]
+      }
+    }
+  ],
+  "messages": [
+    {
+      "role": "user",
+      "content": "What is the weather like in Lisbon?"
+    }
+  ]
+}
+
+###
+
+# curl https://api.anthropic.com/v1/messages
+#  -H "x-api-key: $ANTHROPIC_API_KEY"
+#  -H "anthropic-version: 2023-06-01"
+#  -H "content-type: application/json"
+#  -d '{
+#    "model": "claude-3-5-haiku-20241022",
+#    "max_tokens": 1024,
+#    "tools": [
+#      {
+#        "name": "print_structured_data",
+#        "description": "Prints the final output in structured JSON.",
+#        "input_schema": {
+#          "type": "object",
+#          "properties": {
+#            "winner": {"type": "string"},
+#            "final_match_score": {"type": "string"},
+#            "scorers": {
+#              "type": "array",
+#              "items": {"type": "string"}
+#            }
+#          },
+#          "required": ["winner", "final_match_score", "scorers"]
+#        }
+#      }
+#    ],
+#    "tool_choice": {"type": "tool", "name": "print_structured_data"},
+#    "messages": [
+#      {
+#        "role": "user",
+#        "content": "Search for all details for the latest Euro."
+#      }
+#    ]
+#  }'
+POST https://api.anthropic.com/v1/messages
+x-api-key: {{ANTHROPIC_API_KEY}}
+anthropic-version: 2023-06-01
+Content-Type: application/json
+
+{
+  "model": "claude-3-5-haiku-20241022",
+  "max_tokens": 1024,
+  "tools": [
+    {
+      "name": "print_structured_data",
+      "description": "Prints the final output in structured JSON.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "winner": {
+            "type": "string"
+          },
+          "final_match_score": {
+            "type": "string"
+          },
+          "scorers": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "winner",
+          "final_match_score",
+          "scorers"
+        ]
+      }
+    }
+  ],
+  "tool_choice": {
+    "type": "tool",
+    "name": "print_structured_data"
+  },
+  "messages": [
+    {
+      "role": "user",
+      "content": "Search for all details for the latest Euro."
+    }
+  ]
+}
+
+###
+
+# curl https://api.anthropic.com/v1/messages
+#  -H "x-api-key: $ANTHROPIC_API_KEY"
+#  -H "anthropic-version: 2023-06-01"
+#  -H "content-type: application/json"
+#  -d '{
+#    "model": "claude-3-7-sonnet-20250219",
+#    "max_tokens": 4096,
+#    "thinking": {
+#      "type": "enabled",
+#      "budget_tokens": 2048
+#    },
+#    "messages": [
+#      {
+#        "role": "user",
+#        "content": "How does AI work?"
+#      }
+#    ]
+#  }'
+POST https://api.anthropic.com/v1/messages
+x-api-key: {{ANTHROPIC_API_KEY}}
+anthropic-version: 2023-06-01
+Content-Type: application/json
+
+{
+  "model": "claude-3-7-sonnet-20250219",
+  "max_tokens": 4096,
+  "thinking": {
+    "type": "enabled",
+    "budget_tokens": 2048
+  },
+  "messages": [
+    {
+      "role": "user",
+      "content": "How does AI work?"
+    }
+  ]
+}
+
+###
+
+# curl https://api.anthropic.com/v1/messages
+#  -H "x-api-key: $ANTHROPIC_API_KEY"
+#  -H "anthropic-version: 2023-06-01"
+#  -H "content-type: application/json"
+#  -d '{
+#    "model": "claude-3-5-haiku-20241022",
+#    "max_tokens": 1024,
+#    "messages": [
+#      {
+#        "role": "user",
+#        "content": "What is the weather in Lisbon?"
+#      },
+#      {
+#        "role": "assistant",
+#        "content": [
+#          {
+#            "type": "tool_use",
+#            "id": "toolu_01A02B03C",
+#            "name": "get_weather",
+#            "input": {"location": "Lisbon, Portugal"}
+#          }
+#        ]
+#      },
+#      {
+#        "role": "user",
+#        "content": [
+#          {
+#            "type": "tool_result",
+#            "tool_use_id": "toolu_01A02B03C",
+#            "content": "The weather is 18°C and sunny."
+#          }
+#        ]
+#      }
+#    ]
+#  }'
+POST https://api.anthropic.com/v1/messages
+x-api-key: {{ANTHROPIC_API_KEY}}
+anthropic-version: 2023-06-01
+Content-Type: application/json
+
+{
+  "model": "claude-3-5-haiku-20241022",
+  "max_tokens": 1024,
+  "messages": [
+    {
+      "role": "user",
+      "content": "What is the weather in Lisbon?"
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "toolu_01A02B03C",
+          "name": "get_weather",
+          "input": {
+            "location": "Lisbon, Portugal"
+          }
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "toolu_01A02B03C",
+          "content": "The weather is 18°C and sunny."
+        }
+      ]
+    }
+  ]
+}
+
+###
+
+# curl https://api.anthropic.com/v1/messages
+#  -H "anthropic-version: 2023-06-01"
+#  -H "x-api-key: $ANTHROPIC_API_KEY"
+#  -d '{
+#    "model": "claude-3-5-haiku-20241022",
+#    "messages": [{"role": "user", "content": "Write a long poem."}],
+#    "max_tokens": 1024,
+#    "stream": true
+#  }'
+POST https://api.anthropic.com/v1/messages
+anthropic-version: 2023-06-01
+x-api-key: {{ANTHROPIC_API_KEY}}
+Content-Type: application/x-www-form-urlencoded
+
+{
+    "model": "claude-3-5-haiku-20241022",
+    "messages": [{"role": "user", "content": "Write a long poem."}],
+    "max_tokens": 1024,
+    "stream": true
+  }
+
+###
+
+# curl https://api.anthropic.com/v1/messages
+#  -H "x-api-key: $ANTHROPIC_API_KEY"
+#  -H "anthropic-version: 2023-06-01"
+#  -H "content-type: application/json"
+#  -d '{
+#    "model": "modelo-inexistente",
+#    "max_tokens": 10,
+#    "messages": [{"role": "user", "content": "Hi"}]
+#  }'
+POST https://api.anthropic.com/v1/messages
+x-api-key: {{ANTHROPIC_API_KEY}}
+anthropic-version: 2023-06-01
+Content-Type: application/json
+
+{
+  "model": "modelo-inexistente",
+  "max_tokens": 10,
+  "messages": [
+    {
+      "role": "user",
+      "content": "Hi"
+    }
+  ]
+}
+
+###
+
+
+
+
+
+
+
+

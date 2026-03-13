@@ -10,4 +10,4 @@ RUN /pull-model.sh
 
 EXPOSE 11434
 
-CMD ["serve"]
+CMD ["serve", "--anthropic-compat"]

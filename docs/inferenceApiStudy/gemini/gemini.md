@@ -13,7 +13,7 @@ Para a maioria dos pedidos, deve incluir a chave de API de uma das seguintes for
 
 ## Funcionalidades Principais
 
-Estes são os conceitos fundamentais recomendados para integrar os modelos nas suas aplicações:
+Estes são os conceitos fundamentais recomendados para integrar os modelos nas aplicações:
 
 * **Geração de Texto**: O método padrão onde envia a sua entrada (texto, imagem, vídeo ou áudio) e recebe a resposta completa do modelo após o processamento.
 * **Streaming**: Permite receber a resposta de forma incremental à medida que é gerada, sendo ideal para interfaces de utilizador mais fluidas e dinâmicas.
