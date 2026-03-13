@@ -1,0 +1,16 @@
+#!/bin/bash
+
+set -e
+
+# iniciar ollama em background
+ollama serve &
+pid=$!
+
+# esperar API arrancar
+sleep 5
+
+# baixar modelo
+ollama pull llama3.1:8b
+
+# parar servidor
+kill $pid

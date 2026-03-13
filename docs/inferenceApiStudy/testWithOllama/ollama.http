@@ -1,0 +1,16 @@
+GET http://localhost:11434/api/tags
+
+###
+POST http://localhost:11434/api/chat
+Content-Type: application/json
+
+{
+  "model": "llama3.1:8b",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Olá! Podes ajudar-me com o meu projeto de universidade?"
+    }
+  ],
+  "stream": false
+}

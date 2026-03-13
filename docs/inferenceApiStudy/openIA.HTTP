@@ -1,0 +1,47 @@
+###
+# curl https://api.openai.com/v1/responses
+#  -H "Authorization: Bearer $OPENAI_API_KEY"
+#  -H "Content-Type: application/json"
+#  -d '{
+#    "model": "gpt-4.1-mini",
+#    "input": "How does AI work?"
+#  }'
+
+POST https://api.openai.com/v1/responses
+Authorization: Bearer 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
+Content-Type: application/json
+
+{
+  "model": "gpt-4.1-mini",
+  "input": "How does AI work?"
+}
+
+###
+
+
+
+# curl https://api.openai.com/v1/responses
+#  -H "Authorization: Bearer $OPENAI_API_KEY"
+#  -H "Content-Type: application/json"
+#  -d '{
+#    "model": "gpt-4.1",
+#    "input": "Explain how AI works",
+#    "temperature": 1,
+#    "top_p": 0.8,
+#    "max_output_tokens": 300
+#  }'
+POST https://api.openai.com/v1/responses
+Authorization: Bearer $OPENAI_API_KEY
+Content-Type: application/json
+
+{
+  "model": "gpt-4.1",
+  "input": "Explain how AI works",
+  "temperature": 1,
+  "top_p": 0.8,
+  "max_output_tokens": 300
+}
+
+###
+
+
