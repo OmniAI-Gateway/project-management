@@ -1,0 +1,145 @@
+# curl https://api.groq.com/openai/v1/chat/completions
+#  -X POST
+#  -H "Content-Type: application/json"
+#  -H "Authorization: Bearer TUA_API_KEY_AQUI"
+#  -d '{
+#    "model": "llama-3.3-70b-versatile",
+#    "messages": [
+#      {
+#        "role": "user",
+#        "content": "Explica-me o que é computação quântica de forma simples."
+#      }
+#    ],
+#    "temperature": 0.7
+#  }'
+POST https://api.groq.com/openai/v1/chat/completions
+Authorization: Bearer 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
+Content-Type: application/json
+
+{
+  "model": "llama-3.3-70b-versatile",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Explica-me o que é computação quântica de forma simples."
+    }
+  ],
+  "temperature": 0.7
+}
+
+###
+
+# curl https://api.groq.com/openai/v1/chat/completions
+#  -X POST
+#  -H "Content-Type: application/json"
+#  -H "Authorization: Bearer TUA_API_KEY_AQUI"
+#  -d '{
+#    "model": "llama-3.3-70b-versatile",
+#    "messages": [
+#      {"role": "system", "content": "És um assistente sarcástico."},
+#      {"role": "user", "content": "Como está o tempo hoje?"}
+#    ],
+#    "stream": true
+#  }'
+POST https://api.groq.com/openai/v1/chat/completions
+Authorization: Bearer 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
+Content-Type: application/json
+
+{
+  "model": "llama-3.3-70b-versatile",
+  "messages": [
+    {
+      "role": "system",
+      "content": "És um assistente sarcástico."
+    },
+    {
+      "role": "user",
+      "content": "Como está o tempo hoje?"
+    }
+  ],
+  "stream": true
+}
+
+###
+
+
+# curl https://api.groq.com/openai/v1/chat/completions
+#  -X POST
+#  -H "Authorization: Bearer TUA_API_KEY_AQUI"
+#  -H "Content-Type: application/json"
+#  -d '{
+#    "model": "llama-3.3-70b-versatile",
+#    "messages": [
+#      {
+#        "role": "system",
+#        "content": "Extrai as informações do texto e responde apenas em JSON."
+#      },
+#      {
+#        "role": "user",
+#        "content": "O João tem 25 anos e vive em Lisboa."
+#      }
+#    ],
+#    "response_format": { "type": "json_object" }
+#  }'
+POST https://api.groq.com/openai/v1/chat/completions
+Authorization: Bearer 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
+Content-Type: application/json
+
+{
+  "model": "llama-3.3-70b-versatile",
+  "messages": [
+    {
+      "role": "system",
+      "content": "Extrai as informações do texto e responde apenas em JSON."
+    },
+    {
+      "role": "user",
+      "content": "O João tem 25 anos e vive em Lisboa."
+    }
+  ],
+  "response_format": {
+    "type": "json_object"
+  }
+}
+
+###
+
+
+# curl https://api.groq.com/openai/v1/chat/completions
+#  -X POST
+#  -H "Authorization: Bearer TUA_API_KEY_AQUI"
+#  -H "Content-Type: application/json"
+#  -d '{
+#    "model": "llama-3.3-70b-versatile",
+#    "messages": [
+#      {
+#        "role": "system",
+#        "content": "Identifica os nomes de pessoas, locais e datas mencionados no texto. Responde apenas com a lista."
+#      },
+#      {
+#        "role": "user",
+#        "content": "O Cristiano Ronaldo viajou para Riade na passada segunda-feira para se encontrar com os dirigentes do Al-Nassr."
+#      }
+#    ],
+#    "temperature": 0
+#  }'
+POST https://api.groq.com/openai/v1/chat/completions
+Authorization: Bearer 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
+Content-Type: application/json
+
+{
+  "model": "llama-3.3-70b-versatile",
+  "messages": [
+    {
+      "role": "system",
+      "content": "Identifica os nomes de pessoas, locais e datas mencionados no texto. Responde apenas com a lista."
+    },
+    {
+      "role": "user",
+      "content": "O Cristiano Ronaldo viajou para Riade na passada segunda-feira para se encontrar com os dirigentes do Al-Nassr."
+    }
+  ],
+  "temperature": 0
+}
+
+###
