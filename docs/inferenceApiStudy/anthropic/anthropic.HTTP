@@ -14,11 +14,12 @@
 #  }'
 
 POST http://localhost:11434/v1/messages
+x-api-key: ollama
 anthropic-version: 2023-06-01
 Content-Type: application/json
 
 {
-  "model": "llama3.2:latest",
+  "model": "llama3.1:8b",
   "max_tokens": 1024,
   "messages": [
     {
@@ -52,13 +53,13 @@ Content-Type: application/json
 
 
 
-POST https://api.anthropic.com/v1/messages
-x-api-key: {{ANTHROPIC_API_KEY}}
+POST http://localhost:11434/v1/messages
+x-api-key: ollama
 anthropic-version: 2023-06-01
 Content-Type: application/json
 
 {
-  "model": "claude-3-5-haiku-20241022",
+  "model": "llama3.1:8b",
   "max_tokens": 1024,
   "system": "You are a cat. Your name is Neko.",
   "messages": [
@@ -89,13 +90,13 @@ Content-Type: application/json
 #      }
 #    ]
 #  }'
-POST https://api.anthropic.com/v1/messages
-x-api-key: {{ANTHROPIC_API_KEY}}
+POST http://localhost:11434/v1/messages
+x-api-key: ollama
 anthropic-version: 2023-06-01
 Content-Type: application/json
 
 {
-  "model": "claude-3-5-haiku-20241022",
+  "model": "llama3.1:8b",
   "max_tokens": 1024,
   "temperature": 1.0,
   "top_p": 0.8,
@@ -131,13 +132,13 @@ Content-Type: application/json
 #      }
 #    ]
 #  }'
-POST https://api.anthropic.com/v1/messages
-x-api-key: {{ANTHROPIC_API_KEY}}
+POST http://localhost:11434/v1/messages
+x-api-key: ollama
 anthropic-version: 2023-06-01
 Content-Type: application/json
 
 {
-  "model": "claude-3-5-haiku-20241022",
+  "model": "llama3.1:8b",
   "max_tokens": 1024,
   "temperature": 1.0,
   "top_p": 0.8,
@@ -185,13 +186,13 @@ Content-Type: application/json
 #      }
 #    ]
 #  }'
-POST https://api.anthropic.com/v1/messages
-x-api-key: {{ANTHROPIC_API_KEY}}
+POST http://localhost:11434/v1/messages
+x-api-key: ollama
 anthropic-version: 2023-06-01
 Content-Type: application/json
 
 {
-  "model": "claude-3-5-haiku-20241022",
+  "model": "llama3.1:8b",
   "max_tokens": 1024,
   "tools": [
     {
@@ -254,13 +255,13 @@ Content-Type: application/json
 #      }
 #    ]
 #  }'
-POST https://api.anthropic.com/v1/messages
-x-api-key: {{ANTHROPIC_API_KEY}}
+POST http://localhost:11434/v1/messages
+x-api-key: ollama
 anthropic-version: 2023-06-01
 Content-Type: application/json
 
 {
-  "model": "claude-3-5-haiku-20241022",
+  "model": "llama3.1:8b",
   "max_tokens": 1024,
   "tools": [
     {
@@ -322,13 +323,13 @@ Content-Type: application/json
 #      }
 #    ]
 #  }'
-POST https://api.anthropic.com/v1/messages
-x-api-key: {{ANTHROPIC_API_KEY}}
+POST http://localhost:11434/v1/messages
+x-api-key: ollama
 anthropic-version: 2023-06-01
 Content-Type: application/json
 
 {
-  "model": "claude-3-7-sonnet-20250219",
+  "model": "llama3.1:8b",
   "max_tokens": 4096,
   "thinking": {
     "type": "enabled",
@@ -379,13 +380,13 @@ Content-Type: application/json
 #      }
 #    ]
 #  }'
-POST https://api.anthropic.com/v1/messages
-x-api-key: {{ANTHROPIC_API_KEY}}
+POST http://localhost:11434/v1/messages
+x-api-key: ollama
 anthropic-version: 2023-06-01
 Content-Type: application/json
 
 {
-  "model": "claude-3-5-haiku-20241022",
+  "model": "llama3.1:8b",
   "max_tokens": 1024,
   "messages": [
     {
@@ -429,17 +430,17 @@ Content-Type: application/json
 #    "max_tokens": 1024,
 #    "stream": true
 #  }'
-POST https://api.anthropic.com/v1/messages
+POST http://localhost:11434/v1/messages
 anthropic-version: 2023-06-01
-x-api-key: {{ANTHROPIC_API_KEY}}
+x-api-key: ollama
 Content-Type: application/x-www-form-urlencoded
 
 {
-    "model": "claude-3-5-haiku-20241022",
-    "messages": [{"role": "user", "content": "Write a long poem."}],
-    "max_tokens": 1024,
-    "stream": true
-  }
+   "model": "llama3.1:8b",
+   "messages": [{"role": "user", "content": "Write a long poem."}],
+   "max_tokens": 1024,
+   "stream": true
+   }
 
 ###
 
@@ -452,8 +453,8 @@ Content-Type: application/x-www-form-urlencoded
 #    "max_tokens": 10,
 #    "messages": [{"role": "user", "content": "Hi"}]
 #  }'
-POST https://api.anthropic.com/v1/messages
-x-api-key: {{ANTHROPIC_API_KEY}}
+POST http://localhost:11434/v1/messages
+x-api-key: ollama
 anthropic-version: 2023-06-01
 Content-Type: application/json
 
@@ -469,6 +470,8 @@ Content-Type: application/json
 }
 
 ###
+
+
 
 
 

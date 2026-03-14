@@ -1,0 +1,12 @@
+version: "3.9"
+
+services:
+  ollama-model:
+    build:
+      context: .
+      args:
+        MODEL_NAME: llama3.2:1b
+    container_name: Ollama_model_llama3.1.1b
+    ports:
+      - "11434:11434"
+    restart: unless-stopped

@@ -1,16 +1,16 @@
 #!/bin/bash
-
 set -e
 
-# iniciar ollama em background
+MODEL=${MODEL_NAME:-llama3.1:8b}
+
+echo "A descarregar o modelo: $MODEL..."
+
 ollama serve &
 pid=$!
 
-# esperar API arrancar
 sleep 5
 
-# baixar modelo leve
-ollama pull phi3:mini
+ollama pull $MODEL
 
-# parar servidor
 kill $pid
+wait $pid
