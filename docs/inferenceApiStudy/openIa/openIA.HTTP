@@ -1,27 +1,227 @@
+###
 # curl http://localhost:11434/v1/chat/completions
-#-H "Content-Type: application/json"
-#-d '{
-#  "model": "phi3:mini",
-#  "messages": [
-#    {
-#      "role": "user",
-#      "content": "How does AI work?"
-#    }
-#  ],
-#  "max_tokens": 100
-#}'
+#  -X POST
+#  -H "Content-Type: application/json"
+#  -d '{
+#    "model": "llama3.2:1b",
+#    "messages": [
+#      {
+#        "role": "system",
+#        "content": "És um assistente local a correr em Docker."
+#      },
+#      {
+#        "role": "user",
+#        "content": "Olá! Estás a funcionar?"
+#      }
+#    ],
+#    "temperature": 0.7
+#  }'
 POST http://localhost:11434/v1/chat/completions
 Content-Type: application/json
 
 {
-  "model": "phi3:mini",
+  "model": "llama3.2:1b",
+  "messages": [
+    {
+      "role": "system",
+      "content": "És um assistente local a correr em Docker."
+    },
+    {
+      "role": "user",
+      "content": "Olá! Estás a funcionar?"
+    }
+  ],
+  "temperature": 0.7
+}
+###
+# curl http://localhost:11434/v1/chat/completions
+#  -X POST
+#  -H "Content-Type: application/json"
+#  -d '{
+#    "model": "llama3.2:1b",
+#    "messages": [
+#      {"role": "user", "content": "Explica o que é Kubernetes em poucas frases."}
+#    ],
+#    "stream": true
+#  }'
+POST http://localhost:11434/v1/chat/completions
+Content-Type: application/json
+
+{
+  "model": "llama3.2:1b",
   "messages": [
     {
       "role": "user",
-      "content": "How does AI work?"
+      "content": "Explica o que é Kubernetes em poucas frases."
     }
   ],
-  "max_tokens": 100
+  "stream": true
+}
+
+
+###
+
+# curl http://localhost:11434/v1/chat/completions
+#  -X POST
+#  -H "Content-Type: application/json"
+#  -d '{
+#    "model": "llama3.2:1b",
+#    "messages": [
+#      {"role": "system", "content": "És um assistente técnico preciso."},
+#      {"role": "user", "content": "Escreve um parágrafo sobre Docker."}
+#    ],
+#    "max_tokens": 150,
+#    "temperature": 0.5,
+#    "top_p": 0.9,
+#    "presence_penalty": 0.6,
+#    "frequency_penalty": 0.5,
+#    "seed": 123,
+#    "stop": ["FIM", "NOTAS"],
+#    "n": 1,
+#    "user": "dev_local_01",
+#    "logit_bias": null,
+#    "logprobs": true,
+#    "top_logprobs": 2
+#  }'
+POST http://localhost:11434/v1/chat/completions
+Content-Type: application/json
+
+{
+  "model": "llama3.2:1b",
+  "messages": [
+    {
+      "role": "system",
+      "content": "És um assistente técnico preciso."
+    },
+    {
+      "role": "user",
+      "content": "Escreve um parágrafo sobre Docker."
+    }
+  ],
+  "max_tokens": 150,
+  "temperature": 0.5,
+  "top_p": 0.9,
+  "presence_penalty": 0.6,
+  "frequency_penalty": 0.5,
+  "seed": 123,
+  "stop": [
+    "FIM",
+    "NOTAS"
+  ],
+  "n": 1,
+  "user": "dev_local_01",
+  "logit_bias": null,
+  "logprobs": true,
+  "top_logprobs": 2
+}
+
+###
+
+
+# curl http://localhost:11434/v1/chat/completions
+#  -X POST
+#  -H "Content-Type: application/json"
+#  -d '{
+#    "model": "llama3.2:1b",
+#    "messages": [
+#      {
+#        "role": "system",
+#        "content": "Extrai dados em JSON. Campos: nome, idade, cidade."
+#      },
+#      {
+#        "role": "user",
+#        "content": "O Carlos tem 30 anos e vive no Porto."
+#      }
+#    ],
+#    "response_format": { "type": "json_object" },
+#    "temperature": 0
+#  }'
+POST http://localhost:11434/v1/chat/completions
+Content-Type: application/json
+
+{
+  "model": "llama3.2:1b",
+  "messages": [
+    {
+      "role": "system",
+      "content": "Extrai dados em JSON. Campos: nome, idade, cidade."
+    },
+    {
+      "role": "user",
+      "content": "O Carlos tem 30 anos e vive no Porto."
+    }
+  ],
+  "response_format": {
+    "type": "json_object"
+  },
+  "temperature": 0
+}
+
+###
+
+
+# curl http://localhost:11434/v1/chat/completions
+#  -X POST
+#  -H "Content-Type: application/json"
+#  -d '{
+#    "model": "llama3.2:1b",
+#    "messages": [
+#      {
+#        "role": "user",
+#        "content": "Como está o preço das ações da Apple (AAPL)?"
+#      }
+#    ],
+#    "tools": [
+#      {
+#        "type": "function",
+#        "function": {
+#          "name": "get_stock_price",
+#          "description": "Obtém o preço atual de uma ação",
+#          "parameters": {
+#            "type": "object",
+#            "properties": {
+#              "symbol": { "type": "string", "description": "O ticker da empresa, ex: AAPL" }
+#            },
+#            "required": ["symbol"]
+#          }
+#        }
+#      }
+#    ],
+#    "tool_choice": "auto"
+#  }'
+POST http://localhost:11434/v1/chat/completions
+Content-Type: application/json
+
+{
+  "model": "llama3.2:1b",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Como está o preço das ações da Apple (AAPL)?"
+    }
+  ],
+  "tools": [
+    {
+      "type": "function",
+      "function": {
+        "name": "get_stock_price",
+        "description": "Obtém o preço atual de uma ação",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "symbol": {
+              "type": "string",
+              "description": "O ticker da empresa, ex: AAPL"
+            }
+          },
+          "required": [
+            "symbol"
+          ]
+        }
+      }
+    }
+  ],
+  "tool_choice": "auto"
 }
 
 ###
@@ -30,16 +230,17 @@ POST http://localhost:11434/v1/chat/completions
 Content-Type: application/json
 
 {
-  "model": "phi3:mini",
+  "model": "llama3.2:1b",
   "messages": [
     {
       "role": "system",
-      "content": "You are a pirate assistant."
+      "content": "És um programador experiente."
     },
     {
       "role": "user",
-      "content": "Tell me about artificial intelligence."
+      "content": "Escreve um exemplo simples de API REST em Node.js com Express."
     }
-  ]
+  ],
+  "temperature": 0.3,
+  "max_tokens": 200
 }
-

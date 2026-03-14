@@ -2,18 +2,11 @@
 
 ## Autenticação
 
-Para autenticar os teus pedidos, inclua a chave de API no cabeçalho HTTP:
+Para autenticar os teus pedidos, incluir a chave de API no cabeçalho HTTP:
 
 ```http
 Authorization: Bearer $OPENAI_API_KEY
 ```
-
-Opcionalmente, podes incluir a organização:
-
-```http
-OpenAI-Organization: $ORG_ID
-```
-
 ## Funcionalidades Principais
 
 Estes são os conceitos fundamentais para integrar os modelos OpenAI:
@@ -21,8 +14,6 @@ Estes são os conceitos fundamentais para integrar os modelos OpenAI:
 * **Geração de Texto (Chat Completions):** Método padrão onde envias mensagens e recebes a resposta completa do modelo.
 * **Streaming:** Permite receber a resposta de forma incremental (token a token) à medida que é gerada.
 * **Execução de Ferramentas (Function Calling):** Conecta os modelos a funções externas para obter dados adicionais ou executar ações.
-
-## Gerar Conteúdo
 
 ### Nota sobre Endpoints
 
@@ -37,130 +28,285 @@ https://api.openai.com/v1/chat/completions
 * `model`: Identificador do modelo (ex: `gpt-4o`, `gpt-4o-mini`, `o1-preview`)
 * `messages`: Lista de objetos com `role` (`system`, `user`, `assistant`) e `content`
 
-### Pedido Exemplo (Bash)
+### Exemplo de Pedido e Resposta
 
+## Request1: Geração de Texto (Chat Completions)
 ```bash
-curl https://api.openai.com/v1/chat/completions \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer $OPENAI_API_KEY" \
-  -d '{
-    "model": "gpt-4o",
-    "messages": [
-      {
-        "role": "system",
-        "content": "És um assistente útil e conciso."
+POST http://localhost:11434/v1/chat/completions
+Content-Type: application/json
+
+{
+  "model": "llama3.2:1b",
+  "messages": [
+    {
+      "role": "system",
+      "content": "És um assistente local a correr em Docker."
+    },
+    {
+      "role": "user",
+      "content": "Olá! Estás a funcionar?"
+    }
+  ],
+  "temperature": 0.7
+}
+```
+## Response
+```json
+{
+  "id": "chatcmpl-31",
+  "object": "chat.completion",
+  "created": 1773531116,
+  "model": "llama3.2:1b",
+  "system_fingerprint": "fp_ollama",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "Desculpe, mas esteja de mãos e talvez eu não esteja funcionando corretamente no momento. Mas posso tentar ajudá-lo daqui a um momento!"
       },
-      {
-        "role": "user",
-        "content": "Como funciona a IA?"
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 46,
+    "completion_tokens": 40,
+    "total_tokens": 86
+  }
+}
+```
+## Request2Tool: Chamada de Função (Function Calling)
+
+```http
+POST http://localhost:11434/v1/chat/completions
+Content-Type: application/json
+{
+  "model": "llama3.2:1b",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Como está o preço das ações da Apple (AAPL)?"
+    }
+  ],
+  "tools": [
+    {
+      "type": "function",
+      "function": {
+        "name": "get_stock_price",
+        "description": "Obtém o preço atual de uma ação",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "symbol": {
+              "type": "string",
+              "description": "O ticker da empresa, ex: AAPL"
+            }
+          },
+          "required": [
+            "symbol"
+          ]
+        }
       }
-    ]
-  }'
+    }
+  ],
+  "tool_choice": "auto"
+}
+```
+## Resposta 
+
+```json
+{
+  "id": "chatcmpl-53",
+  "object": "chat.completion",
+  "created": 1773531604,
+  "model": "llama3.2:1b",
+  "system_fingerprint": "fp_ollama",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "",
+        "tool_calls": [
+          {
+            "id": "call_9fasug2c",
+            "index": 0,
+            "type": "function",
+            "function": {
+              "name": "get_stock_price",
+              "arguments": "{\"symbol\":\"AAPL\"}"
+            }
+          }
+        ]
+      },
+      "finish_reason": "tool_calls"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 171,
+    "completion_tokens": 19,
+    "total_tokens": 190
+  }
+}
+```
+## Request: Streaming de Resposta
+```bash
+POST http://localhost:11434/v1/chat/completions
+Content-Type: application/json
+
+{
+  "model": "llama3.2:1b",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Explica o que é Kubernetes em poucas frases."
+    }
+  ],
+  "stream": true
+}
 ```
 
-## Configuração de Raciocínio (Reasoning)
+## Resposta (streaming)
 
-Modelos como a série `o1` utilizam um processo de "pensamento" interno para resolver problemas complexos antes de responder.
 
-### Pedido (Modelo o1)
+data: {"id":"chatcmpl-308","object":"chat.completion.chunk","created":1773532270,"model":"llama3.2:1b","system_fingerprint":"fp_ollama","choices":[{"index":0,"delta":{"role":"assistant","content":"K"},"finish_reason":null}]}
+
+data: {"id":"chatcmpl-308","object":"chat.completion.chunk","created":1773532270,"model":"llama3.2:1b","system_fingerprint":"fp_ollama","choices":[{"index":0,"delta":{"content":"ubernetes"},"finish_reason":null}]}
+
+data: {"id":"chatcmpl-308","object":"chat.completion.chunk","created":1773532271,"model":"llama3.2:1b","system_fingerprint":"fp_ollama","choices":[{"index":0,"delta":{"content":" é um sistema de gerenciamento de distribuição de aplicativos em nuvem (cloud) baseado no conceito de escalar, isolar e autenticar os serviços e instâncias do recurso."},"finish_reason":null}]}
+
+data: {"id":"chatcmpl-308","object":"chat.completion.chunk","created":1773532272,"model":"llama3.2:1b","system_fingerprint":"fp_ollama","choices":[{"index":0,"delta":{},"finish_reason":"stop"}]}
+
+data: [DONE]
+
+## Request: Geração de Código
 
 ```bash
-curl https://api.openai.com/v1/chat/completions \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer $OPENAI_API_KEY" \
-  -d '{
-    "model": "o1-preview",
-    "messages": [
-      {
-        "role": "user",
-        "content": "Resolve este enigma lógico..."
-      }
-    ],
-    "max_completion_tokens": 5000
-  }'
-```
+POST http://localhost:11434/v1/chat/completions
+Content-Type: application/json
 
+{
+  "model": "llama3.2:1b",
+  "messages": [
+    {
+      "role": "system",
+      "content": "És um programador experiente."
+    },
+    {
+      "role": "user",
+      "content": "Escreve um exemplo simples de API REST em Node.js com Express."
+    }
+  ],
+  "temperature": 0.3,
+  "max_tokens": 200
+}
+
+```
+## Resposta
+
+```
+{
+  "id": "chatcmpl-898",
+  "object": "chat.completion",
+  "created": 1773532417,
+  "model": "llama3.2:1b",
+  "system_fingerprint": "fp_ollama",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "Aqui está um exemplo simples de API REST em Node.js com Express:\n\n**Instalação**\n\nAntes de começar, instale as dependências necessárias com o comando:\n```bash\nnpm install express body-parser\n```\n**Código**\n\n```javascript\n// app.js\n\nconst express = require('express');\nconst bodyParser = require('body-parser');\n\nconst app = express();\n\napp.use(bodyParser.json());\n\n// Rota para criar um novo usuário\napp.post('/users', (req, res) => {\n  const { nome, email } = req.body;\n  if (!nome || !email) {\n    return res.status(400).send({ mensagem: 'Por favor, forneça o nome e o e-mail do usuário' });\n  }\n\n  // Criação do novo usuário\n  const newUser = { nome, email };\n  console.log(newUser);\n\n  res.send(`Novo usuário criado com sucesso! ${JSON.stringify(newUser)}`);\n});\n\n// R"
+      },
+      "finish_reason": "length"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 48,
+    "completion_tokens": 200,
+    "total_tokens": 248
+  }
+}
+```
 ## Modificar a Configuração de Geração
 
 Parâmetros que ajustam o comportamento do modelo:
 
-| Parâmetro     | Descrição                                                                       |
-| ------------- | ------------------------------------------------------------------------------- |
-| `temperature` | Controla a aleatoriedade (0 a 2). Valores baixos são mais focados.              |
-| `max_tokens`  | Limite de tokens na resposta final.                                             |
-| `top_p`       | Nucleus sampling; o modelo considera tokens com massa de probabilidade `top_p`. |
-| `stop`        | Sequências que interrompem a geração de texto.                                  |
-
-## Interação Multimodal (Imagens)
-
-O envio de imagens é feito através de URLs ou Base64 dentro do conteúdo da mensagem do utilizador.
-
-```bash
-curl https://api.openai.com/v1/chat/completions \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer $OPENAI_API_KEY" \
-  -d '{
-    "model": "gpt-4o",
-    "messages": [
-      {
-        "role": "user",
-        "content": [
-          { "type": "text", "text": "O que vês nesta imagem?" },
-          {
-            "type": "image_url",
-            "image_url": { "url": "data:image/jpeg;base64,$B64_DATA" }
-          }
-        ]
-      }
-    ]
-  }'
-```
-
-## Saídas Estruturadas (Structured Outputs)
-
-Garante que o modelo responde num formato JSON rigoroso seguindo um esquema.
-
-### Pedido com JSON Schema
-
-```json
-{
-  "model": "gpt-4o-2024-08-06",
-  "messages": [
-    { "role": "system", "content": "Extrai dados do utilizador." }
-  ],
-  "response_format": {
-    "type": "json_schema",
-    "json_schema": {
-      "name": "user_info",
-      "strict": true,
-      "schema": {
-        "type": "object",
-        "properties": {
-          "nome": { "type": "string" },
-          "idade": { "type": "integer" }
-        },
-        "required": ["nome", "idade"],
-        "additionalProperties": false
-      }
-    }
-  }
-}
-```
+| Parâmetro            | Descrição                                                                                     |
+|----------------------|-----------------------------------------------------------------------------------------------|
+| `temperature`        | Controla a aleatoriedade (0 a 2). Valores baixos produzem respostas mais determinísticas.   |
+| `max_tokens`         | Número máximo de tokens que o modelo pode gerar na resposta.                                |
+| `top_p`              | *Nucleus sampling*; o modelo considera tokens cuja soma de probabilidade seja `top_p`.      |
+| `stop`               | Sequências que interrompem a geração quando encontradas.                                    |
+| `frequency_penalty`  | Penaliza tokens que já apareceram com frequência, reduzindo repetições.                     |
+| `presence_penalty`   | Penaliza tokens que já apareceram, incentivando o modelo a introduzir novos tópicos.        |
+| `n`                  | Número de respostas que o modelo deve gerar para o mesmo pedido.                            |
+| `stream`             | Quando `true`, a resposta é enviada em partes (*streaming*) em vez de um único bloco.       |
+| `logit_bias`         | Ajusta a probabilidade de tokens específicos, permitindo favorecer ou bloquear palavras.    |
+| `seed`               | Define uma seed para tornar a geração mais reproduzível entre execuções.                    |
+| `response_format`    | Define o formato da resposta (por exemplo `json_object` para respostas estruturadas).       |
 
 ## Chamada de Função (Tool Calling)
 
-Permite ao modelo solicitar a execução de ferramentas externas:
+Permite ao modelo solicitar a execução de ferramentas externas definidas pela aplicação.
 
-* **Definição:** Envias as funções disponíveis no campo `tools`.
-* **Pedido de Chamada:** O modelo responde com `tool_calls` contendo o nome e argumentos.
-* **Execução:** A tua aplicação corre a função e envia o resultado de volta para o modelo finalizar a resposta.
+### Funcionamento
+
+1. **Definição das ferramentas**
+    - A aplicação envia as funções disponíveis no campo `tools`.
+    - Cada ferramenta define `name`, `description` e `parameters` (JSON Schema).
+
+2. **Decisão do modelo**
+    - O modelo analisa o pedido do utilizador.
+    - Se necessário, decide chamar uma ferramenta.
+
+3. **Pedido de chamada**
+    - A resposta do modelo contém `tool_calls` com:
+        - `name` da função
+        - `arguments` em JSON
+
+4. **Execução**
+    - A aplicação executa a função com os argumentos recebidos.
+
+5. **Resposta final**
+    - O resultado da ferramenta é enviado novamente ao modelo como mensagem com `role: tool`.
+    - O modelo usa essa informação para gerar a resposta final ao utilizador.
+
+### Parâmetros relevantes
+
+| Parâmetro       | Descrição                                                                 |
+|-----------------|-------------------------------------------------------------------------|
+| `tools`         | Lista de ferramentas disponíveis para o modelo.                         |
+| `tool_choice`   | Controla se o modelo pode ou deve chamar uma ferramenta (`auto`, `none` ou específica). |
+
+---
 
 ## Saídas Estruturadas vs Chamada de Função
 
-| Recurso             | Caso de Uso Principal                                               |
-| ------------------- | ------------------------------------------------------------------- |
-| Saídas Estruturadas | Formatar a resposta final para o utilizador ou base de dados.       |
-| Chamada de Função   | Interagir com sistemas externos para obter dados ou realizar ações. |
+Ambos os mecanismos ajudam a obter respostas estruturadas, mas com objetivos diferentes.
+
+| Recurso               | Caso de Uso Principal                                                     |
+|-----------------------|---------------------------------------------------------------------------|
+| Saídas Estruturadas   | Garantir que a resposta segue um formato específico (ex: JSON válido).   |
+| Chamada de Função     | Permitir ao modelo interagir com APIs, bases de dados ou outros serviços.|
+
+### Diferença principal
+
+- **Saídas estruturadas:**  
+  O modelo **gera diretamente** dados num formato definido.
+
+- **Chamada de função:**  
+  O modelo **pede à aplicação para executar uma ação externa** antes de responder.
+
+### Exemplos
+
+| Situação | Melhor abordagem |
+|--------|----------------|
+| Extrair dados estruturados de texto | Saídas estruturadas |
+| Consultar preço de ações | Chamada de função |
+| Criar JSON para guardar numa base de dados | Saídas estruturadas |
+| Reservar voo ou consultar API externa | Chamada de função |
+
 
 ## Documentação Oficial
 

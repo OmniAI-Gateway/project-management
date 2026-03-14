@@ -143,3 +143,180 @@ Content-Type: application/json
 }
 
 ###
+
+# curl https://api.groq.com/openai/v1/chat/completions
+#  -X POST
+#  -H "Authorization: Bearer TUA_API_KEY_AQUI"
+#  -H "Content-Type: application/json"
+#  -d '{
+#    "model": "llama-3.3-70b-versatile",
+#    "messages": [
+#      {
+#        "role": "system",
+#        "content": "És um assistente técnico que responde apenas em tópicos."
+#      },
+#      {
+#        "role": "user",
+#        "content": "Explica a diferença entre CPU e GPU."
+#      }
+#    ],
+#    "temperature": 0.5,
+#    "max_tokens": 1024,
+#    "top_p": 1,
+#    "stream": false,
+#    "stop": ["FIM", "TERMINAR"],
+#    "presence_penalty": 0.0,
+#    "frequency_penalty": 0.0,
+#    "seed": 42,
+#    "user": "utilizador_123",
+#    "response_format": { "type": "text" },
+#    "logit_bias": null
+#  }'
+POST https://api.groq.com/openai/v1/chat/completions
+Authorization: Bearer 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
+Content-Type: application/json
+
+{
+  "model": "llama-3.3-70b-versatile",
+  "messages": [
+    {
+      "role": "system",
+      "content": "És um assistente técnico que responde apenas em tópicos."
+    },
+    {
+      "role": "user",
+      "content": "Explica a diferença entre CPU e GPU."
+    }
+  ],
+  "temperature": 0.5,
+  "max_tokens": 1024,
+  "top_p": 1,
+  "stream": false,
+  "stop": [
+    "FIM",
+    "TERMINAR"
+  ],
+  "presence_penalty": 0.0,
+  "frequency_penalty": 0.0,
+  "seed": 42,
+  "user": "utilizador_123",
+  "response_format": {
+    "type": "text"
+  },
+  "logit_bias": null
+}
+
+###
+
+
+# curl https://api.groq.com/openai/v1/chat/completions
+#  -X POST
+#  -H "Authorization: Bearer TUA_API_KEY_AQUI"
+#  -H "Content-Type: application/json"
+#  -d '{
+#    "model": "llama-3.3-70b-versatile",
+#    "messages": [
+#      {
+#        "role": "system",
+#        "content": "És um assistente que usa ferramentas para responder com precisão."
+#      },
+#      {
+#        "role": "user",
+#        "content": "Qual é a temperatura em Lisboa agora?"
+#      }
+#    ],
+#    "tools": [
+#      {
+#        "type": "function",
+#        "function": {
+#          "name": "get_weather",
+#          "description": "Obtém o estado do tempo para uma localização específica",
+#          "parameters": {
+#            "type": "object",
+#            "properties": {
+#              "location": { "type": "string", "description": "A cidade e o país, ex: Lisboa, Portugal" },
+#              "unit": { "type": "string", "enum": ["celsius", "fahrenheit"] }
+#            },
+#            "required": ["location"]
+#          }
+#        }
+#      }
+#    ],
+#    "tool_choice": "auto",
+#    "temperature": 0.2,
+#    "max_tokens": 500,
+#    "top_p": 1,
+#    "stream": false,
+#    "stop": null,
+#    "presence_penalty": 0.5,
+#    "frequency_penalty": 0.5,
+#    "seed": 1234,
+#    "user": "unique_user_id_99",
+#    "response_format": { "type": "text" },
+#    "logit_bias": null,
+#    "logprobs": false,
+#    "top_logprobs": null
+#  }'
+POST https://api.groq.com/openai/v1/chat/completions
+Authorization: Bearer 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
+Content-Type: application/json
+
+{
+  "model": "llama-3.3-70b-versatile",
+  "messages": [
+    {
+      "role": "system",
+      "content": "És um assistente que usa ferramentas para responder com precisão."
+    },
+    {
+      "role": "user",
+      "content": "Qual é a temperatura em Lisboa agora?"
+    }
+  ],
+  "tools": [
+    {
+      "type": "function",
+      "function": {
+        "name": "get_weather",
+        "description": "Obtém o estado do tempo para uma localização específica",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "location": {
+              "type": "string",
+              "description": "A cidade e o país, ex: Lisboa, Portugal"
+            },
+            "unit": {
+              "type": "string",
+              "enum": [
+                "celsius",
+                "fahrenheit"
+              ]
+            }
+          },
+          "required": [
+            "location"
+          ]
+        }
+      }
+    }
+  ],
+  "tool_choice": "auto",
+  "temperature": 0.2,
+  "max_tokens": 500,
+  "top_p": 1,
+  "stream": false,
+  "stop": null,
+  "presence_penalty": 0.5,
+  "frequency_penalty": 0.5,
+  "seed": 1234,
+  "user": "unique_user_id_99",
+  "response_format": {
+    "type": "text"
+  },
+  "logit_bias": null,
+  "logprobs": false,
+  "top_logprobs": null
+}
+
+###
