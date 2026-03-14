@@ -9,8 +9,8 @@ pid=$!
 # esperar API arrancar
 sleep 5
 
-# baixar modelo
-ollama pull llama3.1:8b
+# baixar modelo leve
+ollama pull phi3:mini
 
 # parar servidor
 kill $pid

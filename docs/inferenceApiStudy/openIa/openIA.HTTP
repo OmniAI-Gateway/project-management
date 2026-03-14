@@ -1,0 +1,45 @@
+# curl http://localhost:11434/v1/chat/completions
+#-H "Content-Type: application/json"
+#-d '{
+#  "model": "phi3:mini",
+#  "messages": [
+#    {
+#      "role": "user",
+#      "content": "How does AI work?"
+#    }
+#  ],
+#  "max_tokens": 100
+#}'
+POST http://localhost:11434/v1/chat/completions
+Content-Type: application/json
+
+{
+  "model": "phi3:mini",
+  "messages": [
+    {
+      "role": "user",
+      "content": "How does AI work?"
+    }
+  ],
+  "max_tokens": 100
+}
+
+###
+
+POST http://localhost:11434/v1/chat/completions
+Content-Type: application/json
+
+{
+  "model": "phi3:mini",
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are a pirate assistant."
+    },
+    {
+      "role": "user",
+      "content": "Tell me about artificial intelligence."
+    }
+  ]
+}
+
