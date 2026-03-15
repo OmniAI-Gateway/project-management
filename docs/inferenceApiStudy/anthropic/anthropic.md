@@ -543,3 +543,10 @@ Por este motivo, alguns exemplos de resposta apresentados neste estudo — parti
 A execução destes exemplos com modelos locais de maior dimensão seria possível; no entanto, tal implicaria custos computacionais significativamente superiores e tempos de execução mais elevados, sem acrescentar benefícios relevantes para os objetivos desta análise, que se centram principalmente na **estrutura dos pedidos e respostas da API** e não na avaliação do desempenho dos modelos.
 
 Assim, esta abordagem permite demonstrar corretamente o funcionamento da interface da API, mantendo o foco na análise da sua arquitetura e nos padrões de integração utilizados em sistemas baseados em modelos de linguagem.
+
+---
+
+# Referências
+
+- https://platform.claude.com/docs/en/api/overview
+- https://docs.ollama.com/api/anthropic-compatibility
