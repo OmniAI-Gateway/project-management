@@ -19,7 +19,7 @@ anthropic-version: 2023-06-01
 Content-Type: application/json
 
 {
-  "model": "llama3.1:8b",
+  "model": "llama3.2:1b",
   "max_tokens": 1024,
   "messages": [
     {
@@ -59,7 +59,7 @@ anthropic-version: 2023-06-01
 Content-Type: application/json
 
 {
-  "model": "llama3.1:8b",
+  "model": "llama3.2:1b",
   "max_tokens": 1024,
   "system": "You are a cat. Your name is Neko.",
   "messages": [
@@ -78,15 +78,12 @@ Content-Type: application/json
 #  -H "content-type: application/json"
 #  -d '{
 #    "model": "claude-3-5-haiku-20241022",
-#    "max_tokens": 1024,
-#    "temperature": 1.0,
-#    "top_p": 0.8,
-#    "top_k": 10,
-#    "stop_sequences": ["Title"],
+#    "max_tokens": 200,
+#    "stream": true,
 #    "messages": [
 #      {
 #        "role": "user",
-#        "content": "Explain how AI works"
+#        "content": "Write a short explanation of artificial intelligence."
 #      }
 #    ]
 #  }'
@@ -96,23 +93,20 @@ anthropic-version: 2023-06-01
 Content-Type: application/json
 
 {
-  "model": "llama3.1:8b",
-  "max_tokens": 1024,
-  "temperature": 1.0,
-  "top_p": 0.8,
-  "top_k": 10,
-  "stop_sequences": [
-    "Title"
-  ],
+  "model": "llama3.2:1b",
+  "max_tokens": 200,
+  "stream": true,
   "messages": [
     {
       "role": "user",
-      "content": "Explain how AI works"
+      "content": "Write a short explanation of artificial intelligence."
     }
   ]
 }
 
 ###
+
+
 
 # curl https://api.anthropic.com/v1/messages
 #  -H "x-api-key: $ANTHROPIC_API_KEY"
@@ -138,7 +132,7 @@ anthropic-version: 2023-06-01
 Content-Type: application/json
 
 {
-  "model": "llama3.1:8b",
+  "model": "llama3.2:1b",
   "max_tokens": 1024,
   "temperature": 1.0,
   "top_p": 0.8,
@@ -153,6 +147,7 @@ Content-Type: application/json
     }
   ]
 }
+
 
 ###
 
@@ -192,7 +187,7 @@ anthropic-version: 2023-06-01
 Content-Type: application/json
 
 {
-  "model": "llama3.1:8b",
+  "model": "llama3.2:1b",
   "max_tokens": 1024,
   "tools": [
     {
@@ -261,7 +256,7 @@ anthropic-version: 2023-06-01
 Content-Type: application/json
 
 {
-  "model": "llama3.1:8b",
+  "model": "llama3.2:1b",
   "max_tokens": 1024,
   "tools": [
     {
@@ -329,7 +324,7 @@ anthropic-version: 2023-06-01
 Content-Type: application/json
 
 {
-  "model": "llama3.1:8b",
+  "model": "llama3.2:1b",
   "max_tokens": 4096,
   "thinking": {
     "type": "enabled",
@@ -386,7 +381,7 @@ anthropic-version: 2023-06-01
 Content-Type: application/json
 
 {
-  "model": "llama3.1:8b",
+  "model": "llama3.2:1b",
   "max_tokens": 1024,
   "messages": [
     {
@@ -436,7 +431,7 @@ x-api-key: ollama
 Content-Type: application/x-www-form-urlencoded
 
 {
-   "model": "llama3.1:8b",
+   "model": "llama3.2:1b",
    "messages": [{"role": "user", "content": "Write a long poem."}],
    "max_tokens": 1024,
    "stream": true
