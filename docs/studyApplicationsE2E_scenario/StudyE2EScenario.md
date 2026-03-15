@@ -32,6 +32,102 @@ No incio deu erro pq o pedido n estava estruturado seguido os pedidos que saibam
 ### Configuração via LibreChat
 O LibreChat [documentação oficial do LibreChat](https://www.librechat.ai/docs/quick_start/custom_endpoints)
 
-### Configuração via Dify
+### Configuração via Claude Code
 
+Outra aplicação relevante para testar a interoperabilidade da OmniAI Gateway é o **Claude Code**, uma ferramenta desenvolvida pela Anthropic que permite utilizar modelos Claude diretamente a partir de ambientes de
+desenvolvimento.
 
+Por defeito, o Claude Code comunica diretamente com a API oficial da
+Anthropic. No entanto, para efeitos de validação da arquitetura da
+OmniAI Gateway, é possível alterar o endpoint utilizado pela aplicação
+de forma a que os pedidos sejam enviados primeiro para a gateway.
+
+Desta forma, o fluxo de comunicação passa a ser o seguinte:
+
+Cliente (Claude Code) → OmniAI Gateway → API Anthropic
+
+Em vez do fluxo tradicional: Cliente (Claude Code) → API Anthropic
+
+Este cenário permite demonstrar que uma aplicação desenvolvida para comunicar diretamente com um fornecedor específico pode ser integrada
+com a OmniAI Gateway apenas através da alteração do endpoint da API.
+
+------------------------------------------------------------------------
+# Claude Code Configuration
+
+Claude Code supports configuration through JSON configuration files.
+These files allow users to define environment variables and API
+parameters.
+
+According to the documentation, the configuration can be defined in:
+
+Global configuration:
+
+    ~/.claude/settings.json
+
+Project‑specific configuration:
+
+    .claude/settings.json
+    .claude/settings.local.json
+
+These files allow developers to define environment variables used by claude Code when making API requests.
+
+------------------------------------------------------------------------
+
+# Changing the API Endpoint
+
+Claude Code allows changing the API endpoint through the `ANTHROPIC_BASE_URL` variable.
+
+Example configuration:
+
+``` json
+{
+  "env": {
+    "ANTHROPIC_AUTH_TOKEN": "YOUR_API_KEY",
+    "ANTHROPIC_BASE_URL": "https://custom-endpoint.example.com",
+    "ANTHROPIC_MODEL": "model-name"
+  }
+}
+```
+
+Key configuration parameters:
+
+-   **ANTHROPIC_AUTH_TOKEN** -- API authentication token
+-   **ANTHROPIC_BASE_URL** -- Base URL for the Anthropic‑compatible API
+-   **ANTHROPIC_MODEL** -- Model identifier used in requests
+
+By modifying `ANTHROPIC_BASE_URL`, Claude Code can communicate with any
+**Anthropic‑compatible API endpoint**, including a custom gateway
+implementation.
+
+------------------------------------------------------------------------
+
+# Example Usage with a Custom Endpoint
+
+A custom endpoint can be configured through environment variables.
+
+Example:
+
+``` bash
+export ANTHROPIC_BASE_URL="http://localhost:8080"
+export ANTHROPIC_AUTH_TOKEN="API_KEY"
+```
+
+In this configuration, the request flow becomes:
+
+    Claude Code
+         |
+         v
+    OmniAI Gateway
+         |
+         v
+    Anthropic API
+
+Instead of the default communication path:
+
+    Claude Code
+         |
+         v
+    Anthropic API
+
+This demonstrates that Claude Code can operate transparently through an
+intermediary system such as the **OmniAI Gateway**.
