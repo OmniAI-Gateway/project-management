@@ -1,0 +1,47 @@
+# Build outputs and caches (all modules)
+**/build/
+**/out/
+**/.gradle/
+**/.kotlin/
+**/bin/
+**/target/
+
+# IDE/editor metadata
+.idea/
+**/*.iml
+.vscode/
+
+# Logs and temp files
+**/*.log
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
+
+# OS metadata
+.DS_Store
+Thumbs.db
+
+# Local config and secrets
+.env
+.env.*
+!.env.example
+*.local
+local.properties
+**/http-client.private.env.json
+*.pem
+*.key
+*.p12
+*.jks
+
+# Keep Gradle wrapper tracked
+!gradlew
+!gradlew.bat
+!gradle/wrapper/gradle-wrapper.jar
+!gradle/wrapper/gradle-wrapper.properties
+!**/gradlew
+!**/gradlew.bat
+!**/gradle/wrapper/gradle-wrapper.jar
+!**/gradle/wrapper/gradle-wrapper.properties
+
