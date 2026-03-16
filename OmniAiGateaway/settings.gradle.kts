@@ -3,4 +3,9 @@ plugins {
 }
 rootProject.name = "OmniAiGateaway"
 
-includeBuild("../OmniAiGateaway-Core")
+
+include(":inbound")
+include(":inbound:web")
+include(":outbound")
+include(":outbound:ollama")
+include(":app")

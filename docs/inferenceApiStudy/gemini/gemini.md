@@ -394,7 +394,105 @@ Por padrão, o modelo retorna uma resposta somente depois que todo o processo de
       }'
 ```
 
-*(A resposta será semelhante à anterior, mas virá em modo de streaming.)*
+### Resposta
+
+```http
+HTTP/2 200 OK
+
+data: {
+  "candidates": [
+    {
+      "content": {
+        "parts": [
+          {
+            "text": "At its simplest level, Artificial Intelligence (AI) is a way of making a computer \"think\" and \"learn\" similarly"
+          }
+        ],
+        "role": "model"
+      },
+      "index": 0
+    }
+  ],
+  "usageMetadata": {
+    "promptTokenCount": 4,
+    "candidatesTokenCount": 25,
+    "totalTokenCount": 608,
+    "promptTokensDetails": [
+      {
+        "modality": "TEXT",
+        "tokenCount": 4
+      }
+    ],
+    "thoughtsTokenCount": 579
+  },
+  "modelVersion": "gemini-3-flash-preview",
+  "responseId": "uZ-2aZX8CbK6kdUPxfCGsQU"
+}
+
+data: {
+  "candidates": [
+    {
+      "content": {
+        "parts": [
+          {
+            "text": " to a human.\n\nInstead of a programmer writing a specific list of rules for every possible situation, the computer is given a massive"
+          }
+        ],
+        "role": "model"
+      },
+      "index": 0
+    }
+  ],
+  "usageMetadata": {
+    "promptTokenCount": 4,
+    "candidatesTokenCount": 51,
+    "totalTokenCount": 634,
+    "promptTokensDetails": [
+      {
+        "modality": "TEXT",
+        "tokenCount": 4
+      }
+    ],
+    "thoughtsTokenCount": 579
+  },
+  "modelVersion": "gemini-3-flash-preview",
+  "responseId": "uZ-2aZX8CbK6kdUPxfCGsQU"
+}
+
+data: {
+  "candidates": [
+    {
+      "content": {
+        "parts": [
+          {
+            "text": "",
+            "thoughtSignature":  "..." 
+          }
+        ],
+        "role": "model"
+      },
+      "finishReason": "STOP",
+      "index": 0
+    }
+  ],
+  "usageMetadata": {
+    "promptTokenCount": 4,
+    "candidatesTokenCount": 853,
+    "totalTokenCount": 1436,
+    "promptTokensDetails": [
+      {
+        "modality": "TEXT",
+        "tokenCount": 4
+      }
+    ],
+    "thoughtsTokenCount": 579
+  },
+  "modelVersion": "gemini-3-flash-preview",
+  "responseId": "uZ-2aZX8CbK6kdUPxfCGsQU"
+}
+
+
+```
 
 ---
 

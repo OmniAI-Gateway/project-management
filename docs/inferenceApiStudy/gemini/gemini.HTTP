@@ -169,6 +169,22 @@ Content-Type: application/json
   }
 }
 
+###
+
+POST https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:streamGenerateContent?alt=sse&key={{GEMINI_API_KEY}}
+Content-Type: application/json
+
+{
+  "contents": [
+    {
+      "parts": [
+        {
+          "text": "Explain how AI works"
+        }
+      ]
+    }
+  ]
+}
 
 ###
 POST https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent

@@ -1,23 +1,28 @@
+import org.gradle.api.tasks.testing.Test
+
 plugins {
-    kotlin("jvm") version "2.3.0"
+    kotlin("jvm") version "2.3.0" apply false
 }
 
 group = "org.example"
 version = "1.0-SNAPSHOT"
 
-repositories {
-    mavenCentral()
-}
+subprojects {
+    apply(plugin = "org.jetbrains.kotlin.jvm")
 
-dependencies {
-    testImplementation(kotlin("test"))
-    implementation("org.example:OmniAiGateaway-Core:1.0-SNAPSHOT")
-}
+    repositories {
+        mavenCentral()
+    }
 
-kotlin {
-    jvmToolchain(22)
-}
+    dependencies {
+        "testImplementation"(kotlin("test"))
+    }
 
-tasks.test {
-    useJUnitPlatform()
+    extensions.configure<org.jetbrains.kotlin.gradle.dsl.KotlinJvmProjectExtension> {
+        jvmToolchain(22)
+    }
+
+    tasks.withType<Test>().configureEach {
+        useJUnitPlatform()
+    }
 }
