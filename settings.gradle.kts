@@ -1,5 +1,5 @@
 rootProject.name = "project-management"
 
-includeBuild("OmniAiGateaway-Core")
-includeBuild("OmniAiGateaway")
+includeBuild("OmniAiGateway-Core")
+includeBuild("OmniAiGateway")
 
