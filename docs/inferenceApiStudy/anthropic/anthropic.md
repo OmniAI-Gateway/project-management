@@ -467,6 +467,35 @@ curl https://api.anthropic.com/v1/messages \
   }'
 ```
 
+## Resposta
+
+```json
+{
+  "id": "msg_01xyz...",
+  "type": "message",
+  "role": "assistant",
+  "model": "claude-3-7-sonnet-20250219",
+  "content": [
+    {
+      "type": "thinking",
+      "thinking": "Here I need to explain how AI works to a general audience. I should start with a basic definition, then break down core concepts like Machine Learning, Neural Networks, and Training Data. I will use an analogy to make it easier to understand. Let's structure it logically: 1. Definition. 2. How it learns (Data). 3. Neural Networks...",
+      "signature": "zxcvbnm1234567890..."
+    },
+    {
+      "type": "text",
+      "text": "Artificial Intelligence (AI) works fundamentally by processing large amounts of data, recognizing patterns within that data, and using those patterns to make decisions or predictions...\n\n(Resto da explicação sobre IA)"
+    }
+  ],
+  "stop_reason": "end_turn",
+  "stop_sequence": null,
+  "usage": {
+    "input_tokens": 13,
+    "output_tokens": 850
+  }
+}
+
+```
+
 ---
 
 # 8. Devolução de Resultado de Ferramenta
