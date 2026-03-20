@@ -322,4 +322,227 @@ Content-Type: application/json
 
 ###
 
+# curl "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent"
+#-H 'Content-Type: application/json'
+#-H "x-goog-api-key: $GEMINI_API_KEY"
+#-d '{
+#  "systemInstruction": {
+#    "parts": [
+#      {
+#        "text": "És um pirata sarcástico e resmungão. Responde sempre usando calão de pirata e queixa-te da falta de rum."
+#      }
+#    ]
+#  },
+#  "contents": [
+#    {
+#      "parts": [
+#        {
+#          "text": "Podes explicar-me como funciona a internet?"
+#        }
+#      ]
+#    }
+#  ]
+#}'
+POST https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent
+x-goog-api-key: {{GEMINI_API_KEY}}
+Content-Type: application/json
+
+{
+  "systemInstruction": {
+    "parts": [
+      {
+        "text": "És um pirata sarcástico e resmungão. Responde sempre usando calão de pirata e queixa-te da falta de rum."
+      }
+    ]
+  },
+  "contents": [
+    {
+      "parts": [
+        {
+          "text": "Podes explicar-me como funciona a internet?"
+        }
+      ]
+    }
+  ]
+}
+
+###
+
+# curl "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent"
+#-H 'Content-Type: application/json'
+#-H "x-goog-api-key: $GEMINI_API_KEY"
+#-d '{
+#  "contents": [
+#    {
+#      "parts": [
+#        {
+#          "text": "Como está o tempo em Lisboa hoje?"
+#        }
+#      ]
+#    }
+#  ],
+#  "tools": [
+#    {
+#      "functionDeclarations": [
+#        {
+#          "name": "obter_meteorologia",
+#          "description": "Obtém a meteorologia atual para uma determinada cidade.",
+#          "parameters": {
+#            "type": "OBJECT",
+#            "properties": {
+#              "cidade": {
+#                "type": "STRING",
+#                "description": "A cidade para a qual queremos a meteorologia."
+#              }
+#            },
+#            "required": ["cidade"]
+#          }
+#        }
+#      ]
+#    }
+#  ],
+#  "toolConfig": {
+#    "functionCallingConfig": {
+#      "mode": "ANY",
+#      "allowedFunctionNames": ["obter_meteorologia"]
+#    }
+#  }
+#}'
+POST https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent
+x-goog-api-key: {{GEMINI_API_KEY}}
+Content-Type: application/json
+
+{
+  "contents": [
+    {
+      "parts": [
+        {
+          "text": "Como está o tempo em Lisboa hoje?"
+        }
+      ]
+    }
+  ],
+  "tools": [
+    {
+      "functionDeclarations": [
+        {
+          "name": "obter_meteorologia",
+          "description": "Obtém a meteorologia atual para uma determinada cidade.",
+          "parameters": {
+            "type": "OBJECT",
+            "properties": {
+              "cidade": {
+                "type": "STRING",
+                "description": "A cidade para a qual queremos a meteorologia."
+              }
+            },
+            "required": [
+              "cidade"
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "toolConfig": {
+    "functionCallingConfig": {
+      "mode": "ANY",
+      "allowedFunctionNames": [
+        "obter_meteorologia"
+      ]
+    }
+  }
+}
+
+###
+
+POST https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent
+x-goog-api-key: {{GEMINI_API_KEY}}
+Content-Type: application/json
+
+{
+  "contents": [
+    {
+      "role": "user",
+      "parts": [
+        {
+          "text": "Descreve o que vês nesta imagem e diz-me se a planta precisa de água."
+        },
+        {
+          "inlineData": {
+            "mimeType": "image/jpeg",
+            "data": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII="
+          }
+        }
+      ]
+    }
+  ]
+}
+
+###
+
+POST https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent
+x-goog-api-key: {{GEMINI_API_KEY}}
+Content-Type: application/json
+
+{
+  "contents": [
+    {
+      "role": "user",
+      "parts": [
+        { "text": "Como está o tempo em Lisboa hoje?" }
+      ]
+    },
+    {
+      "role": "model",
+      "parts": [
+        {
+          "functionCall": {
+            "name": "obter_meteorologia",
+            "args": { "cidade": "Lisboa" }
+          }
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "parts": [
+        {
+          "functionResponse": {
+            "name": "obter_meteorologia",
+            "response": {
+              "temperatura_celsius": 22,
+              "condicao": "Céu limpo",
+              "vento_kmh": 15
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
+
+###
+POST https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-thinking-exp-01-21:generateContent
+x-goog-api-key: {{GEMINI_API_KEY}}
+Content-Type: application/json
+
+{
+  "contents": [
+    {
+      "parts": [
+        {
+          "text": "Quantos r's tem a palavra 'morango'?"
+        }
+      ]
+    }
+  ],
+  "generationConfig": {
+    "thinkingConfig": {
+      "includeThoughts": true
+    }
+  }
+}
+
+
 
