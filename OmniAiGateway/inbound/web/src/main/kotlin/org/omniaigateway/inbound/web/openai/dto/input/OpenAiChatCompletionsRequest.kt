@@ -6,7 +6,7 @@ data class OpenAiChatCompletionsRequest(
     val temperature: Double? = null,
     val maxTokens: Int? = null,
     val topP: Double? = null,
-    val stop: List<String>? = null,
+    val stop: OpenAiStop? = null,
     val frequencyPenalty: Double? = null,
     val presencePenalty: Double? = null,
     val n: Int? = null,
@@ -18,5 +18,5 @@ data class OpenAiChatCompletionsRequest(
     val topLogprobs: Int? = null,
     val responseFormat: OpenAiResponseFormat? = null,
     val tools: List<OpenAiTool>? = null,
-    val toolChoice: String? = null,
+    val toolChoice: OpenAiToolChoice? = null,
 )
