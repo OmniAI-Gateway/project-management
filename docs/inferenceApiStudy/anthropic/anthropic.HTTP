@@ -19,7 +19,7 @@ anthropic-version: 2023-06-01
 Content-Type: application/json
 
 {
-  "model": "llama3.2:1b",
+  "model": "qwen3.5:9b",
   "max_tokens": 1024,
   "messages": [
     {
