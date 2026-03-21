@@ -3,17 +3,19 @@ package org.omniaigateway.domain.common.content
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
+import org.omniaigateway.domain.common.json.JsonValue
 
 class CommonContentPartsTest {
     @Test
     fun `shared content part can be used as request and response`() {
         val text = TextPart("hello")
+        val json = JsonPart(JsonValue.JsonObject(mapOf("ok" to JsonValue.JsonBoolean(true))))
 
-        val requestParts: List<RequestContentPart> = listOf(text)
-        val responseParts: List<ResponseContentPart> = listOf(text)
+        val requestParts: List<RequestContentPart> = listOf(text, json)
+        val responseParts: List<ResponseContentPart> = listOf(text, json)
 
-        assertEquals(1, requestParts.size)
-        assertEquals(1, responseParts.size)
+        assertEquals(2, requestParts.size)
+        assertEquals(2, responseParts.size)
     }
 
     @Test
@@ -21,7 +23,7 @@ class CommonContentPartsTest {
         val part = ToolCallPart(
             toolCallId = "call-1",
             functionName = "search",
-            argumentsJson = mapOf("query" to "weather")
+            argumentsJson = mapOf("query" to JsonValue.JsonString("weather"))
         )
         val shared: SharedContentPart = part
 
@@ -32,7 +34,7 @@ class CommonContentPartsTest {
     fun `request and response specific parts keep their own contracts`() {
         val toolResult: RequestContentPart = ToolResultPart(
             toolCallId = "call-2",
-            content = listOf("ok")
+            content = listOf(JsonValue.JsonString("ok"))
         )
         val refusal: ResponseContentPart = RefusalPart(reason = "safety")
 
