@@ -9,6 +9,7 @@ import org.omniaigateway.domain.common.Provider
 import org.omniaigateway.domain.common.ToolChoice
 import org.omniaigateway.domain.common.content.TextPart
 import org.omniaigateway.domain.common.content.ToolResultPart
+import org.omniaigateway.domain.common.json.JsonValue
 
 class CommonRequestTest {
     @Test
@@ -38,7 +39,10 @@ class CommonRequestTest {
             role = CommonRole.TOOL,
             content = listOf(
                 TextPart("tool output"),
-                ToolResultPart(toolCallId = "call-1", content = listOf(mapOf("ok" to true)))
+                ToolResultPart(
+                    toolCallId = "call-1",
+                    content = listOf(JsonValue.JsonObject(mapOf("ok" to JsonValue.JsonBoolean(true))))
+                )
             )
         )
 

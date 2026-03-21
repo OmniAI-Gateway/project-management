@@ -1,5 +1,8 @@
 package org.omniaigateway.domain.common.content
 
+import org.omniaigateway.domain.common.json.JsonObjectMap
+import org.omniaigateway.domain.common.json.JsonValue
+
 sealed interface RequestContentPart
 
 sealed interface ResponseContentPart
@@ -13,15 +16,19 @@ data class TextPart(
     val text: String
 ) : SharedContentPart
 
+data class JsonPart(
+    val json: JsonValue
+) : SharedContentPart
+
 data class ToolCallPart(
     val toolCallId: String,
     val functionName: String,
-    val argumentsJson: Map<String, Any?>
+    val argumentsJson: JsonObjectMap
 ) : SharedContentPart
 
 data class ToolResultPart(
     val toolCallId: String,
-    val content: List<Any?>
+    val content: List<JsonValue>
 ) : RequestContentPart
 
 data class RefusalPart(

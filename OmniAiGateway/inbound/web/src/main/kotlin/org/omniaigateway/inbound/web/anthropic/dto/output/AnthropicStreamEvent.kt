@@ -4,7 +4,7 @@ sealed interface AnthropicStreamEvent {
     val type: String
 
     data class MessageStart(
-        val message: AnthropicStreamMessage,
+        val message: AnthropicMessageResponse,
         override val type: String = "message_start"
     ) : AnthropicStreamEvent
 
