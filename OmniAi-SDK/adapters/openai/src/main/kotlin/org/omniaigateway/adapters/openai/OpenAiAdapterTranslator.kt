@@ -6,10 +6,6 @@ import org.omniaigateway.contracts.openai.output.OpenAiMessageOutput
 import org.omniaigateway.contracts.openai.output.OpenAiToolCallFunctionOutput
 import org.omniaigateway.contracts.openai.output.OpenAiToolCallOutput
 import org.omniaigateway.contracts.openai.output.OpenAiUsage
-<<<<<<<< HEAD:OmniAi-SDK/adapters/openai/src/main/kotlin/org/omniaigateway/adapters/openai/OpenAiAdapterTranslator.kt
-========
-import org.omniaigateway.core.ports.AdapterTranslator
->>>>>>>> origin/main:OmniAi-SDK/adapters/openai/src/main/kotlin/org/omniaigateway/adapters/openai/OpenAiResponseTranslator.kt
 import org.omniaigateway.domain.common.CommonRole
 import org.omniaigateway.domain.common.content.JsonPart
 import org.omniaigateway.domain.common.content.RefusalPart
@@ -24,13 +20,8 @@ import org.omniaigateway.domain.responses.CommonResponse
 import org.omniaigateway.domain.responses.CommonUsage
 import org.omniaigateway.domain.responses.FinishReason
 
-<<<<<<<< HEAD:OmniAi-SDK/adapters/openai/src/main/kotlin/org/omniaigateway/adapters/openai/OpenAiAdapterTranslator.kt
 class OpenAiAdapterTranslator {
     fun fromDomain(domain: CommonResponse): OpenAiChatCompletionsResponse =
-========
-class OpenAiResponseTranslator : AdapterTranslator<CommonResponse, OpenAiChatCompletionsResponse> {
-    override fun fromDomain(domain: CommonResponse): OpenAiChatCompletionsResponse =
->>>>>>>> origin/main:OmniAi-SDK/adapters/openai/src/main/kotlin/org/omniaigateway/adapters/openai/OpenAiResponseTranslator.kt
         OpenAiChatCompletionsResponse(
             id = domain.id ?: "",
             `object` = "chat.completion",
@@ -101,7 +92,4 @@ private fun FinishReason?.toOpenAiFinishReason(): String? =
         FinishReason.OTHER, null -> null
     }
 
-<<<<<<<< HEAD:OmniAi-SDK/adapters/openai/src/main/kotlin/org/omniaigateway/adapters/openai/OpenAiAdapterTranslator.kt
 
-========
->>>>>>>> origin/main:OmniAi-SDK/adapters/openai/src/main/kotlin/org/omniaigateway/adapters/openai/OpenAiResponseTranslator.kt

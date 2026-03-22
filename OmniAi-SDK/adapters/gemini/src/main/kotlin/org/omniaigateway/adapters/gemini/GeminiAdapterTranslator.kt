@@ -1,9 +1,5 @@
 package org.omniaigateway.adapters.gemini
 
-<<<<<<<< HEAD:OmniAi-SDK/adapters/gemini/src/main/kotlin/org/omniaigateway/adapters/gemini/GeminiAdapterTranslator.kt
-========
-import org.omniaigateway.core.ports.AdapterTranslator
->>>>>>>> origin/main:OmniAi-SDK/adapters/gemini/src/main/kotlin/org/omniaigateway/adapters/gemini/GeminiResponseTranslator.kt
 import org.omniaigateway.domain.common.CommonRole
 import org.omniaigateway.domain.common.content.JsonPart
 import org.omniaigateway.domain.common.content.RefusalPart
@@ -23,13 +19,8 @@ import org.omniaigateway.contracts.gemini.output.GeminiResponseContent
 import org.omniaigateway.contracts.gemini.output.GeminiResponsePart
 import org.omniaigateway.contracts.gemini.output.GeminiUsageMetadata
 
-<<<<<<<< HEAD:OmniAi-SDK/adapters/gemini/src/main/kotlin/org/omniaigateway/adapters/gemini/GeminiAdapterTranslator.kt
 class GeminiAdapterTranslator {
     fun fromDomain(domain: CommonResponse): GeminiGenerateContentResponse =
-========
-class GeminiResponseTranslator : AdapterTranslator<CommonResponse, GeminiGenerateContentResponse> {
-    override fun fromDomain(domain: CommonResponse): GeminiGenerateContentResponse =
->>>>>>>> origin/main:OmniAi-SDK/adapters/gemini/src/main/kotlin/org/omniaigateway/adapters/gemini/GeminiResponseTranslator.kt
         GeminiGenerateContentResponse(
             candidates = domain.choices.map(::toGeminiCandidate),
             usageMetadata = domain.usage?.let(::toGeminiUsageMetadata),
@@ -86,7 +77,4 @@ private fun FinishReason?.toGeminiFinishReason(): String? =
         FinishReason.OTHER, null -> null
     }
 
-<<<<<<<< HEAD:OmniAi-SDK/adapters/gemini/src/main/kotlin/org/omniaigateway/adapters/gemini/GeminiAdapterTranslator.kt
 
-========
->>>>>>>> origin/main:OmniAi-SDK/adapters/gemini/src/main/kotlin/org/omniaigateway/adapters/gemini/GeminiResponseTranslator.kt
