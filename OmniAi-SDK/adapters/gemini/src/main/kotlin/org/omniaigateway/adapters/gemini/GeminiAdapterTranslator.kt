@@ -44,7 +44,6 @@ import org.omniaigateway.domain.responses.ToolCallStartedEvent
 import org.omniaigateway.domain.responses.UsageReported
 import org.omniaigateway.contracts.gemini.output.GeminiCandidate
 import org.omniaigateway.contracts.gemini.output.GeminiGenerateContentResponse
-import org.omniaigateway.contracts.gemini.output.GeminiResponseContent
 import org.omniaigateway.contracts.gemini.output.GeminiResponsePart
 import org.omniaigateway.contracts.gemini.output.GeminiUsageMetadata
 import org.omniaigateway.core.ports.AdapterTranslator
@@ -274,8 +273,8 @@ private fun toDomainChoice(candidate: GeminiCandidate): CommonChoice {
     )
 }
 
-private fun GeminiResponsePart.toDomainPart(): ResponseContentPart? =
-    when {
+private fun GeminiResponsePart.toDomainPart(): ResponseContentPart? {
+    return when {
         text != null -> TextPart(text ?: return null)
         functionCall != null -> {
             val fc = functionCall ?: return null
@@ -287,6 +286,7 @@ private fun GeminiResponsePart.toDomainPart(): ResponseContentPart? =
         }
         else -> null
     }
+}
 
 private fun GeminiUsageMetadata.toDomainUsage(): CommonUsage =
     CommonUsage(
