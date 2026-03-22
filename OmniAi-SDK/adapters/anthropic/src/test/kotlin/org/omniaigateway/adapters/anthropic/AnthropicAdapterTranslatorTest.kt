@@ -2,61 +2,78 @@ package org.omniaigateway.adapters.anthropic
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertTrue
+import kotlin.test.assertIs
+import org.omniaigateway.contracts.anthropic.output.AnthropicMessageResponse
 import org.omniaigateway.contracts.anthropic.output.AnthropicOutputContent
+import org.omniaigateway.contracts.anthropic.output.AnthropicStreamEvent
 import org.omniaigateway.domain.common.CommonRole
 import org.omniaigateway.domain.common.Provider
-import org.omniaigateway.domain.common.content.JsonPart
+import org.omniaigateway.domain.common.Model
 import org.omniaigateway.domain.common.content.TextPart
-import org.omniaigateway.domain.common.content.ToolCallPart
-import org.omniaigateway.domain.common.json.JsonValue
-import org.omniaigateway.domain.responses.CommonChoice
-import org.omniaigateway.domain.responses.CommonResponse
-import org.omniaigateway.domain.responses.CommonResponseMessage
-import org.omniaigateway.domain.responses.CommonUsage
-import org.omniaigateway.domain.responses.FinishReason
+import org.omniaigateway.domain.requests.CommonRequest
+import org.omniaigateway.domain.requests.CommonRequestMessage
+import org.omniaigateway.domain.responses.ResponseStarted
 
 class AnthropicAdapterTranslatorTest {
 
     private val translator = AnthropicAdapterTranslator()
 
     @Test
-    fun `maps common response to anthropic message`() {
-        val response = CommonResponse(
+    fun `maps common request to anthropic request`() {
+        val request = CommonRequest(
             provider = Provider.ANTHROPIC,
-            id = "msg_123",
             model = "claude-3-5-sonnet",
-            choices = listOf(
-                CommonChoice(
-                    index = 0,
-                    message = CommonResponseMessage(
-                        role = CommonRole.ASSISTANT,
-                        content = listOf(
-                            TextPart("Done"),
-                            JsonPart(JsonValue.JsonObject(mapOf("status" to JsonValue.JsonString("ok")))),
-                            ToolCallPart(
-                                toolCallId = "toolu_1",
-                                functionName = "weather",
-                                argumentsJson = mapOf("city" to JsonValue.JsonString("Lisbon"))
-                            )
-                        )
-                    ),
-                    finishReason = FinishReason.TOOL_CALL
+            messages = listOf(
+                CommonRequestMessage(
+                    role = CommonRole.USER,
+                    content = listOf(TextPart("Hello"))
                 )
             ),
-            usage = CommonUsage(inputTokens = 10, outputTokens = 20, totalTokens = 30)
+            systemPrompt = org.omniaigateway.domain.common.SystemPrompt("Be concise")
         )
 
-        val anthropic = translator.fromDomain(response)
+        val anthropic = translator.fromDomain(request)
 
-        assertEquals("msg_123", anthropic.id)
-        assertEquals("assistant", anthropic.role)
-        assertEquals("tool_use", anthropic.stopReason)
-        assertEquals(2, anthropic.content.size)
-        assertTrue(anthropic.content.first() is AnthropicOutputContent.Text)
-        assertTrue(anthropic.content[1] is AnthropicOutputContent.ToolUse)
-        assertEquals(10, anthropic.usage?.inputTokens)
-        assertEquals(20, anthropic.usage?.outputTokens)
+        assertEquals("claude-3-5-sonnet", anthropic.model)
+        assertEquals("Be concise", anthropic.system)
+        assertEquals(1, anthropic.messages.size)
+        assertEquals("user", anthropic.messages.first().role)
+    }
+
+    @Test
+    fun `maps anthropic response to common response`() {
+        val response = AnthropicMessageResponse(
+            id = "msg_123",
+            type = "message",
+            role = "assistant",
+            model = "claude-3-5-sonnet",
+            content = listOf(AnthropicOutputContent.Text("Done")),
+            stopReason = "end_turn"
+        )
+
+        val domain = translator.toDomain(response)
+
+        assertEquals(Provider.ANTHROPIC, domain.provider)
+        assertEquals("msg_123", domain.id)
+        assertEquals("Done", (domain.choices.first().message.content.first() as TextPart).text)
+    }
+
+    @Test
+    fun `maps anthropic stream event to domain event`() {
+        val event = AnthropicStreamEvent.MessageStart(
+            message = AnthropicMessageResponse(
+                id = "msg_1",
+                type = "message",
+                role = "assistant",
+                model = "claude-3-5-sonnet"
+            )
+        )
+
+        val domainEvent = translator.toDomainEvent(event)
+
+        val started = assertIs<ResponseStarted>(domainEvent)
+        assertEquals(Provider.ANTHROPIC, started.provider)
+        assertEquals(Model("claude-3-5-sonnet"), started.model)
     }
 }
 
