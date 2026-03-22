@@ -1,7 +1,4 @@
 package org.omniaigateway.inbound.web.anthropic.dto.output
 
-data class AnthropicError(
-    val type: String,
-    val message: String,
-)
+typealias AnthropicError = org.omniaigateway.contracts.anthropic.output.AnthropicError
 

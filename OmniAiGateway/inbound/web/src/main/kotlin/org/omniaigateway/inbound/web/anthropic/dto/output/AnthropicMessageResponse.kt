@@ -1,8 +1,8 @@
 package org.omniaigateway.inbound.web.anthropic.dto.output
 
+import org.omniaigateway.adapters.anthropic.AnthropicResponseTranslator
 import org.omniaigateway.domain.responses.CommonResponse
 import org.omniaigateway.inbound.web.DomainMappableOut
-import org.omniaigateway.inbound.web.anthropic.mapper.toAnthropicMessage
 
 data class AnthropicMessageResponse(
     val id: String,
@@ -15,8 +15,22 @@ data class AnthropicMessageResponse(
     val usage: AnthropicUsage? = null
 ) {
     companion object : DomainMappableOut<CommonResponse, AnthropicMessageResponse> {
-        override fun fromDomain(domain: CommonResponse): AnthropicMessageResponse =
-            domain.toAnthropicMessage()
+        private val translator = AnthropicResponseTranslator()
+
+        override fun fromDomain(domain: CommonResponse): AnthropicMessageResponse {
+            val mapped = translator.fromDomain(domain)
+
+            return AnthropicMessageResponse(
+                id = mapped.id,
+                type = mapped.type,
+                role = mapped.role,
+                model = mapped.model,
+                content = mapped.content,
+                stopReason = mapped.stopReason,
+                stopSequence = mapped.stopSequence,
+                usage = mapped.usage
+            )
+        }
     }
 }
 

@@ -1,6 +1,4 @@
 package org.omniaigateway.inbound.web.anthropic.dto.input
 
-data class ListContentBlock(
-    val blocks: List<AnthropicInputContentBlock>
-) : AnthropicContent
+typealias ListContentBlock = org.omniaigateway.contracts.anthropic.input.ListContentBlock
 

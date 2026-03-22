@@ -1,4 +1,4 @@
 package org.omniaigateway.inbound.web.anthropic.dto.input
 
-sealed interface AnthropicContent
+typealias AnthropicContent = org.omniaigateway.contracts.anthropic.input.AnthropicContent
 

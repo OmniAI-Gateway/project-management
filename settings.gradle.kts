@@ -1,5 +1,5 @@
 rootProject.name = "project-management"
 
-includeBuild("OmniAiGateway-Core")
+includeBuild("OmniAi-SDK")
 includeBuild("OmniAiGateway")
 
