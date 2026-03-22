@@ -106,7 +106,7 @@ class OpenAiInboundTranslatorTest {
         val response = translator.fromDomain(domainResponse)
 
         assertEquals("chatcmpl_123", response.id)
-        assertEquals("chat.completion", response.`object`)
+        assertEquals("chat.completion", response.obj)
         assertEquals("tool_calls", response.choices.first().finishReason)
         assertEquals("assistant", response.choices.first().message?.role)
         assertEquals("Done", response.choices.first().message?.content)
@@ -125,7 +125,7 @@ class OpenAiInboundTranslatorTest {
                 sequence = 1
             )
         )
-        assertEquals("chat.completion.chunk", started.`object`)
+        assertEquals("chat.completion.chunk", started.obj)
         assertEquals("chatcmpl_abc", started.id)
 
         val toolCallStarted = translator.fromDomainEvent(
