@@ -1,5 +1,18 @@
 package org.omniaigateway.inbound.gemini
 
+import org.omniaigateway.contracts.gemini.input.GeminiContent
+import org.omniaigateway.contracts.gemini.input.GeminiFunctionCallingConfig
+import org.omniaigateway.contracts.gemini.input.GeminiFunctionDeclaration
+import org.omniaigateway.contracts.gemini.input.GeminiGenerateContentRequest
+import org.omniaigateway.contracts.gemini.input.GeminiPart
+import org.omniaigateway.contracts.gemini.input.GeminiSystemInstruction
+import org.omniaigateway.contracts.gemini.output.GeminiCandidate
+import org.omniaigateway.contracts.gemini.output.GeminiFunctionCall
+import org.omniaigateway.contracts.gemini.output.GeminiGenerateContentResponse
+import org.omniaigateway.contracts.gemini.output.GeminiPromptFeedback
+import org.omniaigateway.contracts.gemini.output.GeminiResponseContent
+import org.omniaigateway.contracts.gemini.output.GeminiResponsePart
+import org.omniaigateway.contracts.gemini.output.GeminiUsageMetadata
 import org.omniaigateway.core.ports.InboundTranslator
 import org.omniaigateway.domain.common.CommonGenerationConfig
 import org.omniaigateway.domain.common.CommonRole
@@ -7,51 +20,170 @@ import org.omniaigateway.domain.common.CommonTool
 import org.omniaigateway.domain.common.Provider
 import org.omniaigateway.domain.common.SystemPrompt
 import org.omniaigateway.domain.common.ToolChoice
+import org.omniaigateway.domain.common.content.JsonPart
 import org.omniaigateway.domain.common.content.RequestContentPart
+import org.omniaigateway.domain.common.content.RefusalPart
+import org.omniaigateway.domain.common.content.ResponseContentPart
 import org.omniaigateway.domain.common.content.TextPart
 import org.omniaigateway.domain.common.content.ToolCallPart
 import org.omniaigateway.domain.common.content.ToolResultPart
 import org.omniaigateway.domain.common.json.toJsonObject
+import org.omniaigateway.domain.common.json.toRawMap
 import org.omniaigateway.domain.common.json.toJsonValue
 import org.omniaigateway.domain.requests.CommonRequest
 import org.omniaigateway.domain.requests.CommonRequestMessage
-import org.omniaigateway.contracts.gemini.input.GeminiContent
-import org.omniaigateway.contracts.gemini.input.GeminiFunctionCallingConfig
-import org.omniaigateway.contracts.gemini.input.GeminiFunctionDeclaration
-import org.omniaigateway.contracts.gemini.input.GeminiGenerateContentRequest
-import org.omniaigateway.contracts.gemini.input.GeminiPart
-import org.omniaigateway.contracts.gemini.input.GeminiSystemInstruction
+import org.omniaigateway.domain.responses.ChoiceFinished
+import org.omniaigateway.domain.responses.ChoiceStarted
+import org.omniaigateway.domain.responses.CommonChoice
+import org.omniaigateway.domain.responses.CommonResponse
+import org.omniaigateway.domain.responses.CommonResponseEvent
+import org.omniaigateway.domain.responses.CommonUsage
+import org.omniaigateway.domain.responses.FinishReason
+import org.omniaigateway.domain.responses.ResponseCompleted
+import org.omniaigateway.domain.responses.ResponseErrored
+import org.omniaigateway.domain.responses.ResponseStarted
+import org.omniaigateway.domain.responses.TextDeltaEvent
+import org.omniaigateway.domain.responses.ToolCallArgumentsDeltaEvent
+import org.omniaigateway.domain.responses.ToolCallStartedEvent
+import org.omniaigateway.domain.responses.UsageReported
 
-class GeminiInboundTranslator : InboundTranslator<GeminiGenerateContentRequest> {
+class GeminiInboundTranslator :
+    InboundTranslator<GeminiGenerateContentRequest, GeminiGenerateContentResponse, GeminiGenerateContentResponse> {
     override val provider: Provider = Provider.GEMINI
 
-    override fun toDomain(payload: GeminiGenerateContentRequest): CommonRequest {
+    override fun toDomain(clientRequest: GeminiGenerateContentRequest): CommonRequest {
         val providerOptions = buildMap<String, Any?> {
-            payload.generationConfig?.topK?.let { put("topK", it) }
-            payload.generationConfig?.thinkingConfig?.let { put("thinkingConfig", it) }
-            payload.generationConfig?.responseMimeType?.let { put("responseMimeType", it) }
-            payload.generationConfig?.responseJsonSchema?.let { put("responseJsonSchema", it) }
+            clientRequest.generationConfig?.topK?.let { put("topK", it) }
+            clientRequest.generationConfig?.thinkingConfig?.let { put("thinkingConfig", it) }
+            clientRequest.generationConfig?.responseMimeType?.let { put("responseMimeType", it) }
+            clientRequest.generationConfig?.responseJsonSchema?.let { put("responseJsonSchema", it) }
         }
 
         return CommonRequest(
             provider = provider,
-            model = payload.model,
-            messages = payload.contents.map { it.toDomainMessage() },
-            systemPrompt = payload.systemInstruction?.toSystemPrompt(),
+            model = clientRequest.model,
+            messages = clientRequest.contents.map { it.toDomainMessage() },
+            systemPrompt = clientRequest.systemInstruction?.toSystemPrompt(),
             config = CommonGenerationConfig(
-                temperature = payload.generationConfig?.temperature,
-                topP = payload.generationConfig?.topP,
-                stopSequences = payload.generationConfig?.stopSequences
+                temperature = clientRequest.generationConfig?.temperature,
+                topP = clientRequest.generationConfig?.topP,
+                stopSequences = clientRequest.generationConfig?.stopSequences
             ),
-            tools = payload.tools.orEmpty().flatMap { tool ->
+            tools = clientRequest.tools.orEmpty().flatMap { tool ->
                 tool.functionDeclarations.orEmpty().map { declaration -> declaration.toDomainTool() }
             },
-            toolChoice = payload.toolConfig?.functionCallingConfig?.toDomainToolChoice(),
-            jsonResponse = payload.generationConfig?.responseMimeType.equals("application/json", ignoreCase = true)
-                || payload.generationConfig?.responseJsonSchema != null,
+            toolChoice = clientRequest.toolConfig?.functionCallingConfig?.toDomainToolChoice(),
+            jsonResponse = clientRequest.generationConfig?.responseMimeType.equals("application/json", ignoreCase = true)
+                || clientRequest.generationConfig?.responseJsonSchema != null,
             providerOptions = providerOptions
         )
     }
+
+    override fun fromDomain(domainResponse: CommonResponse): GeminiGenerateContentResponse =
+        GeminiGenerateContentResponse(
+            candidates = domainResponse.choices.map(::toGeminiCandidate),
+            usageMetadata = domainResponse.usage?.toGeminiUsageMetadata(),
+            modelVersion = domainResponse.model,
+            responseId = domainResponse.id
+        )
+
+    override fun fromDomainEvent(domainEvent: CommonResponseEvent): GeminiGenerateContentResponse =
+        when (domainEvent) {
+            is ResponseStarted -> GeminiGenerateContentResponse(
+                modelVersion = domainEvent.model.model,
+                responseId = domainEvent.id
+            )
+            is ChoiceStarted -> GeminiGenerateContentResponse(
+                candidates = listOf(
+                    GeminiCandidate(
+                        index = domainEvent.choiceIndex,
+                        content = GeminiResponseContent(role = domainEvent.role?.toGeminiRole() ?: "model")
+                    )
+                ),
+                modelVersion = domainEvent.model.model,
+                responseId = domainEvent.id
+            )
+            is TextDeltaEvent -> GeminiGenerateContentResponse(
+                candidates = listOf(
+                    GeminiCandidate(
+                        index = domainEvent.choiceIndex,
+                        content = GeminiResponseContent(parts = listOf(GeminiResponsePart(text = domainEvent.text)))
+                    )
+                ),
+                modelVersion = domainEvent.model.model,
+                responseId = domainEvent.id
+            )
+            is ToolCallStartedEvent -> GeminiGenerateContentResponse(
+                candidates = listOf(
+                    GeminiCandidate(
+                        index = domainEvent.choiceIndex,
+                        content = GeminiResponseContent(
+                            parts = listOf(
+                                GeminiResponsePart(
+                                    functionCall = GeminiFunctionCall(
+                                        id = domainEvent.toolCallId,
+                                        name = domainEvent.functionName,
+                                        args = emptyMap()
+                                    )
+                                )
+                            )
+                        )
+                    )
+                ),
+                modelVersion = domainEvent.model.model,
+                responseId = domainEvent.id
+            )
+            is ToolCallArgumentsDeltaEvent -> GeminiGenerateContentResponse(
+                candidates = listOf(
+                    GeminiCandidate(
+                        index = domainEvent.choiceIndex,
+                        content = GeminiResponseContent(
+                            parts = listOf(
+                                GeminiResponsePart(
+                                    functionCall = GeminiFunctionCall(
+                                        id = null,
+                                        name = "",
+                                        args = mapOf("partialJson" to domainEvent.argumentsFragment)
+                                    )
+                                )
+                            )
+                        )
+                    )
+                ),
+                modelVersion = domainEvent.model.model,
+                responseId = domainEvent.id
+            )
+            is ChoiceFinished -> GeminiGenerateContentResponse(
+                candidates = listOf(
+                    GeminiCandidate(
+                        index = domainEvent.choiceIndex,
+                        finishReason = domainEvent.finishReason.toGeminiFinishReason()
+                    )
+                ),
+                modelVersion = domainEvent.model.model,
+                responseId = domainEvent.id
+            )
+            is UsageReported -> GeminiGenerateContentResponse(
+                usageMetadata = domainEvent.usage.toGeminiUsageMetadata(),
+                modelVersion = domainEvent.model.model,
+                responseId = domainEvent.id
+            )
+            is ResponseCompleted -> GeminiGenerateContentResponse(
+                modelVersion = domainEvent.model.model,
+                responseId = domainEvent.id
+            )
+            is ResponseErrored -> GeminiGenerateContentResponse(
+                promptFeedback = GeminiPromptFeedback(
+                    blockReason = if (domainEvent.retryable) {
+                        "TRANSIENT_ERROR: ${domainEvent.message}"
+                    } else {
+                        "ERROR: ${domainEvent.message}"
+                    }
+                ),
+                modelVersion = domainEvent.model.model,
+                responseId = domainEvent.id
+            )
+        }
 }
 
 private fun String?.toCommonRole(): CommonRole =
@@ -113,5 +245,53 @@ private fun GeminiFunctionCallingConfig.toDomainToolChoice(): ToolChoice? {
         else -> null
     }
 }
+
+private fun toGeminiCandidate(choice: CommonChoice): GeminiCandidate =
+    GeminiCandidate(
+        content = GeminiResponseContent(
+            parts = choice.message.content.map(::toGeminiPart),
+            role = choice.message.role.toGeminiRole()
+        ),
+        finishReason = choice.finishReason.toGeminiFinishReason(),
+        index = choice.index
+    )
+
+private fun toGeminiPart(part: ResponseContentPart): GeminiResponsePart =
+    when (part) {
+        is TextPart -> GeminiResponsePart(text = part.text)
+        is ToolCallPart -> GeminiResponsePart(
+            functionCall = GeminiFunctionCall(
+                name = part.functionName,
+                args = org.omniaigateway.domain.common.json.JsonValue.JsonObject(part.argumentsJson).toRawMap(),
+                id = part.toolCallId
+            )
+        )
+        is JsonPart -> GeminiResponsePart(text = part.json.toString())
+        is RefusalPart -> GeminiResponsePart(text = part.reason)
+    }
+
+private fun CommonUsage.toGeminiUsageMetadata(): GeminiUsageMetadata =
+    GeminiUsageMetadata(
+        promptTokenCount = inputTokens,
+        candidatesTokenCount = outputTokens,
+        totalTokenCount = totalTokens
+    )
+
+private fun CommonRole.toGeminiRole(): String =
+    when (this) {
+        CommonRole.SYSTEM -> "model"
+        CommonRole.USER -> "user"
+        CommonRole.ASSISTANT -> "model"
+        CommonRole.TOOL -> "tool"
+    }
+
+private fun FinishReason?.toGeminiFinishReason(): String? =
+    when (this) {
+        FinishReason.STOP -> "STOP"
+        FinishReason.LENGTH -> "MAX_TOKENS"
+        FinishReason.TOOL_CALL -> "STOP"
+        FinishReason.CONTENT_FILTER -> "SAFETY"
+        FinishReason.OTHER, null -> null
+    }
 
 
