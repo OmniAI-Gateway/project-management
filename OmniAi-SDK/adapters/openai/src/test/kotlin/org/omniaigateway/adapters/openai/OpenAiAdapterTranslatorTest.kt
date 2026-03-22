@@ -44,7 +44,7 @@ class OpenAiAdapterTranslatorTest {
     fun `maps openai response to common response`() {
         val response = OpenAiChatCompletionsResponse(
             id = "chatcmpl_123",
-            `object` = "chat.completion",
+            obj = "chat.completion",
             created = 1,
             model = "gpt-4o-mini",
             choices = listOf(
@@ -70,7 +70,7 @@ class OpenAiAdapterTranslatorTest {
     fun `maps openai chunk event to domain event`() {
         val event = OpenAiChatCompletionsResponse(
             id = "chatcmpl_1",
-            `object` = "chat.completion.chunk",
+            obj = "chat.completion.chunk",
             created = 2,
             model = "gpt-4o-mini",
             choices = listOf(

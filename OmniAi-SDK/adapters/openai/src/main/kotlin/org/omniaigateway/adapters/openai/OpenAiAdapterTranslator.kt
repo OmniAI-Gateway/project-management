@@ -1,5 +1,6 @@
 package org.omniaigateway.adapters.openai
 
+import org.omniaigateway.contracts.openai.input.FunctionRef
 import org.omniaigateway.contracts.openai.input.OpenAiChatCompletionsRequest
 import org.omniaigateway.contracts.openai.input.OpenAiFunctionDefinition
 import org.omniaigateway.contracts.openai.input.OpenAiMessageInput
@@ -47,7 +48,6 @@ class OpenAiAdapterTranslator : AdapterTranslator<OpenAiChatCompletionsRequest, 
 
     override fun fromDomain(domainRequest: CommonRequest): OpenAiChatCompletionsRequest {
         val providerOptions = domainRequest.providerOptions
-
         return OpenAiChatCompletionsRequest(
             model = domainRequest.model,
             messages = domainRequest.messages.map(CommonRequestMessage::toOpenAiMessageInput),
@@ -62,8 +62,8 @@ class OpenAiAdapterTranslator : AdapterTranslator<OpenAiChatCompletionsRequest, 
             seed = providerOptions["seed"] as? Int,
             user = providerOptions["user"] as? String,
             logitBias = providerOptions["logitBias"] as? Map<String, Int>,
-            logprobs = providerOptions["logprobs"] as? Boolean,
-            topLogprobs = providerOptions["topLogprobs"] as? Int,
+            logProbs = providerOptions["logProbs"] as? Boolean,
+            topLogProbs = providerOptions["topLogProbs"] as? Int,
             responseFormat = domainRequest.takeIf { it.jsonResponse }?.let { OpenAiResponseFormat(type = "json_object") },
             tools = domainRequest.tools.map(CommonTool::toOpenAiTool).ifEmpty { null },
             toolChoice = domainRequest.toolChoice?.toOpenAiToolChoice()
@@ -88,13 +88,13 @@ class OpenAiAdapterTranslator : AdapterTranslator<OpenAiChatCompletionsRequest, 
         val sequence = providerEvent.created
         val firstChoice = providerEvent.choices.firstOrNull()
 
-        if (providerEvent.`object` != "chat.completion.chunk") {
+        if (providerEvent.obj != "chat.completion.chunk") {
             return ResponseCompleted(
                 provider = Provider.OPENAI,
                 id = providerEvent.id,
                 model = model,
                 sequence = sequence,
-                providerEventType = providerEvent.`object`
+                providerEventType = providerEvent.obj
             )
         }
 
@@ -107,7 +107,7 @@ class OpenAiAdapterTranslator : AdapterTranslator<OpenAiChatCompletionsRequest, 
                     model = model,
                     sequence = sequence,
                     usage = usage.toDomainUsage(),
-                    providerEventType = providerEvent.`object`
+                    providerEventType = providerEvent.obj
                 )
             }
 
@@ -116,7 +116,7 @@ class OpenAiAdapterTranslator : AdapterTranslator<OpenAiChatCompletionsRequest, 
                 id = providerEvent.id,
                 model = model,
                 sequence = sequence,
-                providerEventType = providerEvent.`object`
+                providerEventType = providerEvent.obj
             )
         }
 
@@ -125,7 +125,7 @@ class OpenAiAdapterTranslator : AdapterTranslator<OpenAiChatCompletionsRequest, 
             id = providerEvent.id,
             model = model,
             sequence = sequence,
-            providerEventType = providerEvent.`object`
+            providerEventType = providerEvent.obj
         )
 
         choice.finishReason?.let {
@@ -136,7 +136,7 @@ class OpenAiAdapterTranslator : AdapterTranslator<OpenAiChatCompletionsRequest, 
                 sequence = sequence,
                 choiceIndex = choice.index,
                 finishReason = it.toDomainFinishReason(),
-                providerEventType = providerEvent.`object`
+                providerEventType = providerEvent.obj
             )
         }
 
@@ -152,7 +152,7 @@ class OpenAiAdapterTranslator : AdapterTranslator<OpenAiChatCompletionsRequest, 
                     choiceIndex = choice.index,
                     toolCallIndex = toolCall.index ?: 0,
                     argumentsFragment = partialJson,
-                    providerEventType = providerEvent.`object`
+                    providerEventType = providerEvent.obj
                 )
             }
 
@@ -165,7 +165,7 @@ class OpenAiAdapterTranslator : AdapterTranslator<OpenAiChatCompletionsRequest, 
                 toolCallIndex = toolCall.index ?: 0,
                 toolCallId = toolCall.id,
                 functionName = toolCall.function.name,
-                providerEventType = providerEvent.`object`
+                providerEventType = providerEvent.obj
             )
         }
 
@@ -177,7 +177,7 @@ class OpenAiAdapterTranslator : AdapterTranslator<OpenAiChatCompletionsRequest, 
                 sequence = sequence,
                 choiceIndex = choice.index,
                 text = it,
-                providerEventType = providerEvent.`object`
+                providerEventType = providerEvent.obj
             )
         }
 
@@ -189,7 +189,7 @@ class OpenAiAdapterTranslator : AdapterTranslator<OpenAiChatCompletionsRequest, 
                 sequence = sequence,
                 choiceIndex = choice.index,
                 role = it.toCommonRole(),
-                providerEventType = providerEvent.`object`
+                providerEventType = providerEvent.obj
             )
         }
 
@@ -198,19 +198,19 @@ class OpenAiAdapterTranslator : AdapterTranslator<OpenAiChatCompletionsRequest, 
             id = providerEvent.id,
             model = model,
             sequence = sequence,
-            providerEventType = providerEvent.`object`
+            providerEventType = providerEvent.obj
         )
     }
 
 }
 
-private fun List<String>?.toOpenAiStop(): OpenAiStop? =
-    when {
-        this == null -> null
-        size == 1 -> OpenAiStop.Single(first())
-        isEmpty() -> null
-        else -> OpenAiStop.Multiple(this)
+private fun List<String>?.toOpenAiStop(): OpenAiStop? = this?.takeIf { it.isNotEmpty() }?.let { stops ->
+        if (stops.size == 1) OpenAiStop.Single(stops.first()) else OpenAiStop.Multiple(stops)
     }
+
+/*
+For now just supporting text we use string but to support text+image or sound just need to use array
+ */
 
 private fun CommonRequestMessage.toOpenAiMessageInput(): OpenAiMessageInput {
     val textContent = content.filterIsInstance<TextPart>().joinToString("\n") { it.text }.ifBlank { null }
@@ -225,7 +225,6 @@ private fun CommonRequestMessage.toOpenAiMessageInput(): OpenAiMessageInput {
     }.ifEmpty { null }
     val toolResult = content.firstOrNull { it is ToolResultPart } as? ToolResultPart
     val toolResultContent = toolResult?.content?.firstOrNull()?.toRawAny()?.toString()
-
     return OpenAiMessageInput(
         role = role.toOpenAiRole(),
         content = if (role == CommonRole.TOOL) toolResultContent else textContent,
@@ -248,7 +247,7 @@ private fun ToolChoice.toOpenAiToolChoice(): OpenAiToolChoice =
         ToolChoice.Auto -> OpenAiToolChoice.Mode("auto")
         ToolChoice.None -> OpenAiToolChoice.Mode("none")
         ToolChoice.Required -> OpenAiToolChoice.Mode("required")
-        is ToolChoice.Specific -> OpenAiToolChoice.Function(function = org.omniaigateway.contracts.openai.input.FunctionRef(toolNames.first()))
+        is ToolChoice.Specific -> OpenAiToolChoice.Function(function = FunctionRef(toolNames.first()))
     }
 
 private fun toDomainChoice(choice: OpenAiChoice): CommonChoice {

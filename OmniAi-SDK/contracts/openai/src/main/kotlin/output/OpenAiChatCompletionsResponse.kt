@@ -2,7 +2,7 @@ package org.omniaigateway.contracts.openai.output
 
 data class OpenAiChatCompletionsResponse(
     val id: String,
-    val `object`: String,
+    val obj: String,
     val created: Long,
     val model: String,
     val systemFingerprint: String? = null,

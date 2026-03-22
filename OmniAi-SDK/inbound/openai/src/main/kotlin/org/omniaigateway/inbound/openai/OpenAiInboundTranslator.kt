@@ -20,7 +20,6 @@ import org.omniaigateway.domain.common.CommonTool
 import org.omniaigateway.domain.common.Provider
 import org.omniaigateway.domain.common.ToolChoice
 import org.omniaigateway.domain.common.content.JsonPart
-import org.omniaigateway.domain.common.content.RequestContentPart
 import org.omniaigateway.domain.common.content.RefusalPart
 import org.omniaigateway.domain.common.content.ResponseContentPart
 import org.omniaigateway.domain.common.content.TextPart
@@ -47,13 +46,17 @@ import org.omniaigateway.domain.responses.TextDeltaEvent
 import org.omniaigateway.domain.responses.ToolCallArgumentsDeltaEvent
 import org.omniaigateway.domain.responses.ToolCallStartedEvent
 import org.omniaigateway.domain.responses.UsageReported
+import kotlin.sequences.ifEmpty
+import kotlin.text.forEachIndexed
+import kotlin.text.orEmpty
+import kotlin.toString
 
 class OpenAiInboundTranslator :
     InboundTranslator<OpenAiChatCompletionsRequest, OpenAiChatCompletionsResponse, OpenAiChatCompletionsResponse> {
     override val provider: Provider = Provider.OPENAI
 
     override fun toDomain(clientRequest: OpenAiChatCompletionsRequest): CommonRequest {
-        val providerOptions = buildMap<String, Any?> {
+        val providerOptions = buildMap {
             if (clientRequest.stream != null) put("stream", clientRequest.stream)
             if (clientRequest.frequencyPenalty != null) put("frequencyPenalty", clientRequest.frequencyPenalty)
             if (clientRequest.presencePenalty != null) put("presencePenalty", clientRequest.presencePenalty)
@@ -61,11 +64,12 @@ class OpenAiInboundTranslator :
             if (clientRequest.seed != null) put("seed", clientRequest.seed)
             if (clientRequest.user != null) put("user", clientRequest.user)
             if (clientRequest.logitBias != null) put("logitBias", clientRequest.logitBias)
-            if (clientRequest.logprobs != null) put("logprobs", clientRequest.logprobs)
-            if (clientRequest.topLogprobs != null) put("topLogprobs", clientRequest.topLogprobs)
+            if (clientRequest.logProbs != null) put("logProbs", clientRequest.logProbs)
+            if (clientRequest.topLogProbs != null) put("topLogProbs", clientRequest.topLogProbs)
             if (clientRequest.responseFormat != null) put("responseFormat", clientRequest.responseFormat)
         }
 
+        val responseFormatType = clientRequest.responseFormat?.type?.lowercase()
         return CommonRequest(
             provider = provider,
             model = clientRequest.model,
@@ -78,19 +82,16 @@ class OpenAiInboundTranslator :
             ),
             tools = clientRequest.tools?.map(OpenAiTool::toDomainTool).orEmpty(),
             toolChoice = clientRequest.toolChoice?.toDomainToolChoice(),
-            jsonResponse = clientRequest.responseFormat?.type.equals("json_object", ignoreCase = true)
-                || clientRequest.responseFormat?.type.equals("json_schema", ignoreCase = true),
+            jsonResponse = responseFormatType == "json_object" || responseFormatType == "json_schema",
             providerOptions = providerOptions
         )
     }
 
     override fun fromDomain(domainResponse: CommonResponse): OpenAiChatCompletionsResponse =
         OpenAiChatCompletionsResponse(
-            id = domainResponse.id ?: "",
-            `object` = "chat.completion",
-            created =
-                ((domainResponse.providerOptions["created"] as? Number)?.toLong()
-                    ?: (System.currentTimeMillis() / 1000)),
+            id = domainResponse.id?.takeIf { it.isNotBlank() } ?: "chatcmpl_${System.currentTimeMillis()}",
+            obj = "chat.completion",
+            created = ((domainResponse.providerOptions["created"] as? Number)?.toLong() ?: (System.currentTimeMillis() / 1000)),
             model = domainResponse.model,
             systemFingerprint = domainResponse.providerOptions["systemFingerprint"] as? String,
             choices = domainResponse.choices.map(::toOpenAiChoice),
@@ -225,20 +226,21 @@ private fun OpenAiToolCall.toDomainPart(index: Int): ToolCallPart =
         argumentsJson = mapOf("raw" to JsonValue.JsonString(function.arguments))
     )
 
-private fun OpenAiMessageInput.toDomainMessage(): CommonRequestMessage =
-    CommonRequestMessage(
-        role = role.toCommonRole(),
-        content = buildList<RequestContentPart> {
+private fun OpenAiMessageInput.toDomainMessage(): CommonRequestMessage {
+    val commonRole = role.toCommonRole()
+    return CommonRequestMessage(
+        role = commonRole,
+        content = buildList {
             val rawContent = content
             val rawToolCallId = toolCallId
-
             content?.takeIf { it.isNotBlank() }?.let { add(TextPart(it)) }
             toolCalls.orEmpty().forEachIndexed { index, toolCall -> add(toolCall.toDomainPart(index)) }
-            if (role.equals("tool", ignoreCase = true) && rawToolCallId != null && rawContent != null) {
+            if (commonRole == CommonRole.TOOL && rawToolCallId != null && rawContent != null) {
                 add(ToolResultPart(toolCallId = rawToolCallId, content = listOf(rawContent.toJsonValue())))
             }
         }
     )
+}
 
 private fun OpenAiTool.toDomainTool(): CommonTool =
     CommonTool(
@@ -268,35 +270,36 @@ private fun chunkResponse(
     usage: OpenAiUsage? = null
 ): OpenAiChatCompletionsResponse =
     OpenAiChatCompletionsResponse(
-        id = id ?: "",
-        `object` = "chat.completion.chunk",
+        id = id ?: "catchall_${System.currentTimeMillis()}",
+        obj = "chat.completion.chunk",
         created = System.currentTimeMillis() / 1000,
         model = model,
         choices = choices,
         usage = usage
     )
 
-private fun toOpenAiChoice(choice: CommonChoice): OpenAiChoice =
-    OpenAiChoice(
+private fun toOpenAiChoice(choice: CommonChoice): OpenAiChoice {
+    val toolCalls = choice.message.content.mapNotNull(::toOpenAiToolCall).ifEmpty { null }
+    val content = choice.message.content.firstRenderableContentOrNull()
+    return OpenAiChoice(
         index = choice.index,
         message = OpenAiMessageOutput(
             role = choice.message.role.toOpenAiRole(),
-            content = choice.message.content.firstTextOrFallback(),
-            toolCalls = choice.message.content.mapNotNull(::toOpenAiToolCall).ifEmpty { null }
+            content = content,
+            toolCalls = toolCalls
         ),
         finishReason = choice.finishReason.toOpenAiFinishReason()
     )
-
-private fun List<ResponseContentPart>.firstTextOrFallback(): String? {
-    val text = filterIsInstance<TextPart>().joinToString(separator = "\n") { it.text }
-    if (text.isNotBlank()) return text
-
-    val refusal = firstOrNull { it is RefusalPart } as? RefusalPart
-    if (refusal != null) return refusal.reason
-
-    val jsonPart = firstOrNull { it is JsonPart } as? JsonPart
-    return jsonPart?.json?.toRawAny()?.toString()
 }
+
+private fun List<ResponseContentPart>.firstRenderableContentOrNull(): String? =
+    filterIsInstance<TextPart>()
+        .joinToString("\n") { it.text }
+        .trim()
+        .takeIf { it.isNotEmpty() }
+        ?: filterIsInstance<RefusalPart>().firstOrNull()?.reason
+        ?: filterIsInstance<JsonPart>().firstOrNull()?.json?.toRawAny()?.toString()
+
 
 private fun toOpenAiToolCall(part: ResponseContentPart): OpenAiToolCallOutput? =
     when (part) {
