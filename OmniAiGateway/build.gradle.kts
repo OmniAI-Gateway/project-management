@@ -15,7 +15,7 @@ subprojects {
 
     dependencies {
         "testImplementation"(kotlin("test"))
-        "implementation"("org.omniaigateway:OmniAiGateway-Core:1.0-SNAPSHOT")
+        "implementation"("org.omniaigateway:omniAi-SDK:1.0-SNAPSHOT")
 
     }
 

@@ -11,4 +11,4 @@ include(":outbound:ollama")
 include(":app")
 
 
-includeBuild("../OmniAiGateway-Core")
+includeBuild("../OmniAi-SDK")
