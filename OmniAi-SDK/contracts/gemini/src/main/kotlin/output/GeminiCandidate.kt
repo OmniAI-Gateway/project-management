@@ -1,4 +1,4 @@
-package org.omniaigateway.inbound.web.gemini.dto.output
+package org.omniaigateway.contracts.gemini.output
 
 data class GeminiCandidate(
     val content: GeminiResponseContent? = null,

@@ -1,4 +1,6 @@
-package org.omniaigateway.inbound.web.openai.dto.output
+package org.omniaigateway.contracts.openai.output
+
+
 
 data class OpenAiToolCallOutput(
     val id: String,

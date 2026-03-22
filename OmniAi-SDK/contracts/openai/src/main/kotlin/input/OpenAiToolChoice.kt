@@ -1,4 +1,4 @@
-package org.omniaigateway.inbound.web.openai.dto.input
+package org.omniaigateway.contracts.openai.input
 
 sealed interface OpenAiToolChoice {
     data class Mode(val value: String) : OpenAiToolChoice // "auto" | "none" | "required"

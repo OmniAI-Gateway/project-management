@@ -1,4 +1,4 @@
-package org.omniaigateway.inbound.web.openai.dto.input
+package org.omniaigateway.contracts.openai.input
 
 data class OpenAiToolCall(
     val id: String? = null,

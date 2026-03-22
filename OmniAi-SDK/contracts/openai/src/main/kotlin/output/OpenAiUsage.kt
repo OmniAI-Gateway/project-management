@@ -1,4 +1,4 @@
-package org.omniaigateway.inbound.web.openai.dto.output
+package org.omniaigateway.contracts.openai.output
 
 data class OpenAiUsage(
     val totalTokens: Int? = null,
