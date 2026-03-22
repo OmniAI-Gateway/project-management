@@ -143,7 +143,8 @@ class OpenAiAdapterTranslator : AdapterTranslator<OpenAiChatCompletionsRequest, 
         val toolCall = choice.delta?.toolCalls?.firstOrNull()
         if (toolCall != null) {
             val partialJson = toolCall.function.arguments["partialJson"] as? String
-            if (partialJson != null && toolCall.function.name.isBlank()) {
+            val functionName = toolCall.function.name
+            if (partialJson != null && functionName.isNullOrBlank()) {
                 return ToolCallArgumentsDeltaEvent(
                     provider = Provider.OPENAI,
                     id = providerEvent.id,
@@ -164,7 +165,7 @@ class OpenAiAdapterTranslator : AdapterTranslator<OpenAiChatCompletionsRequest, 
                 choiceIndex = choice.index,
                 toolCallIndex = toolCall.index ?: 0,
                 toolCallId = toolCall.id,
-                functionName = toolCall.function.name,
+                functionName = functionName ?: "unknown",
                 providerEventType = providerEvent.obj
             )
         }
@@ -271,9 +272,10 @@ private fun toDomainChoice(choice: OpenAiChoice): CommonChoice {
 private fun OpenAiToolCallOutput.toDomainToolCallPart(): ToolCallPart =
     ToolCallPart(
         toolCallId = id,
-        functionName = function.name,
+        functionName = function.name ?: "unknown",
         argumentsJson = function.arguments.toJsonObject().properties
     )
+
 
 private fun OpenAiUsage.toDomainUsage(): CommonUsage =
     CommonUsage(
