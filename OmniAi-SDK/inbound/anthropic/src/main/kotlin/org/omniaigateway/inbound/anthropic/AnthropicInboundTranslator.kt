@@ -52,7 +52,7 @@ class AnthropicInboundTranslator : InboundTranslator<AnthropicMessagesRequest, A
 	override val provider: Provider = Provider.ANTHROPIC
 
 	override fun toDomain(clientRequest: AnthropicMessagesRequest): CommonRequest {
-		val providerOptions = buildMap<String, Any?> {
+		val providerOptions = buildMap {
 			if (clientRequest.stream != null) put("stream", clientRequest.stream)
 			if (clientRequest.topK != null) put("topK", clientRequest.topK)
 			if (clientRequest.stopToken != null) put("stopToken", clientRequest.stopToken)
@@ -82,7 +82,7 @@ class AnthropicInboundTranslator : InboundTranslator<AnthropicMessagesRequest, A
 		val firstChoice = domainResponse.choices.firstOrNull()
 
 		return AnthropicMessageResponse(
-			id = domainResponse.id ?: "",
+			id = domainResponse.id ?: "", // tratar ids de melhor forma no futuro
 			type = "message",
 			role = firstChoice?.message?.role?.toAnthropicRole() ?: "assistant",
 			model = domainResponse.model,

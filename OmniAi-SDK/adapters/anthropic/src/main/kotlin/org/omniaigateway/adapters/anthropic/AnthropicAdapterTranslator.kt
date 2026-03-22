@@ -38,6 +38,7 @@ import org.omniaigateway.domain.responses.ChoiceStarted
 import org.omniaigateway.domain.responses.CommonChoice
 import org.omniaigateway.domain.responses.CommonResponse
 import org.omniaigateway.domain.responses.CommonResponseEvent
+import org.omniaigateway.domain.responses.CommonResponseMessage
 import org.omniaigateway.domain.responses.CommonUsage
 import org.omniaigateway.domain.responses.FinishReason
 import org.omniaigateway.domain.responses.ResponseCompleted
@@ -47,9 +48,17 @@ import org.omniaigateway.domain.responses.TextDeltaEvent
 import org.omniaigateway.domain.responses.ToolCallArgumentsDeltaEvent
 import org.omniaigateway.domain.responses.ToolCallStartedEvent
 import org.omniaigateway.domain.responses.UsageReported
+import java.util.Locale
+import java.util.Locale.getDefault
 
 class AnthropicAdapterTranslator : AdapterTranslator<AnthropicMessagesRequest, AnthropicMessageResponse, AnthropicStreamEvent> {
+
+
+    /*
+     This version of functions doesn't treat the JsonSchema , it needs to add a new message for that
+     */
     override fun fromDomain(domainRequest: CommonRequest): AnthropicMessagesRequest {
+
         val providerOptions = domainRequest.providerOptions
 
         return AnthropicMessagesRequest(
@@ -66,12 +75,12 @@ class AnthropicAdapterTranslator : AdapterTranslator<AnthropicMessagesRequest, A
             stopSequences = domainRequest.config?.stopSequences,
             stopToken = providerOptions["stopToken"] as? String,
             thinking = providerOptions["thinking"] as? AnthropicThinkingConfig,
-            metadata = providerOptions["metadata"] as? Map<String, Any?>
+            metadata = providerOptions["metadata"] as? Map<String, Any?>  // criar type alias para isto
         )
     }
 
     override fun toDomain(providerResponse: AnthropicMessageResponse): CommonResponse {
-        val message = org.omniaigateway.domain.responses.CommonResponseMessage(
+        val message = CommonResponseMessage(
             role = providerResponse.role.toCommonRole(),
             content = providerResponse.content.mapNotNull(::toDomainContentPart)
         )
@@ -211,10 +220,10 @@ class AnthropicAdapterTranslator : AdapterTranslator<AnthropicMessagesRequest, A
             is AnthropicStreamEvent.Error -> ResponseErrored(
                 provider = Provider.ANTHROPIC,
                 id = null,
-                model = Model(""),
+                model = Model(""), // tornar model um sealed class no futuro
                 sequence = 0,
                 message = providerEvent.error.message,
-                retryable = providerEvent.error.type.contains("overloaded", ignoreCase = true),
+                retryable = providerEvent.error.type.lowercase().contains("overloaded"),
                 providerEventType = providerEvent.type
             )
             is AnthropicStreamEvent.Ping -> ResponseStarted(
