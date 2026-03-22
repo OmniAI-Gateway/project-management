@@ -3,7 +3,6 @@ package org.omniaigateway.adapters.anthropic
 import org.omniaigateway.contracts.anthropic.output.AnthropicMessageResponse
 import org.omniaigateway.contracts.anthropic.output.AnthropicOutputContent
 import org.omniaigateway.contracts.anthropic.output.AnthropicUsage
-import org.omniaigateway.core.ports.AdapterTranslator
 import org.omniaigateway.domain.common.CommonRole
 import org.omniaigateway.domain.common.content.JsonPart
 import org.omniaigateway.domain.common.content.RefusalPart
@@ -16,8 +15,8 @@ import org.omniaigateway.domain.responses.CommonResponse
 import org.omniaigateway.domain.responses.CommonUsage
 import org.omniaigateway.domain.responses.FinishReason
 
-class AnthropicResponseTranslator : AdapterTranslator<CommonResponse, AnthropicMessageResponse> {
-    override fun fromDomain(domain: CommonResponse): AnthropicMessageResponse {
+class AnthropicAdapterTranslator {
+    fun fromDomain(domain: CommonResponse): AnthropicMessageResponse {
         val firstChoice = domain.choices.firstOrNull()
 
         return AnthropicMessageResponse(
@@ -65,4 +64,5 @@ private fun FinishReason?.toAnthropicStopReason(): String? =
         FinishReason.CONTENT_FILTER -> "stop_sequence"
         FinishReason.OTHER, null -> null
     }
+
 

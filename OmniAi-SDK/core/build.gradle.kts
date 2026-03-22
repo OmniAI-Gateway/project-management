@@ -4,6 +4,8 @@ plugins {
 
 dependencies {
     testImplementation(kotlin("test"))
+    api(libs.kotlinx.coroutines.core)
+
 }
 
 kotlin {

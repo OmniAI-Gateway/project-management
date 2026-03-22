@@ -14,7 +14,19 @@ import org.omniaigateway.contracts.gemini.input.GeminiPart
 import org.omniaigateway.contracts.gemini.input.GeminiTool
 import org.omniaigateway.contracts.gemini.input.GeminiToolConfig
 import org.omniaigateway.domain.common.CommonRole
+import org.omniaigateway.domain.common.Model
 import org.omniaigateway.domain.common.Provider
+import org.omniaigateway.domain.common.content.TextPart
+import org.omniaigateway.domain.common.content.ToolCallPart
+import org.omniaigateway.domain.common.json.JsonValue
+import org.omniaigateway.domain.responses.CommonChoice
+import org.omniaigateway.domain.responses.CommonResponse
+import org.omniaigateway.domain.responses.CommonResponseMessage
+import org.omniaigateway.domain.responses.CommonUsage
+import org.omniaigateway.domain.responses.FinishReason
+import org.omniaigateway.domain.responses.ResponseStarted
+import org.omniaigateway.domain.responses.ToolCallStartedEvent
+import org.omniaigateway.domain.responses.UsageReported
 
 class GeminiInboundTranslatorTest {
 
@@ -73,6 +85,84 @@ class GeminiInboundTranslatorTest {
         assertEquals("weather", domain.tools.first().name)
         assertNotNull(domain.toolChoice)
         assertTrue(domain.jsonResponse)
+    }
+
+    @Test
+    fun `maps common response to gemini response`() {
+        val domainResponse = CommonResponse(
+            provider = Provider.GEMINI,
+            id = "resp_123",
+            model = "gemini-2.0-flash",
+            choices = listOf(
+                CommonChoice(
+                    index = 0,
+                    message = CommonResponseMessage(
+                        role = CommonRole.ASSISTANT,
+                        content = listOf(
+                            TextPart("Done"),
+                            ToolCallPart(
+                                toolCallId = "call_1",
+                                functionName = "weather",
+                                argumentsJson = mapOf("city" to JsonValue.JsonString("Lisbon"))
+                            )
+                        )
+                    ),
+                    finishReason = FinishReason.TOOL_CALL
+                )
+            ),
+            usage = CommonUsage(inputTokens = 10, outputTokens = 20, totalTokens = 30)
+        )
+
+        val response = translator.fromDomain(domainResponse)
+
+        assertEquals("resp_123", response.responseId)
+        assertEquals("gemini-2.0-flash", response.modelVersion)
+        assertEquals("STOP", response.candidates.first().finishReason)
+        assertEquals("model", response.candidates.first().content?.role)
+        assertEquals("Done", response.candidates.first().content?.parts?.first()?.text)
+        assertEquals("Lisbon", response.candidates.first().content?.parts?.get(1)?.functionCall?.args?.get("city"))
+        assertEquals(10, response.usageMetadata?.promptTokenCount)
+    }
+
+    @Test
+    fun `maps common stream events to gemini response chunks`() {
+        val started = translator.fromDomainEvent(
+            ResponseStarted(
+                provider = Provider.GEMINI,
+                id = "resp_abc",
+                model = Model("gemini-2.0-flash"),
+                sequence = 1
+            )
+        )
+        assertEquals("resp_abc", started.responseId)
+        assertEquals("gemini-2.0-flash", started.modelVersion)
+
+        val toolCallStarted = translator.fromDomainEvent(
+            ToolCallStartedEvent(
+                provider = Provider.GEMINI,
+                id = "resp_abc",
+                model = Model("gemini-2.0-flash"),
+                sequence = 2,
+                choiceIndex = 0,
+                toolCallIndex = 0,
+                toolCallId = "call_1",
+                functionName = "weather"
+            )
+        )
+        assertEquals("weather", toolCallStarted.candidates.first().content?.parts?.first()?.functionCall?.name)
+
+        val usage = translator.fromDomainEvent(
+            UsageReported(
+                provider = Provider.GEMINI,
+                id = "resp_abc",
+                model = Model("gemini-2.0-flash"),
+                sequence = 3,
+                usage = CommonUsage(inputTokens = 3, outputTokens = 4, totalTokens = 7)
+            )
+        )
+        assertEquals(3, usage.usageMetadata?.promptTokenCount)
+        assertEquals(4, usage.usageMetadata?.candidatesTokenCount)
+        assertEquals(7, usage.usageMetadata?.totalTokenCount)
     }
 }
 

@@ -16,9 +16,9 @@ import org.omniaigateway.domain.responses.CommonResponseMessage
 import org.omniaigateway.domain.responses.CommonUsage
 import org.omniaigateway.domain.responses.FinishReason
 
-class AnthropicResponseTranslatorTest {
+class AnthropicAdapterTranslatorTest {
 
-    private val translator = AnthropicResponseTranslator()
+    private val translator = AnthropicAdapterTranslator()
 
     @Test
     fun `maps common response to anthropic message`() {
@@ -59,4 +59,5 @@ class AnthropicResponseTranslatorTest {
         assertEquals(20, anthropic.usage?.outputTokens)
     }
 }
+
 

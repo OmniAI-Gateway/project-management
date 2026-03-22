@@ -13,9 +13,9 @@ import org.omniaigateway.domain.responses.CommonResponseMessage
 import org.omniaigateway.domain.responses.CommonUsage
 import org.omniaigateway.domain.responses.FinishReason
 
-class OpenAiResponseTranslatorTest {
+class OpenAiAdapterTranslatorTest {
 
-    private val translator = OpenAiResponseTranslator()
+    private val translator = OpenAiAdapterTranslator()
 
     @Test
     fun `maps common response to openai response`() {
@@ -56,4 +56,5 @@ class OpenAiResponseTranslatorTest {
         assertEquals(20, openAi.usage?.completionTokens)
     }
 }
+
 

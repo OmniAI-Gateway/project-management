@@ -6,7 +6,6 @@ import org.omniaigateway.contracts.openai.output.OpenAiMessageOutput
 import org.omniaigateway.contracts.openai.output.OpenAiToolCallFunctionOutput
 import org.omniaigateway.contracts.openai.output.OpenAiToolCallOutput
 import org.omniaigateway.contracts.openai.output.OpenAiUsage
-import org.omniaigateway.core.ports.AdapterTranslator
 import org.omniaigateway.domain.common.CommonRole
 import org.omniaigateway.domain.common.content.JsonPart
 import org.omniaigateway.domain.common.content.RefusalPart
@@ -21,8 +20,8 @@ import org.omniaigateway.domain.responses.CommonResponse
 import org.omniaigateway.domain.responses.CommonUsage
 import org.omniaigateway.domain.responses.FinishReason
 
-class OpenAiResponseTranslator : AdapterTranslator<CommonResponse, OpenAiChatCompletionsResponse> {
-    override fun fromDomain(domain: CommonResponse): OpenAiChatCompletionsResponse =
+class OpenAiAdapterTranslator {
+    fun fromDomain(domain: CommonResponse): OpenAiChatCompletionsResponse =
         OpenAiChatCompletionsResponse(
             id = domain.id ?: "",
             `object` = "chat.completion",
@@ -92,4 +91,5 @@ private fun FinishReason?.toOpenAiFinishReason(): String? =
         FinishReason.CONTENT_FILTER -> "content_filter"
         FinishReason.OTHER, null -> null
     }
+
 

@@ -13,9 +13,9 @@ import org.omniaigateway.domain.responses.CommonResponseMessage
 import org.omniaigateway.domain.responses.CommonUsage
 import org.omniaigateway.domain.responses.FinishReason
 
-class GeminiResponseTranslatorTest {
+class GeminiAdapterTranslatorTest {
 
-    private val translator = GeminiResponseTranslator()
+    private val translator = GeminiAdapterTranslator()
 
     @Test
     fun `maps common response to gemini response`() {
@@ -56,4 +56,5 @@ class GeminiResponseTranslatorTest {
         assertEquals(20, gemini.usageMetadata?.candidatesTokenCount)
     }
 }
+
 

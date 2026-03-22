@@ -1,6 +1,5 @@
 package org.omniaigateway.adapters.gemini
 
-import org.omniaigateway.core.ports.AdapterTranslator
 import org.omniaigateway.domain.common.CommonRole
 import org.omniaigateway.domain.common.content.JsonPart
 import org.omniaigateway.domain.common.content.RefusalPart
@@ -20,8 +19,8 @@ import org.omniaigateway.contracts.gemini.output.GeminiResponseContent
 import org.omniaigateway.contracts.gemini.output.GeminiResponsePart
 import org.omniaigateway.contracts.gemini.output.GeminiUsageMetadata
 
-class GeminiResponseTranslator : AdapterTranslator<CommonResponse, GeminiGenerateContentResponse> {
-    override fun fromDomain(domain: CommonResponse): GeminiGenerateContentResponse =
+class GeminiAdapterTranslator {
+    fun fromDomain(domain: CommonResponse): GeminiGenerateContentResponse =
         GeminiGenerateContentResponse(
             candidates = domain.choices.map(::toGeminiCandidate),
             usageMetadata = domain.usage?.let(::toGeminiUsageMetadata),
@@ -77,4 +76,5 @@ private fun FinishReason?.toGeminiFinishReason(): String? =
         FinishReason.CONTENT_FILTER -> "SAFETY"
         FinishReason.OTHER, null -> null
     }
+
 
