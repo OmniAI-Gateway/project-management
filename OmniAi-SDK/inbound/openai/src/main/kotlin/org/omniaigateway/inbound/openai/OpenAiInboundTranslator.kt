@@ -139,7 +139,7 @@ class OpenAiInboundTranslator :
                                     type = "function",
                                     function = OpenAiToolCallFunctionOutput(
                                         name = domainEvent.functionName,
-                                        arguments = JsonObject(emptyMap())
+                                        arguments = ""
                                     )
                                 )
                             )
@@ -161,7 +161,7 @@ class OpenAiInboundTranslator :
                                     type = "function",
                                     function = OpenAiToolCallFunctionOutput(
                                         name = "",
-                                        arguments = JsonObject(mapOf("partialJson" to JsonPrimitive(domainEvent.argumentsFragment)))
+                                        arguments = domainEvent.argumentsFragment
                                     )
                                 )
                             )
@@ -308,7 +308,7 @@ private fun toOpenAiToolCall(part: ResponseContentPart): OpenAiToolCallOutput? =
             type = "function",
             function = OpenAiToolCallFunctionOutput(
                 name = part.functionName,
-                arguments = part.argumentsJson.toOpenAiJsonObject()
+                arguments = part.argumentsJson.toOpenAiJsonObject().toString()
             )
         )
         is TextPart, is JsonPart, is RefusalPart -> null

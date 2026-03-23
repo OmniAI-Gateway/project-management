@@ -5,8 +5,7 @@ import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
-import kotlinx.serialization.json.contentOrNull
-import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.Json
 import org.omniaigateway.contracts.openai.input.FunctionRef
 import org.omniaigateway.contracts.openai.input.OpenAiChatCompletionsRequest
 import org.omniaigateway.contracts.openai.input.OpenAiFunctionDefinition
@@ -148,7 +147,7 @@ class OpenAiOutboundTranslator : OutboundTranslator<OpenAiChatCompletionsRequest
 
         val toolCall = choice.delta?.toolCalls?.firstOrNull()
         if (toolCall != null) {
-            val partialJson = toolCall.function.arguments["partialJson"]?.jsonPrimitive?.contentOrNull
+            val partialJson = toolCall.function.arguments
             val functionName = toolCall.function.name
             if (partialJson != null && functionName.isNullOrBlank()) {
                 return ToolCallArgumentsDeltaEvent(
@@ -279,7 +278,7 @@ private fun OpenAiToolCallOutput.toDomainToolCallPart(): ToolCallPart =
     ToolCallPart(
         toolCallId = id,
         functionName = function.name ?: "unknown",
-        argumentsJson = function.arguments.toDomainJsonObject().properties
+        argumentsJson = function.arguments.toDomainToolArguments()
     )
 
 
@@ -332,6 +331,12 @@ private fun JsonValue.toOpenAiJsonElement(): JsonElement =
 
 private fun JsonObject.toDomainJsonObject(): JsonValue.JsonObject =
     JsonValue.JsonObject(properties = mapValues { (_, value) -> value.toDomainJsonValue() })
+
+private fun String.toDomainToolArguments(): Map<String, JsonValue> {
+    val parsed = runCatching { Json.parseToJsonElement(this) }.getOrNull()
+    val jsonObject = parsed as? JsonObject
+    return jsonObject?.toDomainJsonObject()?.properties ?: mapOf("raw" to JsonValue.JsonString(this))
+}
 
 private fun JsonElement.toDomainJsonValue(): JsonValue =
     when (this) {
