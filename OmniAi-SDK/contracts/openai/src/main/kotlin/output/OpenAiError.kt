@@ -1,5 +1,8 @@
 package org.omniaigateway.contracts.openai.output
 
+import kotlinx.serialization.Serializable
+
+@Serializable
 data class OpenAiError(
     val message: String,
     val type: String? = null,

@@ -46,10 +46,7 @@ import org.omniaigateway.domain.responses.TextDeltaEvent
 import org.omniaigateway.domain.responses.ToolCallArgumentsDeltaEvent
 import org.omniaigateway.domain.responses.ToolCallStartedEvent
 import org.omniaigateway.domain.responses.UsageReported
-import kotlin.sequences.ifEmpty
-import kotlin.text.forEachIndexed
-import kotlin.text.orEmpty
-import kotlin.toString
+
 
 class OpenAiInboundTranslator :
     InboundTranslator<OpenAiChatCompletionsRequest, OpenAiChatCompletionsResponse, OpenAiChatCompletionsResponse> {

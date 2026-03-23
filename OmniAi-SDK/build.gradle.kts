@@ -1,5 +1,6 @@
 plugins {
     kotlin("jvm") version "2.3.0" apply false
+    kotlin("plugin.serialization") version "2.3.0" apply false
     id("java-library")
 
 }
@@ -15,6 +16,12 @@ subprojects {
     version = rootProject.version
 
     apply(plugin = "org.jetbrains.kotlin.jvm")
+
+    apply(plugin = "org.jetbrains.kotlin.plugin.serialization")
+
+    dependencies {
+        add("implementation", "org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0")
+    }
 
     repositories {
         mavenCentral()
@@ -33,8 +40,8 @@ dependencies {
     api(project(":inbound:anthropic"))
     api(project(":inbound:gemini"))
 
-    api(project(":adapters:openai"))
-    api(project(":adapters:anthropic"))
-    api(project(":adapters:gemini"))
+    api(project(":outbound:openai"))
+    api(project(":outbound:anthropic"))
+    api(project(":outbound:gemini"))
 }
 
