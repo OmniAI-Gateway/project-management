@@ -37,7 +37,7 @@ fun main() = runBlocking {
     val apiKey = System.getenv("OPENAI_API_KEY")
         ?: error("Missing OPENAI_API_KEY environment variable")
 
-    val modelName = System.getenv("OPENAI_MODEL") ?: "qwen/qwen3-32b"
+    val modelName = System.getenv("OPENAI_MODEL") ?: "openai/gpt-oss-120b"
 
     val baseUrl = System.getenv("OPENAI_BASE_URL") ?: "https://api.groq.com/openai/v1"
 
@@ -95,14 +95,18 @@ private fun jsonResponseRequest(model: String): CommonRequest =
         model = model,
         messages = listOf(
             CommonRequestMessage(
+                role = CommonRole.SYSTEM,
+                content = listOf(TextPart("És um assistente especializado em análise e resumo de texto. O teu único objetivo é devolver respostas estritamente num formato JSON válido. Não incluas saudações, explicações adicionais ou blocos de formatação markdown (como ```json) na tua resposta final."))
+            ),
+            CommonRequestMessage(
                 role = CommonRole.USER,
-                content = listOf(TextPart("Devolve um objeto JSON com campos: summary e confidence."))
+                content = listOf(TextPart("Analisa o texto fornecido abaixo e devolve um objeto JSON com exatamente dois campos:\n1. \"summary\": (string) Um resumo conciso e claro do texto.\n2. \"confidence\": (number) Um valor entre 0.0 e 1.0 que indica o teu nível de confiança de que o resumo captou os pontos principais.\n\nTexto para analisar:\nA inteligência artificial está a mudar a forma como trabalhamos. Ferramentas como modelos de linguagem conseguem analisar grandes volumes de texto, resumir informações e até escrever código. No entanto, é importante que os humanos supervisionem estas ferramentas para garantir a precisão e evitar erros. O futuro do trabalho será uma colaboração entre humanos e máquinas."))
             )
         ),
         jsonResponse = true,
         config = CommonGenerationConfig(
             temperature = 0.0,
-            maxTokens = 120,
+            maxTokens = 1000,
             stopSequences = listOf("END")
         )
     )

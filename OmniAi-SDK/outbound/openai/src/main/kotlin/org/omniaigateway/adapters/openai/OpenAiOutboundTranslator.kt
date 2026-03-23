@@ -26,7 +26,9 @@ import org.omniaigateway.domain.common.CommonTool
 import org.omniaigateway.domain.common.Model
 import org.omniaigateway.domain.common.Provider
 import org.omniaigateway.domain.common.ToolChoice
+import org.omniaigateway.domain.common.content.JsonPart
 import org.omniaigateway.domain.common.content.ResponseContentPart
+import org.omniaigateway.domain.common.content.SharedContentPart
 import org.omniaigateway.domain.common.content.TextPart
 import org.omniaigateway.domain.common.content.ToolCallPart
 import org.omniaigateway.domain.common.content.ToolResultPart
@@ -40,6 +42,7 @@ import org.omniaigateway.domain.responses.ChoiceStarted
 import org.omniaigateway.domain.responses.CommonChoice
 import org.omniaigateway.domain.responses.CommonResponse
 import org.omniaigateway.domain.responses.CommonResponseEvent
+import org.omniaigateway.domain.responses.CommonResponseMessage
 import org.omniaigateway.domain.responses.CommonUsage
 import org.omniaigateway.domain.responses.FinishReason
 import org.omniaigateway.domain.responses.ResponseCompleted
@@ -259,19 +262,35 @@ private fun ToolChoice.toOpenAiToolChoice(): OpenAiToolChoice =
 private fun toDomainChoice(choice: OpenAiChoice): CommonChoice {
     val role = (choice.message?.role ?: choice.delta?.role ?: "assistant").toCommonRole()
     val parts = mutableListOf<ResponseContentPart>()
-    choice.message?.content?.takeIf(String::isNotBlank)?.let { parts += TextPart(it) }
-    choice.delta?.content?.takeIf(String::isNotBlank)?.let { parts += TextPart(it) }
+    choice.message?.content?.takeIf(String::isNotBlank)?.let { parts += it.toDomainContentPart() }
+    choice.delta?.content?.takeIf(String::isNotBlank)?.let { parts += it.toDomainContentPart()}
     choice.message?.toolCalls.orEmpty().mapTo(parts) { it.toDomainToolCallPart() }
     choice.delta?.toolCalls.orEmpty().mapTo(parts) { it.toDomainToolCallPart() }
 
     return CommonChoice(
         index = choice.index,
-        message = org.omniaigateway.domain.responses.CommonResponseMessage(
+        message = CommonResponseMessage(
             role = role,
             content = parts
         ),
         finishReason = choice.finishReason.toDomainFinishReason()
     )
+}
+
+private fun String.toDomainContentPart(): SharedContentPart{
+    val trimmed = trim()
+
+    if(trimmed.startsWith("[") && trimmed.endsWith("]") ||
+        trimmed.startsWith("{") && trimmed.endsWith("}")){
+        try {
+            Json.parseToJsonElement(trimmed).let {
+                jsonElement -> return JsonPart(jsonElement.toDomainJsonValue())
+            }
+        }catch ( _ : Exception){
+            return TextPart(this)
+        }
+    }
+    return TextPart(this)
 }
 
 private fun OpenAiToolCallOutput.toDomainToolCallPart(): ToolCallPart =
@@ -288,6 +307,7 @@ private fun OpenAiUsage.toDomainUsage(): CommonUsage =
         outputTokens = completionTokens,
         totalTokens = totalTokens
     )
+
 
 private fun String.toCommonRole(): CommonRole =
     when (lowercase()) {
