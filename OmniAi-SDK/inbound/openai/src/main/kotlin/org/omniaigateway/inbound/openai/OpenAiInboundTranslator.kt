@@ -1,5 +1,10 @@
 package org.omniaigateway.inbound.openai
 
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonNull
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 import org.omniaigateway.contracts.openai.input.OpenAiChatCompletionsRequest
 import org.omniaigateway.contracts.openai.input.OpenAiMessageInput
 import org.omniaigateway.contracts.openai.input.OpenAiStop
@@ -26,9 +31,7 @@ import org.omniaigateway.domain.common.content.TextPart
 import org.omniaigateway.domain.common.content.ToolCallPart
 import org.omniaigateway.domain.common.content.ToolResultPart
 import org.omniaigateway.domain.common.json.JsonValue
-import org.omniaigateway.domain.common.json.toJsonObject
 import org.omniaigateway.domain.common.json.toRawAny
-import org.omniaigateway.domain.common.json.toRawMap
 import org.omniaigateway.domain.common.json.toJsonValue
 import org.omniaigateway.domain.requests.CommonRequest
 import org.omniaigateway.domain.requests.CommonRequestMessage
@@ -136,7 +139,7 @@ class OpenAiInboundTranslator :
                                     type = "function",
                                     function = OpenAiToolCallFunctionOutput(
                                         name = domainEvent.functionName,
-                                        arguments = emptyMap()
+                                        arguments = ""
                                     )
                                 )
                             )
@@ -158,7 +161,7 @@ class OpenAiInboundTranslator :
                                     type = "function",
                                     function = OpenAiToolCallFunctionOutput(
                                         name = "",
-                                        arguments = mapOf("partialJson" to domainEvent.argumentsFragment)
+                                        arguments = domainEvent.argumentsFragment
                                     )
                                 )
                             )
@@ -243,7 +246,7 @@ private fun OpenAiTool.toDomainTool(): CommonTool =
     CommonTool(
         name = function.name,
         description = function.description ?: function.name,
-        parametersSchema = function.parameters.orEmpty().toJsonObject().properties
+        parametersSchema = function.parameters?.toDomainJsonObject()?.properties.orEmpty()
     )
 
 private fun OpenAiToolChoice.toDomainToolChoice(): ToolChoice? =
@@ -305,7 +308,7 @@ private fun toOpenAiToolCall(part: ResponseContentPart): OpenAiToolCallOutput? =
             type = "function",
             function = OpenAiToolCallFunctionOutput(
                 name = part.functionName,
-                arguments = JsonValue.JsonObject(part.argumentsJson).toRawMap()
+                arguments = part.argumentsJson.toOpenAiJsonObject().toString()
             )
         )
         is TextPart, is JsonPart, is RefusalPart -> null
@@ -333,5 +336,37 @@ private fun FinishReason?.toOpenAiFinishReason(): String? =
         FinishReason.TOOL_CALL -> "tool_calls"
         FinishReason.CONTENT_FILTER -> "content_filter"
         FinishReason.OTHER, null -> null
+    }
+
+// temos no inbound e outbound, secalhar criar um helper faria sentido.
+private fun Map<String, JsonValue>.toOpenAiJsonObject(): JsonObject =
+    JsonObject(entries.associate { (key, value) -> key to value.toOpenAiJsonElement() })
+
+private fun JsonValue.toOpenAiJsonElement(): JsonElement =
+    when (this) {
+        is JsonValue.JsonObject -> JsonObject(properties.mapValues { (_, value) -> value.toOpenAiJsonElement() })
+        is JsonValue.JsonArray -> JsonArray(items.map(JsonValue::toOpenAiJsonElement))
+        is JsonValue.JsonString -> JsonPrimitive(value)
+        is JsonValue.JsonNumber -> JsonPrimitive(value)
+        is JsonValue.JsonBoolean -> JsonPrimitive(value)
+        JsonValue.JsonNull -> JsonNull
+    }
+
+private fun JsonObject.toDomainJsonObject(): JsonValue.JsonObject =
+    JsonValue.JsonObject(properties = mapValues { (_, value) -> value.toDomainJsonValue() })
+
+private fun JsonElement.toDomainJsonValue(): JsonValue =
+    when (this) {
+        is JsonObject -> JsonValue.JsonObject(properties = mapValues { (_, value) -> value.toDomainJsonValue() })
+        is JsonArray -> JsonValue.JsonArray(items = map(JsonElement::toDomainJsonValue))
+        is JsonPrimitive -> when {
+            isString -> JsonValue.JsonString(content)
+            content == "true" -> JsonValue.JsonBoolean(true)
+            content == "false" -> JsonValue.JsonBoolean(false)
+            content.toLongOrNull() != null -> JsonValue.JsonNumber(content.toLong())
+            content.toDoubleOrNull() != null -> JsonValue.JsonNumber(content.toDouble())
+            else -> JsonValue.JsonString(content)
+        }
+        JsonNull -> JsonValue.JsonNull
     }
 

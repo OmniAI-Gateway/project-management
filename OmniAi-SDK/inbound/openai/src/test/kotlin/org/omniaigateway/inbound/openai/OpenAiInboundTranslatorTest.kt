@@ -1,5 +1,7 @@
 package org.omniaigateway.inbound.openai
 
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
@@ -24,6 +26,7 @@ import org.omniaigateway.domain.responses.CommonResponseMessage
 import org.omniaigateway.domain.responses.CommonUsage
 import org.omniaigateway.domain.responses.FinishReason
 import org.omniaigateway.domain.responses.ResponseStarted
+import org.omniaigateway.domain.responses.ToolCallArgumentsDeltaEvent
 import org.omniaigateway.domain.responses.ToolCallStartedEvent
 import org.omniaigateway.domain.responses.UsageReported
 
@@ -55,7 +58,7 @@ class OpenAiInboundTranslatorTest {
                     function = OpenAiFunctionDefinition(
                         name = "weather",
                         description = "Get weather",
-                        parameters = mapOf("type" to "object")
+                        parameters = JsonObject(mapOf("type" to JsonPrimitive("object")))
                     )
                 )
             ),
@@ -110,7 +113,7 @@ class OpenAiInboundTranslatorTest {
         assertEquals("tool_calls", response.choices.first().finishReason)
         assertEquals("assistant", response.choices.first().message?.role)
         assertEquals("Done", response.choices.first().message?.content)
-        assertEquals("Lisbon", response.choices.first().message?.toolCalls?.first()?.function?.arguments?.get("city"))
+        assertEquals("{\"city\":\"Lisbon\"}", response.choices.first().message?.toolCalls?.first()?.function?.arguments)
         assertEquals(10, response.usage?.promptTokens)
         assertEquals(20, response.usage?.completionTokens)
     }
@@ -141,6 +144,23 @@ class OpenAiInboundTranslatorTest {
             )
         )
         assertEquals("weather", toolCallStarted.choices.first().delta?.toolCalls?.first()?.function?.name)
+        assertEquals("", toolCallStarted.choices.first().delta?.toolCalls?.first()?.function?.arguments)
+
+        val toolArgsDelta = translator.fromDomainEvent(
+            ToolCallArgumentsDeltaEvent(
+                provider = Provider.OPENAI,
+                id = "chatcmpl_abc",
+                model = Model("gpt-4o-mini"),
+                sequence = 2,
+                choiceIndex = 0,
+                toolCallIndex = 0,
+                argumentsFragment = "{\"city\":\"Lis"
+            )
+        )
+        assertEquals(
+            "{\"city\":\"Lis",
+            toolArgsDelta.choices.first().delta?.toolCalls?.first()?.function?.arguments
+        )
 
         val usage = translator.fromDomainEvent(
             UsageReported(

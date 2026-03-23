@@ -1,5 +1,11 @@
 package org.omniaigateway.adapters.openai
 
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonNull
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.Json
 import org.omniaigateway.contracts.openai.input.FunctionRef
 import org.omniaigateway.contracts.openai.input.OpenAiChatCompletionsRequest
 import org.omniaigateway.contracts.openai.input.OpenAiFunctionDefinition
@@ -25,7 +31,6 @@ import org.omniaigateway.domain.common.content.TextPart
 import org.omniaigateway.domain.common.content.ToolCallPart
 import org.omniaigateway.domain.common.content.ToolResultPart
 import org.omniaigateway.domain.common.json.JsonValue
-import org.omniaigateway.domain.common.json.toJsonObject
 import org.omniaigateway.domain.common.json.toRawAny
 import org.omniaigateway.domain.common.json.toRawMap
 import org.omniaigateway.domain.requests.CommonRequest
@@ -142,7 +147,7 @@ class OpenAiOutboundTranslator : OutboundTranslator<OpenAiChatCompletionsRequest
 
         val toolCall = choice.delta?.toolCalls?.firstOrNull()
         if (toolCall != null) {
-            val partialJson = toolCall.function.arguments["partialJson"] as? String
+            val partialJson = toolCall.function.arguments
             val functionName = toolCall.function.name
             if (partialJson != null && functionName.isNullOrBlank()) {
                 return ToolCallArgumentsDeltaEvent(
@@ -239,7 +244,7 @@ private fun CommonTool.toOpenAiTool(): OpenAiTool =
         function = OpenAiFunctionDefinition(
             name = name,
             description = description,
-            parameters = JsonValue.JsonObject(parametersSchema).toRawMap()
+            parameters = parametersSchema.toOpenAiJsonObject()
         )
     )
 
@@ -273,7 +278,7 @@ private fun OpenAiToolCallOutput.toDomainToolCallPart(): ToolCallPart =
     ToolCallPart(
         toolCallId = id,
         functionName = function.name ?: "unknown",
-        argumentsJson = function.arguments.toJsonObject().properties
+        argumentsJson = function.arguments.toDomainToolArguments()
     )
 
 
@@ -309,5 +314,42 @@ private fun CommonRole.toOpenAiRole(): String =
         CommonRole.USER -> "user"
         CommonRole.ASSISTANT -> "assistant"
         CommonRole.TOOL -> "tool"
+    }
+
+private fun Map<String, JsonValue>.toOpenAiJsonObject(): JsonObject =
+    JsonObject(entries.associate { (key, value) -> key to value.toOpenAiJsonElement() })
+
+private fun JsonValue.toOpenAiJsonElement(): JsonElement =
+    when (this) {
+        is JsonValue.JsonObject -> JsonObject(properties.mapValues { (_, value) -> value.toOpenAiJsonElement() })
+        is JsonValue.JsonArray -> JsonArray(items.map(JsonValue::toOpenAiJsonElement))
+        is JsonValue.JsonString -> JsonPrimitive(value)
+        is JsonValue.JsonNumber -> JsonPrimitive(value)
+        is JsonValue.JsonBoolean -> JsonPrimitive(value)
+        JsonValue.JsonNull -> JsonNull
+    }
+
+private fun JsonObject.toDomainJsonObject(): JsonValue.JsonObject =
+    JsonValue.JsonObject(properties = mapValues { (_, value) -> value.toDomainJsonValue() })
+
+private fun String.toDomainToolArguments(): Map<String, JsonValue> {
+    val parsed = runCatching { Json.parseToJsonElement(this) }.getOrNull()
+    val jsonObject = parsed as? JsonObject
+    return jsonObject?.toDomainJsonObject()?.properties ?: mapOf("raw" to JsonValue.JsonString(this))
+}
+
+private fun JsonElement.toDomainJsonValue(): JsonValue =
+    when (this) {
+        is JsonObject -> JsonValue.JsonObject(properties = mapValues { (_, value) -> value.toDomainJsonValue() })
+        is JsonArray -> JsonValue.JsonArray(items = map(JsonElement::toDomainJsonValue))
+        is JsonPrimitive -> when {
+            isString -> JsonValue.JsonString(content)
+            content == "true" -> JsonValue.JsonBoolean(true)
+            content == "false" -> JsonValue.JsonBoolean(false)
+            content.toLongOrNull() != null -> JsonValue.JsonNumber(content.toLong())
+            content.toDoubleOrNull() != null -> JsonValue.JsonNumber(content.toDouble())
+            else -> JsonValue.JsonString(content)
+        }
+        JsonNull -> JsonValue.JsonNull
     }
 
