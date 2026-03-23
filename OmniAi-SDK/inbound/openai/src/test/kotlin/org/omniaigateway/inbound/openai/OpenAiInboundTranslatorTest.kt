@@ -1,5 +1,7 @@
 package org.omniaigateway.inbound.openai
 
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
@@ -55,7 +57,7 @@ class OpenAiInboundTranslatorTest {
                     function = OpenAiFunctionDefinition(
                         name = "weather",
                         description = "Get weather",
-                        parameters = mapOf("type" to "object")
+                        parameters = JsonObject(mapOf("type" to JsonPrimitive("object")))
                     )
                 )
             ),
@@ -110,7 +112,10 @@ class OpenAiInboundTranslatorTest {
         assertEquals("tool_calls", response.choices.first().finishReason)
         assertEquals("assistant", response.choices.first().message?.role)
         assertEquals("Done", response.choices.first().message?.content)
-        assertEquals("Lisbon", response.choices.first().message?.toolCalls?.first()?.function?.arguments?.get("city"))
+        assertEquals(
+            JsonPrimitive("Lisbon"),
+            response.choices.first().message?.toolCalls?.first()?.function?.arguments?.get("city")
+        )
         assertEquals(10, response.usage?.promptTokens)
         assertEquals(20, response.usage?.completionTokens)
     }

@@ -1,6 +1,5 @@
 package org.omniaigateway.adapters.openai
 
-import io.ktor.client.statement.bodyAsText
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
