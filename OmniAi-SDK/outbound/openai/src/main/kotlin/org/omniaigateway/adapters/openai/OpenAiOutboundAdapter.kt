@@ -15,6 +15,7 @@ import io.ktor.http.isSuccess
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.coroutines.flow.Flow
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.encodeToJsonElement
 import org.omniaigateway.contracts.openai.output.OpenAiChatCompletionsResponse
 import org.omniaigateway.core.ports.OutboundPort
 import org.omniaigateway.domain.common.Model
@@ -37,6 +38,7 @@ class OpenAiOutboundAdapter(
     override suspend fun generate(request: CommonRequest): CommonResponse {
         val providerRequest = translator.fromDomain(request)
 
+        println("REQUEST: ${Json.encodeToJsonElement(providerRequest)}")
         val response = client.post("$baseUrl/chat/completions") {
             contentType(ContentType.Application.Json)
             header(HttpHeaders.Authorization, "Bearer $apiKey")
@@ -49,6 +51,8 @@ class OpenAiOutboundAdapter(
             )
         }
         val providerResponse: OpenAiChatCompletionsResponse = response.body()
+        println("RESPONSE: ${Json.encodeToJsonElement(providerResponse)}")
+
         return translator.toDomain(providerResponse)
     }
 
