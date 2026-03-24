@@ -12,6 +12,7 @@ base {
 dependencies {
     implementation(project(":core"))
     implementation(project(":contracts:anthropic"))
+
     testImplementation(kotlin("test"))
 }
 

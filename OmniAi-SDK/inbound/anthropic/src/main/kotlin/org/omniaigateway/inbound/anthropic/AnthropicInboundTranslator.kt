@@ -202,7 +202,7 @@ private fun toAnthropicContentPart(part: ResponseContentPart): AnthropicOutputCo
 			name = part.functionName,
 			input = org.omniaigateway.domain.common.json.JsonValue.JsonObject(part.argumentsJson).toRawMap()
 		)
-		is JsonPart -> null
+		is JsonPart -> AnthropicOutputContent.Text(text = part.json.toJsonString())
 		is RefusalPart -> null
 	}
 

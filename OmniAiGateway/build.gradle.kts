@@ -1,6 +1,6 @@
 
 plugins {
-    kotlin("jvm") version "2.3.0" apply false
+    kotlin("jvm") version "2.2.0" apply false
 }
 
 group = "org.omniaigateway"
