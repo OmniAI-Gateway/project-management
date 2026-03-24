@@ -60,7 +60,7 @@ class OpenAiOutboundTranslator : OutboundTranslator<OpenAiChatCompletionsRequest
             model = domainRequest.model,
             messages = domainRequest.messages.map(CommonRequestMessage::toOpenAiMessageInput),
             temperature = domainRequest.config?.temperature,
-            maxTokens = domainRequest.config?.maxTokens,
+            maxTokens = domainRequest.config?.maxTokens?.coerceAtMost(4000) ?: 1000,
             topP = domainRequest.config?.topP,
             stop = domainRequest.config?.stopSequences.toOpenAiStop(),
             frequencyPenalty = providerOptions["frequencyPenalty"] as? Double,

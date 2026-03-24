@@ -10,7 +10,7 @@ data class AnthropicMessagesRequest(
     @SerialName("max_tokens")
     val maxTokens: Int,
     val messages: List<AnthropicMessageInput>,
-    val system: String? = null,
+    val system: AnthropicContent? = null,
     val tools: List<AnthropicToolDefinition>? = null,
     @SerialName("tool_choice")
     val toolChoice: AnthropicToolChoice? = null,
@@ -24,6 +24,8 @@ data class AnthropicMessagesRequest(
     val stopSequences: List<String>? = null,
     @SerialName("stop_token")
     val stopToken: String? = null,
+    @SerialName("output_config")
+    val outputConfig: AnthropicOutputConfig? = null,
     val thinking: AnthropicThinkingConfig? = null,
     @Serializable(with = NullableStringAnyMapSerializer::class)
     val metadata: Map<String, Any?>? = null

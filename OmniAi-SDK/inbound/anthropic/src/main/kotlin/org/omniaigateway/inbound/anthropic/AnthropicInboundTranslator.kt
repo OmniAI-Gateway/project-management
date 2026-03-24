@@ -64,7 +64,7 @@ class AnthropicInboundTranslator : InboundTranslator<AnthropicMessagesRequest, A
 			provider = provider,
 			model = clientRequest.model,
 			messages = clientRequest.messages.map(AnthropicMessageInput::toDomainMessage),
-			systemPrompt = clientRequest.system?.takeIf(String::isNotBlank)?.let(::SystemPrompt),
+			systemPrompt = clientRequest.system.toPlainSystemText()?.takeIf(String::isNotBlank)?.let(::SystemPrompt),
 			config = CommonGenerationConfig(
 				temperature = clientRequest.temperature,
 				maxTokens = clientRequest.maxTokens,
@@ -138,6 +138,16 @@ class AnthropicInboundTranslator : InboundTranslator<AnthropicMessagesRequest, A
 			)
 		}
 }
+
+private fun AnthropicContent?.toPlainSystemText(): String? = when (this) {
+    null -> null
+    is RawText -> text
+    is ListContentBlock -> blocks
+        .filterIsInstance<AnthropicInputContentBlock.Text>()
+        .joinToString("\n") { it.text }
+        .takeIf { it.isNotBlank() }
+}
+
 
 private fun String.toCommonRole(): CommonRole =
 	when (lowercase()) {
