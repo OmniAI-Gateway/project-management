@@ -3,12 +3,10 @@ plugins {
 }
 rootProject.name = "OmniAiGateway"
 
+includeBuild("../OmniAi-SDK")
 
 include(":inbound")
 include(":inbound:web")
 include(":outbound")
 include(":outbound:ollama")
 include(":app")
-
-
-includeBuild("../OmniAi-SDK")

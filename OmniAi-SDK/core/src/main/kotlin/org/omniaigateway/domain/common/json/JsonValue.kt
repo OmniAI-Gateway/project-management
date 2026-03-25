@@ -15,7 +15,33 @@ sealed class JsonValue {
     data class JsonBoolean(val value: Boolean) : JsonValue()
 
     data object JsonNull : JsonValue()
+
+
+    fun toJsonString(): String = when (this) {
+        is JsonNull -> "null"
+        is JsonBoolean -> value.toString()
+        is JsonNumber -> value.toString()
+        is JsonString -> "\"$value\""
+
+        is JsonArray -> items.joinToString(
+            prefix = "[",
+            separator = ",",
+            postfix = "]"
+        ) { item ->
+            item.toJsonString()
+        }
+
+        is JsonObject -> properties.entries.joinToString(
+            prefix = "{",
+            separator = ",",
+            postfix = "}"
+        ) { (key, value) ->
+            "\"$key\":${value.toJsonString()}"
+        }
+    }
 }
 
 typealias JsonObjectMap = Map<String, JsonValue>
+
+
 

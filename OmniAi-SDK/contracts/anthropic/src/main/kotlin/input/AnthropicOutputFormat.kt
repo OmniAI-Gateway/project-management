@@ -1,9 +1,11 @@
 package org.omniaigateway.contracts.anthropic.input
 
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonElement
+
 
 @Serializable
-data class AnthropicToolChoice(
+data class AnthropicOutputFormat(
     val type: String,
-    val name: String? = null,
+    val schema: JsonElement? = null
 )
