@@ -1,5 +1,4 @@
 package org.omniai.sdk.inbound.openai
-
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonNull
@@ -89,9 +88,9 @@ class OpenAiInboundTranslator :
 
     override fun fromDomain(domainResponse: CommonResponse): OpenAiChatCompletionsResponse =
         OpenAiChatCompletionsResponse(
-            id = domainResponse.id?.takeIf { it.isNotBlank() } ?: "chatcmpl_${System.currentTimeMillis()}",
+            id = domainResponse.id?.takeIf { it.isNotBlank() } ?: "chatcmpl_${currentTimeMillis()}",
             obj = "chat.completion",
-            created = ((domainResponse.providerOptions["created"] as? Number)?.toLong() ?: (System.currentTimeMillis() / 1000)),
+            created = ((domainResponse.providerOptions["created"] as? Number)?.toLong() ?: (currentTimeMillis() / 1000)),
             model = domainResponse.model,
             systemFingerprint = domainResponse.providerOptions["systemFingerprint"] as? String,
             choices = domainResponse.choices.map(::toOpenAiChoice),
@@ -270,9 +269,9 @@ private fun chunkResponse(
     usage: OpenAiUsage? = null
 ): OpenAiChatCompletionsResponse =
     OpenAiChatCompletionsResponse(
-        id = id ?: "catchall_${System.currentTimeMillis()}",
+        id = id ?: "catchall_${currentTimeMillis()}",
         obj = "chat.completion.chunk",
-        created = System.currentTimeMillis() / 1000,
+        created = currentTimeMillis() / 1000,
         model = model,
         choices = choices,
         usage = usage
@@ -369,4 +368,3 @@ private fun JsonElement.toDomainJsonValue(): JsonValue =
         }
         JsonNull -> JsonValue.JsonNull
     }
-

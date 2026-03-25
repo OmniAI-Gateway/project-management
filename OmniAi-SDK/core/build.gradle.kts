@@ -7,6 +7,10 @@ kotlin {
     jvm()
     jvmToolchain(22)
 
+    js(IR) {
+        nodejs()
+    }
+
     sourceSets {
         commonMain.dependencies {
             api(libs.kotlinx.coroutines.core)

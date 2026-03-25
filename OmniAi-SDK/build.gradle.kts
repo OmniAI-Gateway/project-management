@@ -22,6 +22,10 @@ kotlin {
     jvm()
     jvmToolchain(22)
 
+    js(IR) {
+        nodejs()
+    }
+
     sourceSets {
         commonMain.dependencies {
             api(project(":core"))
@@ -45,9 +49,12 @@ kotlin {
             implementation("io.ktor:ktor-client-okhttp:3.2.2")
         }
 
+        jsMain.dependencies {
+            implementation("io.ktor:ktor-client-js:3.2.2")
+        }
+
         commonTest.dependencies {
             implementation(kotlin("test"))
         }
     }
 }
-

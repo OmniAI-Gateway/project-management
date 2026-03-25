@@ -13,6 +13,10 @@ kotlin {
     jvm()
     jvmToolchain(22)
 
+    js(IR) {
+        nodejs()
+    }
+
     sourceSets {
         commonMain.dependencies {
             implementation(project(":core"))
