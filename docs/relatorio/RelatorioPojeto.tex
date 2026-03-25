@@ -1,0 +1,230 @@
+
+\documentclass[11pt,a4paper]{report}
+
+% --- Pacotes ---
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[portuguese]{babel}
+\usepackage{graphicx}
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{hyperref}
+\usepackage{setspace}
+\usepackage{float}
+\usepackage{titlesec}
+
+\onehalfspacing
+
+\begin{document}
+
+% ================= CAPA =================
+    \begin{titlepage}
+        \centering
+        \includegraphics[width=0.80\textwidth]{images.png}\par
+        \vspace{1.2cm}
+
+        {\scshape\Large Instituto Superior de Engenharia de Lisboa \par}
+        \vspace{2cm}
+
+        {\Huge\bfseries OmniAI Gateway\par}
+        \vspace{0.4cm}
+        {\LARGE Relatório de Projeto\par}
+
+        \vspace{2.5cm}
+
+        \rule{0.8\textwidth}{0.4pt}
+        \vspace{1cm}
+
+        {\large
+            \begin{tabular}{c}
+                \textbf{Guilherme Coutinho} \\
+                Nº 50467 \\
+                A50467@alunos.isel.pt \\
+                \\
+                \textbf{André Nunes} \\
+                Nº 51766 \\
+                A51766@alunos.isel.pt \\
+            \end{tabular}
+        }
+
+        \vspace{1.5cm}
+
+        {\large
+        \textbf{Orientador:} Pedro Félix \\
+        pedro.felix@isel.pt
+        }
+
+        \vfill
+
+        {\large
+        Engenharia Informática \\
+        \vspace{0.3cm}
+        \today
+        }
+
+    \end{titlepage}
+
+% ================= ÍNDICE =================
+    \tableofcontents
+    \newpage
+
+% ================= CAPÍTULOS DA PROPOSTA =================
+
+    \chapter{Contexto}
+
+    Os Modelos de Linguagem de Grande Escala (\textit{Large Language Models -- LLMs}) \cite{ibm_llm_topics} tornaram-se componentes relevantes no desenvolvimento de aplicações baseadas em inteligência artificial. Um LLM é um modelo treinado com grandes volumes de texto capaz de entender e gerar linguagem natural e outros tipos de conteúdo, possibilitando a realização de diversas tarefas.
+
+    É possível distinguir duas fases principais no ciclo de vida de um modelo, treino e inferência. O treino corresponde ao processo de aprendizagem a partir de grandes conjuntos de dados, exigindo elevados recursos computacionais. A inferência corresponde à utilização do modelo já treinado para gerar respostas a novos pedidos. Atualmente, a maioria das aplicações utiliza modelos exclusivamente em modo de inferência.
+
+    O acesso aos LLMs é realizado através das suas APIs de inferência disponibilizadas pelos seus fornecedores. A comunicação com estas APIs é normalmente realizada usando o formato JSON, tanto na estrutura dos pedidos enviados como nas respostas retornadas.
+
+    Estas APIs de inferência convertem internamente um pedido em linguagem natural (\textit{prompt}) para o formato utilizado pelos LLMs, denominado \textbf{\textit{tokens}}. Os \textbf{\textit{tokens} \cite{nvidia_tokens}} são pequenas unidades de dados que resultam da divisão de blocos maiores de informação, permitindo ao modelo processar e interpretar os dados de forma eficiente. Como os modelos geram as suas respostas sequencialmente em forma de múltiplos \textit{tokens}, muitas APIs de inferência suportam mecanismos de \textbf{\textit{streaming}}, permitindo minimizar a latência sentida no seu uso.
+
+    Atualmente, múltiplos fornecedores disponibilizam serviços de inferência, incluindo OpenAI \cite{openai_api}, Anthropic \cite{anthropic_api}, Google \cite{google_gemini_api} e Groq \cite{groq_api}. Apesar de normalmente utilizarem JSON na sua comunicação, cada fornecedor define o seu próprio formato de pedido e resposta, bem como diferentes mecanismos de  autenticação. A integração de vários fornecedores requer assim a adaptação a diferentes interfaces de comunicação e estruturas de dados.
+
+    O uso destes modelos evoluiu de simples interações para sistemas baseados em agentes (\textit{Agentic Workflows}) \cite{ibm_agentic_workflows}. Nestes cenários, os LLMs são capazes de delegar tarefas, interpretar resultados e tomar decisões intermédias de forma autónoma.
+
+    Com o crescimento destes sistemas baseados em agentes, surgiu a necessidade de criar um mecanismo padrão para a comunicação entre modelos e ferramentas externas, nomeadamente o \textit{Model Context Protocol} (MCP) \cite{mcp_protocol}, que define uma arquitetura cliente-servidor para facilitar a troca de informações entre modelos e ferramentas de forma estruturada.
+
+    \chapter{Problema}
+
+    A existência de múltiplos fornecedores de LLMs e a ausência de um protocolo comum implica que existam diferentes interfaces de acesso aos modelos, com estruturas específicas de pedidos e respostas, modelos distintos de contabilização de \textit{tokens}, custos variáveis e implementações particulares para invocação de funções externas (\textit{tool calling}). Por exemplo, enquanto a API de um fornecedor pode exigir a definição de ferramentas num esquema JSON rigoroso, outros adotam sintaxes baseadas em XML ou estruturas proprietárias.
+
+    Apesar de existirem mecanismos criados para mitigar estas diferenças, como o \textit{Model Context Protocol} (MCP), o mesmo ainda não é amplamente adotado pelas APIs de inferência.
+
+    Estas diferenças tecnológicas criam um forte acoplamento entre as aplicações cliente e as APIs dos fornecedores. Sempre que uma aplicação pretende integrar mais do que um modelo de linguagem ou ferramenta, torna-se necessário implementar lógica específica para cada API, incluindo:
+
+    \begin{itemize}
+        \item Conversão de formatos de pedido e resposta;
+        \item Interpretação de estruturas de dados e respostas específicas;
+        \item Diferente gestão de erros e códigos de estado HTTP;
+        \item Implementação manual de mecanismos de redundância ou \textit{fallback}.
+    \end{itemize}
+
+    Como consequência deste acoplamento tecnológico, observam-se nas aplicações modernas \cite{ml_code_smells} \cite{ml_code_smells1}:
+
+    \begin{itemize}
+        \item Duplicação de código e aumento da complexidade;
+        \item Dificuldade na substituição ou combinação dinâmica de diversos modelos;
+        \item Baixa portabilidade das aplicações entre diferentes fornecedores;
+        \item Aumento significativo do esforço de manutenção a longo prazo;
+        \item Maior exposição à dependência tecnológica (\textit{vendor lock-in}) de um único fornecedor.
+    \end{itemize}
+
+    Outro fator crítico está relacionado com o tratamento de dados sensíveis e a segurança da infraestrutura. A execução de ferramentas localmente ou o envio de contexto interno para modelos externos de terceiros levanta questões de privacidade. Além disso, a falta de uma camada intermédia estruturada dificulta a aplicação de mecanismos de filtragem, controlo de acesso e auditoria.
+
+    Neste contexto, o principal problema é a ausência de uma camada de abstração capaz de separar as aplicações cliente das particularidades de cada fornecedor de LLMs, garantindo simultaneamente a execução segura das ferramentas externas.
+
+% Cola aqui o teu texto do Problema
+
+    \chapter{Solução}
+
+    A figura 1 apresenta a arquitetura do sistema idealizado a realizar:
+    \begin{figure}[H]
+        \centering
+        \includegraphics[width=0.9\textwidth]{arquiteturaF.png} % Imagem reduzida para 65%
+        \caption{Diagrama da Arquitetura do Sistema}\label{fig:figure}
+        \vspace{-0.3cm} % Reduz espaço abaixo da imagem
+    \end{figure}
+
+    A solução proposta, denominada \textbf{OmniAI Gateway}, consiste no desenvolvimento de um sistema informático que atua como uma \textbf{\textit{Gateway}}, ou seja, um ponto de entrada único que centraliza o acesso a diversas APIs. Ao orientar esta centralização para APIs de inferência e de ferramentas via MCP, o sistema assume-se como uma \textbf{\textit{AI Gateway}}. Este sistema informático procura resolver o problema das diferenças tecnológicas no acesso a LLMs e a servidores MCP. Embora partilhe características com sistemas existentes, como o \textit{LiteLLM} \cite{litellm} ou o \textit{OpenRouter} \cite{openrouter}, o OmniAI Gateway distingue-se pela centralização e execução de ferramentas a pedido da \textbf{\textit{Gateway}}.
+
+    Para a realização do sistema, a arquitetura será dividida em duas componentes principais. Primeiramente, será desenvolvida uma biblioteca base em Kotlin, designada OmniAI Core. Esta biblioteca estabelecerá uma camada de abstração implementando um \textbf{\textit{pipeline}} de processamento que garante as seguintes etapas:
+
+    \begin{itemize}
+        \item \textbf{Acesso a APIs de Inferência:} Integração com diversas APIs de modelos de IA, gerindo a comunicação e a autenticação em cada fornecedor.
+        \item \textbf{Roteamento Inteligente de Modelos:} Análise do pedido para otimização de custos e garantia de fiabilidade através de mecanismos de \textbf{\textit{fallback}} e \textbf{\textit{retry}} automático em caso de falha, latência elevada ou indisponibilidade de um fornecedor primário.
+        \item \textbf{Invocação e Registo de Ferramentas (via MCP):} Disponibilização de uma interface para o registo dinâmico de ferramentas externas. Isto permite abstrair a complexidade da execução para a aplicação cliente, gerindo o ciclo de \textbf{\textit{tool calling}} \cite{toolCallingCycle}, conforme apresentado na Figura \ref{fig:cicle-mcp}.
+        \item \textbf{Normalização e Monitorização:} Normalização dos formatos de pedido, resposta e erros entre pelo menos dois ecossistemas de fornecedores distintos, bem como a recolha de métricas de utilização, contagem de \textit{tokens}, monitorização de latência e controlo de custos operacionais.
+    \end{itemize}
+
+    \begin{figure}[H]
+        \centering
+        \includegraphics[width=0.4\textwidth]{ToolCallingCycle.png}
+        \caption{Representação do ciclo de \textit{tool calling} e interação com ferramentas externas.}
+        \label{fig:cicle-mcp} % O nome aqui tem de ser igual ao que está no \ref{}
+    \end{figure}
+
+    Após a consolidação da biblioteca Core, será desenvolvida a aplicação final, denominada OmniAI Gateway. Esta camada superior irá expor uma API HTTP, com suporte a mecanismos de \textit{streaming} ou comunicação assíncrona, de forma a reduzir a latência percebida pelos utilizadores.
+
+    O objetivo desta aplicação é servir como interface de comunicação e demonstrar um cenário de utilização real da biblioteca desenvolvida. A implementação incluirá alguns fornecedores de LLMs e ferramentas MCP, suficientes para demonstrar o funcionamento completo da arquitetura proposta, sem a necessidade de suportar todos os fornecedores existentes.
+
+% Cola aqui o teu texto da Solução
+
+    \begin{figure}[H]
+        \centering
+        \includegraphics[width=0.8\textwidth]{arquiteturaF.png}
+        \caption{Arquitetura do sistema}
+    \end{figure}
+
+    \chapter{Riscos e Mitigações}
+
+    Durante a fase de planeamento do projeto, foram identificados os seguintes riscos que podem impactar o cronograma e a qualidade dos resultados, bem como as respetivas estratégias de mitigação:
+
+    \begin{itemize}
+        \item \textbf{Curva de Aprendizagem Tecnológica:} A utilização de protocolos recentes (como o MCP) pode provocar alguns atrasos nas fases iniciais do desenvolvimento. \\
+        \textbf{Mitigação:} Realização de investigação nas primeiras semanas, com foco na criação de pequenos protótipos utilizando MCP antes da sua integração na arquitetura final.
+
+        \item \textbf{Atrasos no Planeamento e Integração:} A complexidade associada à normalização de múltiplos fornecedores com APIs distintas pode levar a desvios no cronograma inicialmente definido. \\
+        \textbf{Mitigação:} Adoção de uma abordagem faseada, iniciando com a integração de dois fornecedores estáveis (ex.: Groq e Gemini).
+
+        \item \textbf{Instabilidade de Serviços Externos:} A dependência direta de APIs de terceiros introduz o risco de indisponibilidade temporária ou limitações de \textbf{\textit{rate-limiting}} durante o desenvolvimento. \\
+        \textbf{Mitigação:} Implementação de mecanismos de \textbf{\textit{mocking}} e testes unitários locais no Core, reduzindo a necessidade de chamadas constantes a serviços externos.
+
+        \item \textbf{Custos Imprevistos de Tokens:} Durante a fase de desenvolvimento, funcionalidades como \textbf{\textit{retries}} em \textbf{\textit{loop}} podem gerar um consumo elevado de créditos nas APIs. \\
+        \textbf{Mitigação:} Definição de tetos de consumo nas contas dos fornecedores e utilização temporária de modelos locais mais pequenos para testes estruturais.
+
+        \item \textbf{Custo das APIs de Inferência:} Os custos associados às APIs de inferência podem representar uma dificuldade na sua integração no \textbf{\textit{gateway}}, especialmente quando se pretende realizar testes frequentes ou experimentar diferentes fornecedores. \\
+        \textbf{Mitigação:} Utilização de créditos de estudante ou créditos iniciais disponibilizados por alguns fornecedores. Adicionalmente, será dada preferência a APIs que ofereçam limites gratuitos razoáveis, permitindo realizar testes e validações sem custos significativos.
+    \end{itemize}
+
+% Cola aqui
+
+    \chapter{Planeamento}
+
+    \begin{table}[H]
+        \centering
+        \footnotesize % Reduz o tamanho da letra da tabela para garantir que cabe com a bibliografia
+        \renewcommand{\arraystretch}{1.2} % Otimiza o espaçamento vertical das linhas
+        \begin{tabular}{|c|l|p{11.5cm}|}
+            \hline
+            \textbf{Semana} & \textbf{Período} & \textbf{Descrição} \\
+            \hline
+            1  & 18 fev -- 22 fev (parcial) & Estudo das APIs de inferência e protocolo MCP. \\
+            2  & 23 fev -- 1 mar  & Continuação da semana anterior e início da proposta. \\
+            3  & 2 mar -- 8 mar  & \textbf{Entrega Proposta do projeto} \\
+            4  & 9 mar -- 15 mar  & Configuração inicial da biblioteca, definição da arquitetura base e das interfaces. \\
+            5  & 16 mar -- 22 mar  & Integração com as APIs de inferência. Foco inicial em dois fornecedores estáveis. \\
+            6  & 23 mar -- 29 mar  & Integração do MCP no OmniAI Core. Invocação e registo dinâmico de ferramentas, gerindo o ciclo de \textbf{\textit{tool calling}}. \\
+            7  & 30 mar -- 5 abr  & Implementação do roteamento inteligente de modelos (otimização de custos) e mecanismos de redundância (\textbf{\textit{fallback}} e \textbf{\textit{retry}}). \\
+            8  & 6 abr -- 12 abr  & Implementação dos mecanismos de segurança, como controlo de acesso, preparação do contexto e remoção de dados sensíveis. \\
+            9  & 13 abr -- 19 abr  & Conclusão das implementações anteriores. \\
+            10 & 20 abr -- 26 abr  & \textbf{Apresentação de Progresso} \\
+            11 & 27 abr -- 3 mai  & Início do desenvolvimento da aplicação final OmniAI Gateway. Exposição da WEB API. \\
+            12 & 4 mai -- 10 mai  & Continuação da semana anterior e integração do MCP na OmniAI Gateway. \\
+            13 & 11 mai -- 17 mai  & Término de todas as APIs de comunicação para o exterior. \\
+            14 & 18 mai -- 24 mai  & Testes de integração do Core e da Gateway. \\
+            15 & 25 mai -- 31 mai  &  \textbf{Entrega da Versão beta} \\
+            16 & 1 jun -- 7 jun  & Refinamento de testes a todos os módulos. \\
+            17 & 8 jun -- 14 jun  & Refinamento de código, desempenho e limpeza de bugs do sistema. \\
+            18 & 15 jun -- 21 jun  & Continuação da semana anterior e refinamento do relatório final. \\
+            19 & 22 jun -- 28 jun 2026 & Conclusão do relatório final. \\
+            20 & 29 jun -- 5 jul 2026 & Vistoria completa a todo o sistema e polimento de falhas para a entrega da Versão final. \\
+            21 & 6 jul -- 11 jul 2026 (parcial) & \textbf{Entrega Final do Projeto e Relatório} \\
+            \hline
+        \end{tabular}
+        \caption{Planeamento semanal do projeto}
+    \end{table}
+
+
+    \chapter{Conclusão}
+
+% Conclusões finais
+
+% ================= BIBLIOGRAFIA =================
+
+    \renewcommand{\bibname}{Referências}
+    \bibliographystyle{IEEEtran}
+    \bibliography{references}
+
+\end{document}
