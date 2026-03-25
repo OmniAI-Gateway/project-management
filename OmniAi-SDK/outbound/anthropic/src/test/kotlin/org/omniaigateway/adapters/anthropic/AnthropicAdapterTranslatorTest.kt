@@ -1,5 +1,6 @@
 package org.omniaigateway.adapters.anthropic
 
+import org.omniaigateway.contracts.anthropic.input.RawText
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
@@ -33,9 +34,8 @@ class AnthropicAdapterTranslatorTest {
         )
 
         val anthropic = translator.fromDomain(request)
-
         assertEquals("claude-3-5-sonnet", anthropic.model)
-        assertEquals("Be concise", anthropic.system)
+        assertEquals(RawText("Be concise"), anthropic.system)
         assertEquals(1, anthropic.messages.size)
         assertEquals("user", anthropic.messages.first().role)
     }
