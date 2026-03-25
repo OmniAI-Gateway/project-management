@@ -20,5 +20,5 @@ dependencies {
 }
 
 application {
-    mainClass = "org.omniaigateway.app.MainKt"
+    mainClass = "org.omniai.gateway.app.MainKt"
 }

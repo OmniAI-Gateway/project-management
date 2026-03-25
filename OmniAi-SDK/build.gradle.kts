@@ -3,8 +3,8 @@ plugins {
     kotlin("plugin.serialization") version "2.2.0"
 }
 
-group = "org.omniaigateway"
-version = "1.0-SNAPSHOT"
+group = "org.omniai.sdk"
+version = "1.0.0-SNAPSHOT"
 
 repositories {
     mavenCentral()

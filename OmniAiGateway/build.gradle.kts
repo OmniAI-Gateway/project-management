@@ -3,8 +3,8 @@ plugins {
     kotlin("jvm") version "2.2.0" apply false
 }
 
-group = "org.omniaigateway"
-version = "1.0-SNAPSHOT"
+group = "org.omniai.gateway"
+version = "1.0.0-SNAPSHOT"
 
 subprojects {
     apply(plugin = "org.jetbrains.kotlin.jvm")
@@ -15,7 +15,7 @@ subprojects {
 
     dependencies {
         "testImplementation"(kotlin("test"))
-        "implementation"("org.omniaigateway:omniAi-SDK:1.0-SNAPSHOT")
+        "implementation"("org.omniai.sdk:omniAi-SDK:1.0.0-SNAPSHOT")
 
     }
 

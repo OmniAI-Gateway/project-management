@@ -1,8 +1,8 @@
 description = "inbound module"
 
-group = "org.omniaigateway.inbound"
+group = "org.omniai.sdk.inbound"
 
 subprojects {
-    group = "org.omniaigateway.inbound"
+    group = "org.omniai.sdk.inbound"
 }
 

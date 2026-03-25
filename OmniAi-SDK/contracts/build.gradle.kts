@@ -1,8 +1,8 @@
 description = "contracts module"
 
-group = "org.omniaigateway.contracts"
+group = "org.omniai.sdk.contracts"
 
 subprojects {
-    group = "org.omniaigateway.contracts"
+    group = "org.omniai.sdk.contracts"
 }
 
