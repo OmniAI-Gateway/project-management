@@ -24,8 +24,5 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
-      - name: Run checks on OmniAiGateway-Core
-        run: ./gradlew -p OmniAi-SDK check
-
-      - name: Run checks on OmniAiGateway
-        run: ./gradlew -p OmniAiGateway check
+      - name: Build and test
+        run: ./gradlew clean build
