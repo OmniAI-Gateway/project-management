@@ -1,8 +1,6 @@
 plugins {
-    kotlin("jvm") version "2.2.0" apply false
-    kotlin("plugin.serialization") version "2.2.0" apply false
-    id("java-library")
-
+    kotlin("multiplatform") version "2.2.0"
+    kotlin("plugin.serialization") version "2.2.0"
 }
 
 group = "org.omniaigateway"
@@ -15,35 +13,41 @@ repositories {
 subprojects {
     version = rootProject.version
 
-    apply(plugin = "org.jetbrains.kotlin.jvm")
-
-    apply(plugin = "org.jetbrains.kotlin.plugin.serialization")
-
-    dependencies {
-        add("implementation", "org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0")
-    }
-
     repositories {
         mavenCentral()
     }
-
-    extensions.configure<org.jetbrains.kotlin.gradle.dsl.KotlinJvmProjectExtension> {
-        jvmToolchain(22)
-    }
-
 }
 
-dependencies {
-    api(project(":core"))
+kotlin {
+    jvm()
+    jvmToolchain(22)
 
-    api(project(":inbound:openai"))
-    api(project(":inbound:anthropic"))
-    api(project(":inbound:gemini"))
-    api(project(":contracts:openai"))
-    api(project(":contracts:anthropic"))
-    api(project(":contracts:gemini"))
-    api(project(":outbound:openai"))
-    api(project(":outbound:anthropic"))
-    api(project(":outbound:gemini"))
+    sourceSets {
+        commonMain.dependencies {
+            api(project(":core"))
+            api(project(":inbound:openai"))
+            api(project(":inbound:anthropic"))
+            api(project(":inbound:gemini"))
+            api(project(":contracts:openai"))
+            api(project(":contracts:anthropic"))
+            api(project(":contracts:gemini"))
+            api(project(":outbound:openai"))
+            api(project(":outbound:anthropic"))
+            api(project(":outbound:gemini"))
+
+            implementation("io.ktor:ktor-client-core:3.2.2")
+            implementation("io.ktor:ktor-client-content-negotiation:3.2.2")
+            implementation("io.ktor:ktor-serialization-kotlinx-json:3.2.2")
+            implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0")
+        }
+
+        jvmMain.dependencies {
+            implementation("io.ktor:ktor-client-okhttp:3.2.2")
+        }
+
+        commonTest.dependencies {
+            implementation(kotlin("test"))
+        }
+    }
 }
 

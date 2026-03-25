@@ -1,18 +1,20 @@
 plugins {
-    kotlin("jvm")
-}
-
-dependencies {
-    testImplementation(kotlin("test"))
-    api(libs.kotlinx.coroutines.core)
-
+    kotlin("multiplatform")
+    kotlin("plugin.serialization")
 }
 
 kotlin {
+    jvm()
     jvmToolchain(22)
-}
 
-tasks.test {
-    useJUnitPlatform()
-}
+    sourceSets {
+        commonMain.dependencies {
+            api(libs.kotlinx.coroutines.core)
+            implementation(libs.kotlinx.serialization.json)
+        }
 
+        commonTest.dependencies {
+            implementation(kotlin("test"))
+        }
+    }
+}

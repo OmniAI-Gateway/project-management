@@ -1,5 +1,6 @@
 plugins {
-    kotlin("jvm")
+    kotlin("multiplatform")
+    kotlin("plugin.serialization")
 }
 
 description = "Anthropic contracts module"
@@ -8,15 +9,17 @@ base {
     archivesName.set("contracts-anthropic")
 }
 
-dependencies {
-    testImplementation(kotlin("test"))
-}
-
 kotlin {
+    jvm()
     jvmToolchain(22)
-}
 
-tasks.test {
-    useJUnitPlatform()
-}
+    sourceSets {
+        commonMain.dependencies {
+            implementation(libs.kotlinx.serialization.json)
+        }
 
+        commonTest.dependencies {
+            implementation(kotlin("test"))
+        }
+    }
+}

@@ -1,5 +1,6 @@
 plugins {
-    kotlin("jvm")
+    kotlin("multiplatform")
+    kotlin("plugin.serialization")
 }
 
 description = "OpenAI contracts module"
@@ -8,14 +9,17 @@ base {
     archivesName.set("contracts-openai")
 }
 
-dependencies {
-    testImplementation(kotlin("test"))
-}
-
 kotlin {
+    jvm()
     jvmToolchain(22)
-}
 
-tasks.test {
-    useJUnitPlatform()
+    sourceSets {
+        commonMain.dependencies {
+            implementation(libs.kotlinx.serialization.json)
+        }
+
+        commonTest.dependencies {
+            implementation(kotlin("test"))
+        }
+    }
 }

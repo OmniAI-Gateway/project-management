@@ -8,7 +8,6 @@ import io.ktor.server.application.install
 import io.ktor.server.engine.embeddedServer
 import io.ktor.server.netty.Netty
 import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
-import io.ktor.server.request.receive
 import io.ktor.server.request.receiveText
 import io.ktor.server.response.cacheControl
 import io.ktor.server.response.respond
@@ -69,10 +68,7 @@ fun main() {
 
         routing {
             post("/v1/messages") {
-                // 1) body raw
                 val rawBody = call.receiveText()
-
-                // 2) parse com tratamento de erro
                 val request = try {
                     jsonConfig.decodeFromString<AnthropicMessagesRequest>(rawBody)
                 } catch (e: SerializationException) {
@@ -93,7 +89,6 @@ fun main() {
                     return@post
                 }
 
-                // 3) processamento da rota com try/catch geral
                 try {
                     if (request.stream == true) {
                         val fullResponse =  generate {

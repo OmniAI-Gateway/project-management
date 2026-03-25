@@ -1,5 +1,6 @@
 plugins {
-    kotlin("jvm")
+    kotlin("multiplatform")
+    kotlin("plugin.serialization")
 }
 
 description = "Gemini outbound adapter module"
@@ -8,17 +9,19 @@ base {
     archivesName.set("outbound-gemini")
 }
 
-dependencies {
-    implementation(project(":core"))
-    implementation(project(":contracts:gemini"))
-    testImplementation(kotlin("test"))
-}
-
 kotlin {
+    jvm()
     jvmToolchain(22)
-}
 
-tasks.test {
-    useJUnitPlatform()
-}
+    sourceSets {
+        commonMain.dependencies {
+            implementation(project(":core"))
+            implementation(project(":contracts:gemini"))
+            implementation(libs.kotlinx.serialization.json)
+        }
 
+        commonTest.dependencies {
+            implementation(kotlin("test"))
+        }
+    }
+}
