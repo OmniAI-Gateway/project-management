@@ -1,5 +1,8 @@
 package org.omniai.sdk.contracts.gemini.output
 
+import kotlinx.serialization.Serializable
+
+@Serializable
 data class GeminiUsageMetadata(
     val promptTokenCount: Int? = null,
     val candidatesTokenCount: Int? = null,
