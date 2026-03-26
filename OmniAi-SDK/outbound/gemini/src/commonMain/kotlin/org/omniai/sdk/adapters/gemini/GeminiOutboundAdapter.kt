@@ -6,6 +6,7 @@ import org.omniai.sdk.contracts.gemini.output.GeminiGenerateContentResponse
 import org.omniai.sdk.core.http.HttpCallResult
 import org.omniai.sdk.core.http.HttpMethod
 import org.omniai.sdk.core.http.HttpTransportClient
+import org.omniai.sdk.core.http.defaultHttpTransportClient
 import org.omniai.sdk.core.http.executeRequest
 import org.omniai.sdk.core.http.requestConfig
 import org.omniai.sdk.core.ports.OutboundPort
@@ -19,7 +20,7 @@ class GeminiOutboundAdapter(
 	override val model: Model,
 	private val apiKey: String,
 	private val baseUrl: String = "https://generativelanguage.googleapis.com/v1beta",
-	private val transportClient: HttpTransportClient = defaultTransportClient()
+	private val transportClient: HttpTransportClient = defaultHttpTransportClient()
 ) : OutboundPort {
 
 	private val translator = GeminiOutboundTranslator()
@@ -29,8 +30,9 @@ class GeminiOutboundAdapter(
 	override suspend fun generate(request: CommonRequest): CommonResponse {
 		val providerRequest = translator.fromDomain(request)
 		val requestConfig = requestConfig(
-			url = "$baseUrl/models/${request.model}:generateContent"
+			url = baseUrl
 		) {
+            pathParam("model", request.model)
 			method = HttpMethod.POST
 			header("x-goog-api-key", apiKey)
 			header("content-type", "application/json")

@@ -29,6 +29,7 @@ import org.omniai.sdk.contracts.anthropic.input.RawText
 import org.omniai.sdk.contracts.anthropic.output.AnthropicOutputContent
 import org.omniai.sdk.contracts.anthropic.output.AnthropicStreamDelta
 import org.omniai.sdk.contracts.anthropic.output.AnthropicStreamEvent
+import kotlin.text.get
 
 object StringAnyMapSerializer : KSerializer<Map<String, Any?>> {
     override val descriptor: SerialDescriptor = JsonObject.serializer().descriptor
@@ -104,15 +105,26 @@ object AnthropicContentSerializer : KSerializer<AnthropicContent> {
 object AnthropicInputContentBlockSerializer :
     JsonContentPolymorphicSerializer<AnthropicInputContentBlock>(AnthropicInputContentBlock::class) {
     override fun selectDeserializer(element: JsonElement): KSerializer<out AnthropicInputContentBlock> {
-        val type = element.jsonObject["type"]?.jsonPrimitive?.content
-        return when (type) {
+        val obj = element.jsonObject
+        val explicitType = obj["type"]?.jsonPrimitive?.content
+
+        val inferredType = explicitType ?: when {
+            obj["name"] != null && (obj["input"] != null || obj["id"] != null) -> "tool_use"
+            obj["tool_use_id"] != null -> "tool_result"
+            obj["text"] != null -> "text"
+            obj["budget_tokens"] != null -> "thinking"
+            else -> null
+        }
+
+        return when (inferredType) {
             "text" -> AnthropicInputContentBlock.Text.serializer()
             "tool_use" -> AnthropicInputContentBlock.ToolUse.serializer()
             "tool_result" -> AnthropicInputContentBlock.ToolResult.serializer()
             "thinking" -> AnthropicInputContentBlock.Thinking.serializer()
-            else -> throw SerializationException("Unknown Anthropic input content block type: $type")
+            else -> throw SerializationException("Unknown Anthropic input content block type: $explicitType")
         }
     }
+
 }
 
 object AnthropicOutputContentSerializer :

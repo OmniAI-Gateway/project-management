@@ -7,5 +7,5 @@ import kotlinx.serialization.Serializable
 data class AnthropicThinkingConfig(
     val type: String,
     @SerialName("budget_tokens")
-    val budgetTokens: Int,
+    val budgetTokens: Int = 1024,
 )

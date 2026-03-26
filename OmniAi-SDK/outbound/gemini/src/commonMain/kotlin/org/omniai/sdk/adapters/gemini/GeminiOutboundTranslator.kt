@@ -9,6 +9,7 @@ import org.omniai.sdk.contracts.gemini.input.GeminiGenerateContentRequest
 import org.omniai.sdk.contracts.gemini.input.GeminiGenerationConfig
 import org.omniai.sdk.contracts.gemini.input.GeminiPart
 import org.omniai.sdk.contracts.gemini.input.GeminiSystemInstruction
+import org.omniai.sdk.contracts.gemini.input.GeminiThinkingConfig
 import org.omniai.sdk.contracts.gemini.input.GeminiTool
 import org.omniai.sdk.contracts.gemini.input.GeminiToolConfig
 import org.omniai.sdk.domain.common.CommonRole
@@ -47,6 +48,7 @@ import org.omniai.sdk.contracts.gemini.output.GeminiGenerateContentResponse
 import org.omniai.sdk.contracts.gemini.output.GeminiResponsePart
 import org.omniai.sdk.contracts.gemini.output.GeminiUsageMetadata
 import org.omniai.sdk.core.ports.OutboundTranslator
+import kotlin.random.Random
 
 class GeminiOutboundTranslator : OutboundTranslator<GeminiGenerateContentRequest, GeminiGenerateContentResponse, GeminiGenerateContentResponse> {
 
@@ -54,7 +56,6 @@ class GeminiOutboundTranslator : OutboundTranslator<GeminiGenerateContentRequest
         val providerOptions = domainRequest.providerOptions
 
         return GeminiGenerateContentRequest(
-            model = domainRequest.model,
             contents = domainRequest.messages.map(CommonRequestMessage::toGeminiContent),
             systemInstruction = domainRequest.systemPrompt?.toGeminiSystemInstruction(),
             tools = domainRequest.tools.toGeminiTools(),
@@ -64,7 +65,7 @@ class GeminiOutboundTranslator : OutboundTranslator<GeminiGenerateContentRequest
                 temperature = domainRequest.config?.temperature,
                 topP = domainRequest.config?.topP,
                 topK = providerOptions["topK"] as? Int,
-                thinkingConfig = providerOptions["thinkingConfig"] as? org.omniai.sdk.contracts.gemini.input.GeminiThinkingConfig,
+                thinkingConfig = providerOptions["thinkingConfig"] as? GeminiThinkingConfig,
                 responseMimeType = when {
                     domainRequest.jsonResponse -> "application/json"
                     else -> providerOptions["responseMimeType"] as? String
@@ -165,7 +166,7 @@ class GeminiOutboundTranslator : OutboundTranslator<GeminiGenerateContentRequest
                 sequence = sequence,
                 choiceIndex = candidate.index ?: 0,
                 toolCallIndex = 0,
-                toolCallId = functionCall.id ?: "gemini-tool-call-0",
+                toolCallId = functionCall.id ?: "gemini-tool-call-${Random.nextInt(100000, 999999)}",
                 functionName = functionCall.name,
                 providerEventType = "tool_call_started"
             )
@@ -243,7 +244,7 @@ private fun List<CommonTool>.toGeminiTools(): List<GeminiTool>? {
                 GeminiFunctionDeclaration(
                     name = it.name,
                     description = it.description,
-                    parameters = JsonValue.JsonObject(it.parametersSchema).toRawMap()
+                    parameters = JsonValue.JsonObject(it.parametersSchema).toRawMap().cleanGeminiParameters()
                 )
             }
         )
@@ -262,14 +263,18 @@ private fun ToolChoice.toGeminiToolConfig(): GeminiToolConfig =
 
 private fun toDomainChoice(candidate: GeminiCandidate): CommonChoice {
     val parts = candidate.content?.parts.orEmpty().mapNotNull { it.toDomainPart() }
-
+    val hasToolCalls = parts.any { it is ToolCallPart }
     return CommonChoice(
         index = candidate.index ?: 0,
         message = org.omniai.sdk.domain.responses.CommonResponseMessage(
             role = candidate.content?.role.toCommonRole(),
             content = parts
         ),
-        finishReason = candidate.finishReason.toDomainFinishReason()
+        finishReason =  if (hasToolCalls) {
+            FinishReason.TOOL_CALL
+        } else {
+            candidate.finishReason.toDomainFinishReason()
+        }
     )
 }
 
@@ -320,3 +325,37 @@ private fun CommonRole.toGeminiRole(): String =
         CommonRole.ASSISTANT -> "model"
         CommonRole.TOOL -> "tool"
     }
+
+
+// deve ser passada para uma funcao de traducao de apis
+private fun Map<*, *>.cleanGeminiParameters(): Map<String, Any?> {
+    val keysToRemove = setOf(
+        "\$schema",
+        "additionalProperties",
+        "propertyNames",
+        "title",
+        "default",
+        "\$id"
+    )
+
+    val cleaned = mutableMapOf<String, Any?>()
+
+    for ((k, value) in this) {
+        val key = k.toString()
+        if (key in keysToRemove) continue
+        if (key == "const") {
+            cleaned["enum"] = listOf(value)
+            continue
+        }
+        val cleanedValue = when (value) {
+            is Map<*, *> -> value.cleanGeminiParameters()
+            is List<*> -> value.map { item ->
+                if (item is Map<*, *>) item.cleanGeminiParameters() else item
+            }
+            else -> value
+        }
+        cleaned[key] = cleanedValue
+    }
+
+    return cleaned
+}
