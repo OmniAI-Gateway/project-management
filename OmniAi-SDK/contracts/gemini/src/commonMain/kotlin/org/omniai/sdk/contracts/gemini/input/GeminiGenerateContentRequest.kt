@@ -5,7 +5,6 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class GeminiGenerateContentRequest(
-    val model: String,
     val contents: List<GeminiContent>,
     @SerialName("system_instruction")
     val systemInstruction: GeminiSystemInstruction? = null,

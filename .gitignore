@@ -5,6 +5,7 @@
 **/.kotlin/
 **/bin/
 **/target/
+**.kotlin-js-store/
 
 # IDE/editor metadata
 .idea/

@@ -61,7 +61,7 @@ class GeminiInboundTranslator :
 
         return CommonRequest(
             provider = provider,
-            model = clientRequest.model,
+            model = "NO MODEL",
             messages = clientRequest.contents.map { it.toDomainMessage() },
             systemPrompt = clientRequest.systemInstruction?.toSystemPrompt(),
             config = CommonGenerationConfig(
