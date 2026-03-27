@@ -4,6 +4,8 @@ import kotlinx.coroutines.flow.onCompletion
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import org.omniai.sdk.core.commom.AttributeKey
+import org.omniai.sdk.core.commom.key
 import kotlin.time.TimeSource
 import org.omniai.sdk.domain.responses.CommonUsage
 import org.omniai.sdk.domain.responses.ResponseErrored
@@ -31,8 +33,8 @@ data class TokenStats(
     val totalTokens: Int
 )
 
-val TokenUsageKey = AttributeKey<TokenStats>("token.usage")
-val MetricsSnapshotKey = AttributeKey<ProviderModelMetrics>("metrics.snapshot")
+val TokenUsageKey = key<TokenStats>("token.usage")
+val MetricsSnapshotKey = key<ProviderModelMetrics>("metrics.snapshot")
 
 data class ProviderModelKey(
     val provider: String,
@@ -107,14 +109,14 @@ class MetricsInterceptor : Interceptor {
         result: PipelineResult.Unary
     ): PipelineResult.Unary {
         val tokens = result.response.usage?.toTokenStats()
-        tokens?.let { context.put(TokenUsageKey, it) }
+        tokens?.let { context.attributes.put(TokenUsageKey, it) }
 
         val snapshot = InMemoryMetricsRegistry.recordSuccess(
             key = key,
             latencyMs = startedAt.elapsedNow().inWholeMilliseconds,
             tokens = tokens
         )
-        context.put(MetricsSnapshotKey, snapshot)
+        context.attributes.put(MetricsSnapshotKey, snapshot)
         return result
     }
 
@@ -132,7 +134,7 @@ class MetricsInterceptor : Interceptor {
                 if (event is UsageReported) {
                     val tokens = event.usage.toTokenStats()
                     latestTokens = tokens
-                    context.put(TokenUsageKey, tokens)
+                    context.attributes.put(TokenUsageKey, tokens)
                 }
 
                 if (event is ResponseErrored && !terminalMetricRecorded) {
@@ -155,7 +157,7 @@ class MetricsInterceptor : Interceptor {
                         latencyMs = startedAt.elapsedNow().inWholeMilliseconds
                     )
                 }
-                context.put(MetricsSnapshotKey, snapshot)
+                context.attributes.put(MetricsSnapshotKey, snapshot)
             }
 
         return PipelineResult.Stream(trackedFlow)
@@ -170,7 +172,7 @@ class MetricsInterceptor : Interceptor {
             key = key,
             latencyMs = startedAt.elapsedNow().inWholeMilliseconds
         )
-        context.put(MetricsSnapshotKey, snapshot)
+        context.attributes.put(MetricsSnapshotKey, snapshot)
     }
 }
 
