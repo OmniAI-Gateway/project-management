@@ -25,5 +25,9 @@ kotlin {
         commonTest.dependencies {
             implementation(kotlin("test"))
         }
+
+        jvmTest.dependencies {
+            implementation("com.anthropic:anthropic-java:2.18.0")
+        }
     }
 }
