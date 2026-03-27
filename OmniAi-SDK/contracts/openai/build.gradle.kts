@@ -25,5 +25,9 @@ kotlin {
         commonTest.dependencies {
             implementation(kotlin("test"))
         }
+
+        jvmTest.dependencies {
+            implementation("com.openai:openai-java:4.30.0")
+        }
     }
 }

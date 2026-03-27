@@ -1,0 +1,274 @@
+package org.omniai.sdk.contracts.gemini
+
+import com.google.genai.Client
+import com.google.genai.types.HttpOptions
+import kotlinx.serialization.SerializationException
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonObject
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
+import kotlin.test.assertIs
+import kotlin.test.assertNotNull
+import kotlin.test.assertTrue
+import org.omniai.sdk.contracts.gemini.input.GeminiContent
+import org.omniai.sdk.contracts.gemini.input.GeminiFunctionCall as GeminiInputFunctionCall
+import org.omniai.sdk.contracts.gemini.input.GeminiFunctionCallingConfig
+import org.omniai.sdk.contracts.gemini.input.GeminiFunctionDeclaration
+import org.omniai.sdk.contracts.gemini.input.GeminiFunctionResponse
+import org.omniai.sdk.contracts.gemini.input.GeminiGenerateContentRequest
+import org.omniai.sdk.contracts.gemini.input.GeminiGenerationConfig
+import org.omniai.sdk.contracts.gemini.input.GeminiInlineData
+import org.omniai.sdk.contracts.gemini.input.GeminiPart
+import org.omniai.sdk.contracts.gemini.input.GeminiSystemInstruction
+import org.omniai.sdk.contracts.gemini.input.GeminiThinkingConfig
+import org.omniai.sdk.contracts.gemini.input.GeminiTool
+import org.omniai.sdk.contracts.gemini.input.GeminiToolConfig
+import org.omniai.sdk.contracts.gemini.output.GeminiFunctionCall as GeminiOutputFunctionCall
+import org.omniai.sdk.contracts.gemini.output.GeminiGenerateContentResponse
+import org.omniai.sdk.contracts.gemini.output.GeminiResponsePart
+
+class GeminiOfficialSdkContractTest {
+
+    private val json = Json {
+        ignoreUnknownKeys = false
+        encodeDefaults = true
+    }
+
+    @Test
+    fun `official SDK request maps to Gemini request DTO`() {
+        GeminiLocalHttpTestServer(responseBody = sdkResponseJson("pong")).use { server ->
+            server.start()
+
+            val client = Client.builder()
+                .apiKey("test-key")
+                .httpOptions(HttpOptions.builder().baseUrl(server.baseUrl).build())
+                .build()
+
+            client.models.generateContent("gemini-2.5-flash", "ping from sdk", null)
+
+            val captured = assertNotNull(server.capturedRequest)
+            val requestDto = json.decodeFromString<GeminiGenerateContentRequest>(captured.body)
+            val firstPart = requestDto.contents.first().parts.first()
+
+            assertEquals("POST", captured.method)
+            assertTrue(captured.path.contains(":generateContent"))
+            assertTrue(captured.headers.getFirst("content-type")?.contains("application/json") == true)
+
+            assertEquals("user", requestDto.contents.first().role)
+            assertEquals("ping from sdk", firstPart.text)
+        }
+    }
+
+    @Test
+    fun `request DTO round-trips all input objects`() {
+        val request = GeminiGenerateContentRequest(
+            contents = listOf(
+                GeminiContent(
+                    role = "user",
+                    parts = listOf(
+                        GeminiPart(text = "What is weather?"),
+                        GeminiPart(
+                            inlineData = GeminiInlineData(
+                                mimeType = "text/plain",
+                                data = "SGVsbG8="
+                            )
+                        ),
+                        GeminiPart(
+                            functionCall = GeminiInputFunctionCall(
+                                name = "get_weather",
+                                args = mapOf("city" to "Lisbon", "days" to 2L),
+                                id = "call_1"
+                            )
+                        ),
+                        GeminiPart(
+                            functionResponse = GeminiFunctionResponse(
+                                name = "get_weather",
+                                response = mapOf("forecast" to "sunny", "confidence" to 99L)
+                            )
+                        )
+                    )
+                )
+            ),
+            systemInstruction = GeminiSystemInstruction(
+                parts = listOf(GeminiPart(text = "Be concise"))
+            ),
+            tools = listOf(
+                GeminiTool(
+                    functionDeclarations = listOf(
+                        GeminiFunctionDeclaration(
+                            name = "get_weather",
+                            description = "Gets weather",
+                            parameters = mapOf(
+                                "type" to "object",
+                                "properties" to mapOf("city" to mapOf("type" to "string"))
+                            )
+                        )
+                    ),
+                    googleSearch = mapOf("enabled" to true),
+                    urlContext = mapOf("enabled" to true)
+                )
+            ),
+            toolConfig = GeminiToolConfig(
+                functionCallingConfig = GeminiFunctionCallingConfig(
+                    mode = "ANY",
+                    allowedFunctionNames = listOf("get_weather")
+                )
+            ),
+            generationConfig = GeminiGenerationConfig(
+                stopSequences = listOf("STOP"),
+                temperature = 0.4,
+                topP = 0.9,
+                topK = 32,
+                thinkingConfig = GeminiThinkingConfig(
+                    includeThoughts = true,
+                    includeThoughtSignature = true,
+                    thinkingLevel = "HIGH"
+                ),
+                responseMimeType = "application/json",
+                responseJsonSchema = mapOf("type" to "object", "strict" to true)
+            )
+        )
+
+        val encoded = json.encodeToString(request)
+        val root = json.parseToJsonElement(encoded).jsonObject
+
+        assertTrue("system_instruction" in root)
+        assertTrue("generationConfig" in root)
+
+        val decoded = json.decodeFromString<GeminiGenerateContentRequest>(encoded)
+        assertEquals(request, decoded)
+    }
+
+    @Test
+    fun `response DTO parses candidates usage and prompt feedback`() {
+        val payload =
+            """
+            {
+              "candidates": [
+                {
+                  "content": {
+                    "role": "model",
+                    "parts": [
+                      {"text": "Done"},
+                      {"functionCall": {"name": "get_weather", "args": {"city": "Lisbon"}, "id": "call_1"}}
+                    ]
+                  },
+                  "finishReason": "STOP",
+                  "finishMessage": "complete",
+                  "index": 0
+                }
+              ],
+              "usageMetadata": {
+                "promptTokenCount": 10,
+                "candidatesTokenCount": 5,
+                "totalTokenCount": 15,
+                "thoughtsTokenCount": 2,
+                "promptTokensDetails": [{"modality": "TEXT", "tokenCount": 10}],
+                "candidatesTokensDetails": [{"modality": "TEXT", "tokenCount": 5}]
+              },
+              "modelVersion": "gemini-2.5-flash",
+              "responseId": "resp_1",
+              "promptFeedback": {
+                "blockReason": "NONE",
+                "safetyRatings": [
+                  {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "probability": "NEGLIGIBLE", "blocked": false}
+                ]
+              }
+            }
+            """.trimIndent()
+
+        val response = json.decodeFromString<GeminiGenerateContentResponse>(payload)
+
+        assertEquals("gemini-2.5-flash", response.modelVersion)
+        assertEquals("resp_1", response.responseId)
+        assertEquals(15, response.usageMetadata?.totalTokenCount)
+        assertEquals("NONE", response.promptFeedback?.blockReason)
+
+        val firstPart = response.candidates.first().content?.parts?.get(0)
+        assertEquals("Done", assertIs<GeminiResponsePart>(firstPart).text)
+
+        val functionCall = response.candidates.first().content?.parts?.get(1)?.functionCall
+        assertEquals("get_weather", assertIs<GeminiOutputFunctionCall>(functionCall).name)
+        assertEquals("Lisbon", functionCall.args?.get("city"))
+    }
+
+    @Test
+    fun `dynamic map serializers preserve primitive and nested values`() {
+        val payload =
+            """
+            {
+              "contents": [
+                {
+                  "role": "user",
+                  "parts": [
+                    {
+                      "functionCall": {
+                        "name": "do_work",
+                        "args": {
+                          "ok": true,
+                          "attempt": 3,
+                          "ratio": 0.75,
+                          "nested": {"k": "v"}
+                        }
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+            """.trimIndent()
+
+        val request = json.decodeFromString<GeminiGenerateContentRequest>(payload)
+        val args = request.contents.first().parts.first().functionCall?.args ?: error("missing args")
+
+        assertEquals(true, args["ok"])
+        assertEquals(3L, args["attempt"])
+        assertEquals(0.75, args["ratio"])
+        assertEquals("v", (args["nested"] as Map<*, *>)["k"])
+    }
+
+    @Test
+    fun `serializer fails when function response is not an object`() {
+        val payload =
+            """
+            {
+              "contents": [
+                {
+                  "parts": [
+                    {
+                      "functionResponse": {
+                        "name": "get_weather",
+                        "response": ["invalid"]
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+            """.trimIndent()
+
+        assertFailsWith<SerializationException> {
+            json.decodeFromString<GeminiGenerateContentRequest>(payload)
+        }
+    }
+
+    private fun sdkResponseJson(text: String): String =
+        """
+        {
+          "candidates": [
+            {
+              "content": {
+                "role": "model",
+                "parts": [
+                  {"text": "$text"}
+                ]
+              },
+              "finishReason": "STOP",
+              "index": 0
+            }
+          ]
+        }
+        """.trimIndent()
+}
+

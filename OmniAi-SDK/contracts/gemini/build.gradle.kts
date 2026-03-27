@@ -25,5 +25,9 @@ kotlin {
         commonTest.dependencies {
             implementation(kotlin("test"))
         }
+
+        jvmTest.dependencies {
+            implementation("com.google.genai:google-genai:1.44.0")
+        }
     }
 }
