@@ -29,6 +29,9 @@ import org.omniai.sdk.contracts.anthropic.output.AnthropicOutputContent
 import org.omniai.sdk.contracts.anthropic.output.AnthropicStreamDelta
 import org.omniai.sdk.contracts.anthropic.output.AnthropicStreamEvent
 import org.omniai.sdk.contracts.anthropic.output.MessageDeltaInfo
+import org.omniai.sdk.core.pipeline.MetricsInterceptor
+import org.omniai.sdk.core.pipeline.ProviderModelMetrics
+import org.omniai.sdk.core.pipeline.gatewayPipeline
 import org.omniai.sdk.core.ports.InferenceServicePort
 import org.omniai.sdk.domain.common.Model
 import org.omniai.sdk.inbound.anthropic.AnthropicInboundAdapter
@@ -97,10 +100,26 @@ private fun buildInferenceService(config: GatewayConfig): InferenceServicePort {
         baseUrl = config.geminiBaseUrl
     )
 
-    return OpenAiGeminiFallbackInferenceService(
+    val rawService = OpenAiGeminiFallbackInferenceService(
         openAiOutboundAdapter = openAiOutbound,
         geminiOutboundAdapter = geminiOutbound,
         geminiFallbackModel = config.geminiModel
+    )
+
+    val pipeline = gatewayPipeline {
+        install(MetricsInterceptor())
+        installService(rawService)
+    }
+
+    return PipelineBackedInferenceService(
+        pipeline = pipeline,
+        onMetricsCaptured = { _, metrics: ProviderModelMetrics ->
+            println(
+                "[metrics] provider=${metrics.provider} model=${metrics.model} " +
+                    "requests=${metrics.totalRequests} success=${metrics.successCount} errors=${metrics.errorCount} " +
+                    "successRate=${metrics.successRate} avgLatencyMs=${metrics.averageLatencyMs} totalTokens=${metrics.totalTokens}"
+            )
+        }
     )
 }
 
