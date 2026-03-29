@@ -35,7 +35,6 @@ class GeminiInboundTranslatorTest {
     @Test
     fun `maps gemini request to common request`() {
         val request = GeminiGenerateContentRequest(
-            model = "gemini-2.0-flash",
             contents = listOf(
                 GeminiContent(
                     role = "user",

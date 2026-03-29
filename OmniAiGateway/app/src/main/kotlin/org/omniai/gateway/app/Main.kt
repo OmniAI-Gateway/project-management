@@ -29,6 +29,7 @@ import org.omniai.sdk.contracts.anthropic.output.AnthropicOutputContent
 import org.omniai.sdk.contracts.anthropic.output.AnthropicStreamDelta
 import org.omniai.sdk.contracts.anthropic.output.AnthropicStreamEvent
 import org.omniai.sdk.contracts.anthropic.output.MessageDeltaInfo
+import org.omniai.sdk.core.commom.TypedMap
 import org.omniai.sdk.core.pipeline.MetricsInterceptor
 import org.omniai.sdk.core.pipeline.ProviderModelMetrics
 import org.omniai.sdk.core.pipeline.gatewayPipeline
@@ -161,7 +162,7 @@ private suspend fun handleMessagesRequest(
 
     try {
         val response = executeWithProviderCooldown {
-            anthropicInboundAdapter.generate(request)
+            anthropicInboundAdapter.generate(request, TypedMap())
         }
 
         if (request.stream == true) {

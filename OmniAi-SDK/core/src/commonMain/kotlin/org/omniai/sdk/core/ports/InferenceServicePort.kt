@@ -1,6 +1,7 @@
 package org.omniai.sdk.core.ports
 
 import kotlinx.coroutines.flow.Flow
+import org.omniai.sdk.core.commom.TypedMap
 import org.omniai.sdk.domain.requests.CommonRequest
 import org.omniai.sdk.domain.responses.CommonResponse
 import org.omniai.sdk.domain.responses.CommonResponseEvent
