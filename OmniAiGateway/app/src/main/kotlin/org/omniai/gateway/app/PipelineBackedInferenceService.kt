@@ -26,7 +26,7 @@ class PipelineBackedInferenceService(
     override suspend fun generate(request: CommonRequest): CommonResponse {
         val context = GatewayContext(request = request, res = unaryMarker(request))
         val response = pipeline.executeUnary(context)
-        context.get(MetricsSnapshotKey)?.let { onMetricsCaptured(request, it) }
+        context.attributes[MetricsSnapshotKey]?.let { onMetricsCaptured(request, it) }
         return response
     }
 
@@ -35,7 +35,7 @@ class PipelineBackedInferenceService(
         val events = pipeline.executeStream(context)
         emitAll(
             events.onCompletion {
-                context.get(MetricsSnapshotKey)?.let { onMetricsCaptured(request, it) }
+                context.attributes[MetricsSnapshotKey]?.let { onMetricsCaptured(request, it) }
             }
         )
     }

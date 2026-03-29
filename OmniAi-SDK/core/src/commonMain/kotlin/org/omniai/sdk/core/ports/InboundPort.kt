@@ -1,6 +1,7 @@
 package org.omniai.sdk.core.ports
 
 import kotlinx.coroutines.flow.Flow
+import org.omniai.sdk.core.commom.TypedMap
 import org.omniai.sdk.domain.common.Provider
 
 /**
@@ -9,7 +10,7 @@ import org.omniai.sdk.domain.common.Provider
 interface InboundPort<in ClientReq, out ClientRes, out ClientEvent> {
     val provider: Provider
 
-    suspend fun generate(request: ClientReq): ClientRes
+    suspend fun generate(request: ClientReq, map: TypedMap): ClientRes
 
-    fun generateStream(request: ClientReq): Flow<ClientEvent>
+    fun generateStream(request: ClientReq, map: TypedMap): Flow<ClientEvent>
 }
