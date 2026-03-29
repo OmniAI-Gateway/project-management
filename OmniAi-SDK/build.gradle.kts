@@ -46,3 +46,13 @@ kotlin {
         }
     }
 }
+
+val tasksToAggregate = listOf("clean", "check", "assemble", "build")
+
+tasksToAggregate.forEach { taskName ->
+    tasks.named(taskName) {
+        subprojects.forEach { sub ->
+            dependsOn(sub.tasks.matching { it.name == taskName })
+        }
+    }
+}

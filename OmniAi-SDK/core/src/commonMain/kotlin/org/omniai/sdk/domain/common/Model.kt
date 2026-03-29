@@ -1,3 +1,6 @@
 package org.omniai.sdk.domain.common
 
-class Model(val model : String)
+import kotlin.jvm.JvmInline
+
+@JvmInline
+value class Model(val model : String)

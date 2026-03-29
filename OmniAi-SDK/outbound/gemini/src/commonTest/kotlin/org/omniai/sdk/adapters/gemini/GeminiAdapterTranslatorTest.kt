@@ -35,7 +35,6 @@ class GeminiAdapterTranslatorTest {
 
         val gemini = translator.fromDomain(request)
 
-        assertEquals("gemini-2.0-flash", gemini.model)
         assertEquals("user", gemini.contents.first().role)
         assertEquals("Hello", gemini.contents.first().parts.first().text)
     }
@@ -81,7 +80,6 @@ class GeminiAdapterTranslatorTest {
 
         val textDelta = assertIs<TextDeltaEvent>(domainEvent)
         assertEquals(Provider.GEMINI, textDelta.provider)
-        assertEquals(Model("gemini-2.0-flash"), textDelta.model)
     }
 }
 

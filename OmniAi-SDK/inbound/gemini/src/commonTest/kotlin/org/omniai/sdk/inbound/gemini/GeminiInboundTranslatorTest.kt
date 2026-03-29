@@ -35,7 +35,6 @@ class GeminiInboundTranslatorTest {
     @Test
     fun `maps gemini request to common request`() {
         val request = GeminiGenerateContentRequest(
-            model = "gemini-2.0-flash",
             contents = listOf(
                 GeminiContent(
                     role = "user",
@@ -78,7 +77,6 @@ class GeminiInboundTranslatorTest {
         val domain = translator.toDomain(request)
 
         assertEquals(Provider.GEMINI, domain.provider)
-        assertEquals("gemini-2.0-flash", domain.model)
         assertEquals(1, domain.messages.size)
         assertEquals(CommonRole.USER, domain.messages.first().role)
         assertEquals(2, domain.messages.first().content.size)

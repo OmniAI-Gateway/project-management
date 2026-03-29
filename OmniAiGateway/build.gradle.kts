@@ -16,7 +16,7 @@ subprojects {
 
     dependencies {
         "testImplementation"(kotlin("test"))
-        "implementation"("org.omniai.sdk:omniAi-SDK:1.0.0-SNAPSHOT")
+        "implementation"("org.omniai.sdk:OmniAi-SDK:1.0.0-SNAPSHOT")
 
     }
 
@@ -29,3 +29,18 @@ subprojects {
     }
 }
 
+
+val lifecycleTasks = listOf(
+    "clean",
+    "assemble",
+    "check",
+    "build"
+)
+
+lifecycleTasks.forEach { taskName ->
+    tasks.named(taskName) {
+        subprojects.forEach { sub ->
+            dependsOn(sub.tasks.matching { it.name == taskName })
+        }
+    }
+}
