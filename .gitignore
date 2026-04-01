@@ -46,3 +46,7 @@ local.properties
 !**/gradle/wrapper/gradle-wrapper.jar
 !**/gradle/wrapper/gradle-wrapper.properties
 
+# Node.js & TypeScript
+**/node_modules/
+**/dist/
+
