@@ -7,7 +7,9 @@ description = "Executable application module"
 
 dependencies {
     implementation(project(":inbound:web"))
-    implementation(project(":outbound:ollama"))
+    implementation(project(":outbound:builder"))
+    implementation(project(":services"))
+    implementation(project(":interceptors"))
 
     implementation(platform("io.ktor:ktor-bom:3.2.3"))
 

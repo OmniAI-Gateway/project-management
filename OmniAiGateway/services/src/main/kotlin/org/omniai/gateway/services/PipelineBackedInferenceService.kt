@@ -1,8 +1,7 @@
-package org.omniai.gateway.app
+package org.omniai.gateway.services
 
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.onCompletion
 import org.omniai.sdk.core.pipeline.GatewayContext
@@ -15,9 +14,6 @@ import org.omniai.sdk.domain.requests.CommonRequest
 import org.omniai.sdk.domain.responses.CommonResponse
 import org.omniai.sdk.domain.responses.CommonResponseEvent
 
-/**
- * InferenceServicePort wrapper that runs requests through the SDK pipeline.
- */
 class PipelineBackedInferenceService(
     private val pipeline: GatewayPipeline,
     private val onMetricsCaptured: (CommonRequest, ProviderModelMetrics) -> Unit = { _, _ -> }
@@ -30,7 +26,7 @@ class PipelineBackedInferenceService(
         return response
     }
 
-    override fun generateStream(request: CommonRequest): Flow<CommonResponseEvent> = flow {
+    override fun generateStream(request: CommonRequest): kotlinx.coroutines.flow.Flow<CommonResponseEvent> = flow {
         val context = GatewayContext(request = request, res = PipelineResult.Stream(emptyFlow()))
         val events = pipeline.executeStream(context)
         emitAll(
@@ -49,5 +45,4 @@ private fun unaryMarker(request: CommonRequest): PipelineResult.Unary =
             choices = emptyList()
         )
     )
-
 
