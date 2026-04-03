@@ -8,6 +8,7 @@ export class JoseTokenService implements ITokenService {
     private signingCertificatePath = process.env.JWT_SIGNING_CERT_PATH
         ? path.resolve(process.env.JWT_SIGNING_CERT_PATH)
         : path.resolve(process.cwd(), 'src/certificates/signing-certificate.pem');
+
     private certificatePassphrase = process.env.JWT_SIGNING_CERT_PASSPHRASE;
     private issuer = process.env.JWT_ISSUER ?? 'teu-servidor-auth';
 
