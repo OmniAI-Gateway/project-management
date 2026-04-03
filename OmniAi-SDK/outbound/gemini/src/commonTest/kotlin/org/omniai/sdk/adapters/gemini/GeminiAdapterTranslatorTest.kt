@@ -4,12 +4,12 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import org.omniai.sdk.contracts.gemini.output.GeminiCandidate
+import org.omniai.sdk.contracts.gemini.output.GeminiEventStream
 import org.omniai.sdk.contracts.gemini.output.GeminiGenerateContentResponse
 import org.omniai.sdk.contracts.gemini.output.GeminiResponseContent
 import org.omniai.sdk.contracts.gemini.output.GeminiResponsePart
 import org.omniai.sdk.domain.common.CommonRole
 import org.omniai.sdk.domain.common.Provider
-import org.omniai.sdk.domain.common.Model
 import org.omniai.sdk.domain.common.content.TextPart
 import org.omniai.sdk.domain.requests.CommonRequest
 import org.omniai.sdk.domain.requests.CommonRequestMessage
@@ -76,11 +76,9 @@ class GeminiAdapterTranslatorTest {
             responseId = "resp_1"
         )
 
-        val domainEvent = translator.toDomainEvent(event)
+        val domainEvent = translator.toDomainEvent(GeminiEventStream.Chunk(event))
 
         val textDelta = assertIs<TextDeltaEvent>(domainEvent)
         assertEquals(Provider.GEMINI, textDelta.provider)
     }
 }
-
-

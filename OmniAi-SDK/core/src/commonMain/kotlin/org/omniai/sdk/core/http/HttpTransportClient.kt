@@ -10,14 +10,14 @@ interface HttpTransportClient {
         responseSerializer: KSerializer<T>
     ): HttpCallResult<T>
 
-    fun <T> listen(
-        config: RequestConfig<Unit>,
+    fun <T, V> listen(
+        config: RequestConfig<V>,
         eventName: String?,
         responseSerializer: KSerializer<T>
     ): Flow<HttpCallResult<T>>
 
-    fun <E : Any> listenMany(
-        config: RequestConfig<Unit>,
+    fun <E : Any, V> listenMany(
+        config: RequestConfig<V>,
         serializersByEvent: Map<String, KSerializer<out E>>,
     ): Flow<HttpCallResult<E>>
 }

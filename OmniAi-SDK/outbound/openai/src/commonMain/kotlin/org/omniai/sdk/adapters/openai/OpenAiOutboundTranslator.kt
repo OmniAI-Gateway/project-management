@@ -18,6 +18,7 @@ import org.omniai.sdk.contracts.openai.input.OpenAiToolCallFunction
 import org.omniai.sdk.contracts.openai.input.OpenAiToolChoice
 import org.omniai.sdk.contracts.openai.output.OpenAiChatCompletionsResponse
 import org.omniai.sdk.contracts.openai.output.OpenAiChoice
+import org.omniai.sdk.contracts.openai.output.OpenAiEventStream
 import org.omniai.sdk.contracts.openai.output.OpenAiToolCallOutput
 import org.omniai.sdk.contracts.openai.output.OpenAiUsage
 import org.omniai.sdk.core.ports.OutboundTranslator
@@ -51,8 +52,9 @@ import org.omniai.sdk.domain.responses.TextDeltaEvent
 import org.omniai.sdk.domain.responses.ToolCallArgumentsDeltaEvent
 import org.omniai.sdk.domain.responses.ToolCallStartedEvent
 import org.omniai.sdk.domain.responses.UsageReported
+import org.omniai.sdk.domain.responses.ResponseErrored
 
-class OpenAiOutboundTranslator : OutboundTranslator<OpenAiChatCompletionsRequest, OpenAiChatCompletionsResponse, OpenAiChatCompletionsResponse> {
+class OpenAiOutboundTranslator : OutboundTranslator<OpenAiChatCompletionsRequest, OpenAiChatCompletionsResponse, OpenAiEventStream> {
 
     override fun fromDomain(domainRequest: CommonRequest): OpenAiChatCompletionsRequest {
         val providerOptions = domainRequest.providerOptions
@@ -91,125 +93,26 @@ class OpenAiOutboundTranslator : OutboundTranslator<OpenAiChatCompletionsRequest
             }
         )
 
-    override fun toDomainEvent(providerEvent: OpenAiChatCompletionsResponse): CommonResponseEvent {
-        val model = Model(providerEvent.model)
-        val sequence = providerEvent.created
-        val firstChoice = providerEvent.choices.firstOrNull()
-
-        if (providerEvent.obj != "chat.completion.chunk") {
-            return ResponseCompleted(
+    override fun toDomainEvent(providerEvent: OpenAiEventStream): CommonResponseEvent =
+        when (providerEvent) {
+            is OpenAiEventStream.Chunk -> providerEvent.data.toDomainChunkEvent()
+            OpenAiEventStream.Done -> ResponseCompleted(
                 provider = Provider.OPENAI,
-                id = providerEvent.id,
-                model = model,
-                sequence = sequence,
-                providerEventType = providerEvent.obj
+                id = null,
+                model = Model(""),
+                sequence = 0L,
+                providerEventType = "done"
+            )
+            is OpenAiEventStream.Error -> ResponseErrored(
+                provider = Provider.OPENAI,
+                id = null,
+                model = Model(""),
+                sequence = 0L,
+                message = providerEvent.error.message,
+                retryable = providerEvent.error.type.isRetryableOpenAiError(),
+                providerEventType = "error"
             )
         }
-
-        if (providerEvent.choices.isEmpty()) {
-            val usage = providerEvent.usage
-            if (usage != null) {
-                return UsageReported(
-                    provider = Provider.OPENAI,
-                    id = providerEvent.id,
-                    model = model,
-                    sequence = sequence,
-                    usage = usage.toDomainUsage(),
-                    providerEventType = providerEvent.obj
-                )
-            }
-
-            return ResponseStarted(
-                provider = Provider.OPENAI,
-                id = providerEvent.id,
-                model = model,
-                sequence = sequence,
-                providerEventType = providerEvent.obj
-            )
-        }
-
-        val choice = firstChoice ?: return ResponseCompleted(
-            provider = Provider.OPENAI,
-            id = providerEvent.id,
-            model = model,
-            sequence = sequence,
-            providerEventType = providerEvent.obj
-        )
-
-        choice.finishReason?.let {
-            return ChoiceFinished(
-                provider = Provider.OPENAI,
-                id = providerEvent.id,
-                model = model,
-                sequence = sequence,
-                choiceIndex = choice.index,
-                finishReason = it.toDomainFinishReason(),
-                providerEventType = providerEvent.obj
-            )
-        }
-
-        val toolCall = choice.delta?.toolCalls?.firstOrNull()
-        if (toolCall != null) {
-            val partialJson = toolCall.function.arguments
-            val functionName = toolCall.function.name
-            if (partialJson != null && functionName.isNullOrBlank()) {
-                return ToolCallArgumentsDeltaEvent(
-                    provider = Provider.OPENAI,
-                    id = providerEvent.id,
-                    model = model,
-                    sequence = sequence,
-                    choiceIndex = choice.index,
-                    toolCallIndex = toolCall.index ?: 0,
-                    argumentsFragment = partialJson,
-                    providerEventType = providerEvent.obj
-                )
-            }
-
-            return ToolCallStartedEvent(
-                provider = Provider.OPENAI,
-                id = providerEvent.id,
-                model = model,
-                sequence = sequence,
-                choiceIndex = choice.index,
-                toolCallIndex = toolCall.index ?: 0,
-                toolCallId = toolCall.id,
-                functionName = functionName ?: "unknown",
-                providerEventType = providerEvent.obj
-            )
-        }
-
-        choice.delta?.content?.let {
-            return TextDeltaEvent(
-                provider = Provider.OPENAI,
-                id = providerEvent.id,
-                model = model,
-                sequence = sequence,
-                choiceIndex = choice.index,
-                text = it,
-                providerEventType = providerEvent.obj
-            )
-        }
-
-        choice.delta?.role?.let {
-            return ChoiceStarted(
-                provider = Provider.OPENAI,
-                id = providerEvent.id,
-                model = model,
-                sequence = sequence,
-                choiceIndex = choice.index,
-                role = it.toCommonRole(),
-                providerEventType = providerEvent.obj
-            )
-        }
-
-        return ResponseCompleted(
-            provider = Provider.OPENAI,
-            id = providerEvent.id,
-            model = model,
-            sequence = sequence,
-            providerEventType = providerEvent.obj
-        )
-    }
 
 }
 
@@ -373,3 +276,125 @@ private fun JsonElement.toDomainJsonValue(): JsonValue =
         JsonNull -> JsonValue.JsonNull
     }
 
+private fun OpenAiChatCompletionsResponse.toDomainChunkEvent(): CommonResponseEvent {
+    val model = Model(model)
+    val sequence = created
+    val firstChoice = choices.firstOrNull()
+
+    if (obj != "chat.completion.chunk") {
+        return ResponseCompleted(
+            provider = Provider.OPENAI,
+            id = id,
+            model = model,
+            sequence = sequence,
+            providerEventType = obj
+        )
+    }
+
+    if (choices.isEmpty()) {
+        val usage = usage
+        if (usage != null) {
+            return UsageReported(
+                provider = Provider.OPENAI,
+                id = id,
+                model = model,
+                sequence = sequence,
+                usage = usage.toDomainUsage(),
+                providerEventType = obj
+            )
+        }
+
+        return ResponseStarted(
+            provider = Provider.OPENAI,
+            id = id,
+            model = model,
+            sequence = sequence,
+            providerEventType = obj
+        )
+    }
+
+    val choice = firstChoice ?: return ResponseCompleted(
+        provider = Provider.OPENAI,
+        id = id,
+        model = model,
+        sequence = sequence,
+        providerEventType = obj
+    )
+
+    choice.finishReason?.let {
+        return ChoiceFinished(
+            provider = Provider.OPENAI,
+            id = id,
+            model = model,
+            sequence = sequence,
+            choiceIndex = choice.index,
+            finishReason = it.toDomainFinishReason(),
+            providerEventType = obj
+        )
+    }
+
+    val toolCall = choice.delta?.toolCalls?.firstOrNull()
+    if (toolCall != null) {
+        val partialJson = toolCall.function.arguments
+        val functionName = toolCall.function.name
+        if (partialJson.isNotBlank() && functionName.isNullOrBlank()) {
+            return ToolCallArgumentsDeltaEvent(
+                provider = Provider.OPENAI,
+                id = id,
+                model = model,
+                sequence = sequence,
+                choiceIndex = choice.index,
+                toolCallIndex = toolCall.index ?: 0,
+                argumentsFragment = partialJson,
+                providerEventType = obj
+            )
+        }
+
+        return ToolCallStartedEvent(
+            provider = Provider.OPENAI,
+            id = id,
+            model = model,
+            sequence = sequence,
+            choiceIndex = choice.index,
+            toolCallIndex = toolCall.index ?: 0,
+            toolCallId = toolCall.id,
+            functionName = functionName ?: "unknown",
+            providerEventType = obj
+        )
+    }
+
+    choice.delta?.content?.let {
+        return TextDeltaEvent(
+            provider = Provider.OPENAI,
+            id = id,
+            model = model,
+            sequence = sequence,
+            choiceIndex = choice.index,
+            text = it,
+            providerEventType = obj
+        )
+    }
+
+    choice.delta?.role?.let {
+        return ChoiceStarted(
+            provider = Provider.OPENAI,
+            id = id,
+            model = model,
+            sequence = sequence,
+            choiceIndex = choice.index,
+            role = it.toCommonRole(),
+            providerEventType = obj
+        )
+    }
+
+    return ResponseCompleted(
+        provider = Provider.OPENAI,
+        id = id,
+        model = model,
+        sequence = sequence,
+        providerEventType = obj
+    )
+}
+
+private fun String?.isRetryableOpenAiError(): Boolean =
+    this?.lowercase() in setOf("server_error", "rate_limit_error", "temporarily_unavailable")
