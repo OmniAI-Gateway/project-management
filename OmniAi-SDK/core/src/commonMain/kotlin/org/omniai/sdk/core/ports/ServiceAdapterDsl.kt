@@ -1,7 +1,8 @@
 package org.omniai.sdk.core.ports
 
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.emptyFlow
+import org.omniai.sdk.core.commom.Either
+import org.omniai.sdk.domain.errors.DomainError
 import org.omniai.sdk.domain.requests.CommonRequest
 import org.omniai.sdk.domain.responses.CommonResponse
 import org.omniai.sdk.domain.responses.CommonResponseEvent
@@ -12,14 +13,14 @@ import org.omniai.sdk.domain.responses.CommonResponseEvent
 interface ServiceAdapter : InferenceServicePort
 
 class ServiceAdapterBuilder {
-    private var unaryHandler: (suspend (CommonRequest) -> CommonResponse)? = null
-    private var streamHandler: ((CommonRequest) -> Flow<CommonResponseEvent>)? = null
+    private var unaryHandler: (suspend (CommonRequest) -> Either<DomainError, CommonResponse>)? = null
+    private var streamHandler: (suspend (CommonRequest) -> Either<DomainError, Flow<CommonResponseEvent>>)? = null
 
-    fun unary(handler: suspend (CommonRequest) -> CommonResponse) {
+    fun unary(handler: suspend (CommonRequest) -> Either<DomainError, CommonResponse>) {
         unaryHandler = handler
     }
 
-    fun stream(handler: (CommonRequest) -> Flow<CommonResponseEvent>) {
+    fun stream(handler: suspend (CommonRequest) -> Either<DomainError, Flow<CommonResponseEvent>>) {
         streamHandler = handler
     }
 
@@ -27,16 +28,17 @@ class ServiceAdapterBuilder {
         val unary = requireNotNull(unaryHandler) {
             "Missing unary handler. Configure it with unary { request -> ... }."
         }
-        val stream = streamHandler ?: { emptyFlow() }
+        val stream = requireNotNull(streamHandler) {
+            "Missing stream handler. Configure it with stream { request -> ... }."
+        }
 
         return object : ServiceAdapter {
-            override suspend fun generate(request: CommonRequest): CommonResponse = unary(request)
+            override suspend fun generate(request: CommonRequest): Either<DomainError, CommonResponse> = unary(request)
 
-            override fun generateStream(request: CommonRequest): Flow<CommonResponseEvent> = stream(request)
+            override suspend fun generateStream(request: CommonRequest): Either<DomainError, Flow<CommonResponseEvent>> = stream(request)
         }
     }
 }
 
 fun serviceAdapter(block: ServiceAdapterBuilder.() -> Unit): ServiceAdapter =
     ServiceAdapterBuilder().apply(block).build()
-

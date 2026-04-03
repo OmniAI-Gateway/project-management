@@ -4,10 +4,14 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import org.omniai.sdk.contracts.gemini.input.GeminiGenerateContentRequest
 import org.omniai.sdk.contracts.gemini.output.GeminiGenerateContentResponse
+import org.omniai.sdk.core.commom.Either
 import org.omniai.sdk.core.commom.TypedMap
+import org.omniai.sdk.core.commom.failure
+import org.omniai.sdk.core.commom.success
 import org.omniai.sdk.core.ports.InboundPort
 import org.omniai.sdk.core.ports.InferenceServicePort
 import org.omniai.sdk.domain.common.Provider
+import org.omniai.sdk.domain.errors.DomainError
 import org.omniai.sdk.domain.requests.CommonRequest
 
 const val GEMINI_MODEL_KEY: String = "gemini.model"
@@ -19,15 +23,26 @@ class GeminiInboundAdapter(
 
     override val provider: Provider = Provider.GEMINI
 
-    override suspend fun generate(request: GeminiGenerateContentRequest, map: TypedMap): GeminiGenerateContentResponse {
+    override suspend fun generate(
+        request: GeminiGenerateContentRequest,
+        map: TypedMap,
+    ): Either<DomainError, GeminiGenerateContentResponse> {
         val domainRequest = translator.toDomain(request).withModelOverride(map)
-        val domainResponse = service.generate(domainRequest)
-        return translator.fromDomain(domainResponse)
+        return when (val domainResponse = service.generate(domainRequest)) {
+            is Either.Right -> success(translator.fromDomain(domainResponse.value))
+            is Either.Left -> failure(domainResponse.value)
+        }
     }
 
-    override fun generateStream(request: GeminiGenerateContentRequest, map: TypedMap): Flow<GeminiGenerateContentResponse> {
+    override suspend fun generateStream(
+        request: GeminiGenerateContentRequest,
+        map: TypedMap,
+    ): Either<DomainError, Flow<GeminiGenerateContentResponse>> {
         val domainRequest = translator.toDomain(request).withModelOverride(map)
-        return service.generateStream(domainRequest).map(translator::fromDomainEvent)
+        return when (val streamResult = service.generateStream(domainRequest)) {
+            is Either.Right -> success(streamResult.value.map(translator::fromDomainEvent))
+            is Either.Left -> failure(streamResult.value)
+        }
     }
 }
 
@@ -35,4 +50,3 @@ private fun CommonRequest.withModelOverride(map: TypedMap): CommonRequest {
     val modelOverride: String? = map[GEMINI_MODEL_KEY]
     return if (modelOverride.isNullOrBlank()) this else copy(model = modelOverride)
 }
-

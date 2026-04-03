@@ -1,12 +1,16 @@
 package org.omniai.gateway.services
 
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.emitAll
-import kotlinx.coroutines.flow.flow
+import org.omniai.sdk.core.commom.Either
+import org.omniai.sdk.core.commom.failure
 import org.omniai.sdk.core.ports.InferenceServicePort
 import org.omniai.sdk.core.ports.OutboundPort
 import org.omniai.sdk.core.ports.serviceAdapter
+import org.omniai.sdk.domain.errors.DomainError
+import org.omniai.sdk.domain.errors.UnknownDomainError
 import org.omniai.sdk.domain.requests.CommonRequest
+import org.omniai.sdk.domain.responses.CommonResponse
+import org.omniai.sdk.domain.responses.CommonResponseEvent
 
 
 fun routingInferenceServiceFactory(outbounds: List<OutboundPort>): InferenceServicePort {
@@ -20,33 +24,37 @@ fun routingInferenceServiceFactory(outbounds: List<OutboundPort>): InferenceServ
     }
 }
 
-private suspend fun generateWithFallback(request: CommonRequest, outbounds: List<OutboundPort>) =
-    tryOutbounds(request, outbounds) { outbound, req ->
-        outbound.generate(req)
-    }
+private suspend fun generateWithFallback(
+    request: CommonRequest,
+    outbounds: List<OutboundPort>,
+): Either<DomainError, CommonResponse> = tryOutbounds(request, outbounds) { outbound, req ->
+    outbound.generate(req)
+}
 
-private fun generateStreamWithFallback(request: CommonRequest, outbounds: List<OutboundPort>): Flow<org.omniai.sdk.domain.responses.CommonResponseEvent> =
-    flow {
-        emitAll(tryOutbounds(request, outbounds) { outbound, req -> outbound.generateStream(req) })
-    }
+private suspend fun generateStreamWithFallback(
+    request: CommonRequest,
+    outbounds: List<OutboundPort>,
+): Either<DomainError, Flow<CommonResponseEvent>> = tryOutbounds(request, outbounds) { outbound, req ->
+    outbound.generateStream(req)
+}
 
 private suspend fun <T> tryOutbounds(
     request: CommonRequest,
     outbounds: List<OutboundPort>,
-    action: suspend (OutboundPort, CommonRequest) -> T
-): T {
-    var lastError: Throwable? = null
+    action: suspend (OutboundPort, CommonRequest) -> Either<DomainError, T>,
+): Either<DomainError, T> {
+    var lastError: DomainError? = null
 
     for (outbound in outbounds) {
-        try {
-            return action(outbound, request)
-        } catch (ex: Throwable) {
-            lastError = ex
+        when (val result = action(outbound, request)) {
+            is Either.Right -> return result
+            is Either.Left -> lastError = result.value
         }
     }
 
-    throw IllegalStateException(
-        "No outbound succeeded for provider=${request.provider.value} model=${request.model}",
-        lastError
+    return failure(
+        lastError ?: UnknownDomainError(
+            message = "No outbound available for provider=${request.provider.value} model=${request.model}"
+        )
     )
 }

@@ -28,11 +28,14 @@ class RequestLoggingInterceptor : Interceptor {
                     if (cause == null) {
                         logger.info("[gateway] stream completed")
                     } else {
-                        // Passar o "cause" como último argumento imprime a stack trace completa no log
                         logger.error("[gateway] stream failed: {}", cause.message, cause)
                     }
                 }
                 PipelineResult.Stream(traced)
+            }
+            is PipelineResult.Error -> {
+                logger.warn("[gateway] request failed with domain error: {}", result.error.message)
+                result
             }
             is PipelineResult.NoResult -> PipelineResult.NoResult
         }

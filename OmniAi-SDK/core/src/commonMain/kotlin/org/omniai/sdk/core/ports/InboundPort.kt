@@ -1,8 +1,10 @@
 package org.omniai.sdk.core.ports
 
 import kotlinx.coroutines.flow.Flow
+import org.omniai.sdk.core.commom.Either
 import org.omniai.sdk.core.commom.TypedMap
 import org.omniai.sdk.domain.common.Provider
+import org.omniai.sdk.domain.errors.DomainError
 
 /**
  * Provider-specific inbound contract exposed to client-facing adapters.
@@ -10,7 +12,7 @@ import org.omniai.sdk.domain.common.Provider
 interface InboundPort<in ClientReq, out ClientRes, out ClientEvent> {
     val provider: Provider
 
-    suspend fun generate(request: ClientReq, map: TypedMap): ClientRes
+    suspend fun generate(request: ClientReq, map: TypedMap): Either<DomainError, ClientRes>
 
-    fun generateStream(request: ClientReq, map: TypedMap): Flow<ClientEvent>
+    suspend fun generateStream(request: ClientReq, map: TypedMap): Either<DomainError, Flow<ClientEvent>>
 }

@@ -1,27 +1,24 @@
 package org.omniai.gateway.services
 
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.emptyFlow
-import kotlinx.coroutines.flow.emitAll
-import kotlinx.coroutines.flow.flow
+import org.omniai.sdk.core.commom.Either
 import org.omniai.sdk.core.pipeline.GatewayContext
 import org.omniai.sdk.core.pipeline.GatewayPipeline
 import org.omniai.sdk.core.ports.InferenceServicePort
+import org.omniai.sdk.domain.errors.DomainError
 import org.omniai.sdk.domain.requests.CommonRequest
 import org.omniai.sdk.domain.responses.CommonResponse
 import org.omniai.sdk.domain.responses.CommonResponseEvent
 
 class PipelineBackedInferenceService(private val pipeline: GatewayPipeline) : InferenceServicePort {
 
-    override suspend fun generate(request: CommonRequest): CommonResponse {
+    override suspend fun generate(request: CommonRequest): Either<DomainError, CommonResponse> {
         val context = GatewayContext(request = request)
-        val response = pipeline.executeUnary(context)
-        return response
+        return pipeline.executeUnary(context)
     }
 
-    override fun generateStream(request: CommonRequest): Flow<CommonResponseEvent> = flow {
+    override suspend fun generateStream(request: CommonRequest): Either<DomainError, Flow<CommonResponseEvent>> {
         val context = GatewayContext(request = request)
-        val events = pipeline.executeStream(context)
-        emitAll(events)
+        return pipeline.executeStream(context)
     }
 }

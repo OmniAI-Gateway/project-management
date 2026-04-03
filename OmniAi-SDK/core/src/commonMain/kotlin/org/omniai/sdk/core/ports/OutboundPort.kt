@@ -1,8 +1,10 @@
 package org.omniai.sdk.core.ports
 
 import kotlinx.coroutines.flow.Flow
+import org.omniai.sdk.core.commom.Either
 import org.omniai.sdk.domain.common.Model
 import org.omniai.sdk.domain.common.Provider
+import org.omniai.sdk.domain.errors.DomainError
 import org.omniai.sdk.domain.requests.CommonRequest
 import org.omniai.sdk.domain.responses.CommonResponse
 import org.omniai.sdk.domain.responses.CommonResponseEvent
@@ -15,8 +17,7 @@ interface OutboundPort {
 
     val model: Model
 
-    suspend fun generate(request: CommonRequest): CommonResponse
+    suspend fun generate(request: CommonRequest): Either<DomainError, CommonResponse>
 
-    fun generateStream(request: CommonRequest): Flow<CommonResponseEvent>
+    suspend fun generateStream(request: CommonRequest): Either<DomainError, Flow<CommonResponseEvent>>
 }
-

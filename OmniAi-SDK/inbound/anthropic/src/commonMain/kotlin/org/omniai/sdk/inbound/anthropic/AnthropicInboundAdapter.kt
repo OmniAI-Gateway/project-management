@@ -5,10 +5,14 @@ import kotlinx.coroutines.flow.map
 import org.omniai.sdk.contracts.anthropic.input.AnthropicMessagesRequest
 import org.omniai.sdk.contracts.anthropic.output.AnthropicMessageResponse
 import org.omniai.sdk.contracts.anthropic.output.AnthropicStreamEvent
+import org.omniai.sdk.core.commom.Either
 import org.omniai.sdk.core.commom.TypedMap
+import org.omniai.sdk.core.commom.failure
+import org.omniai.sdk.core.commom.success
 import org.omniai.sdk.core.ports.InboundPort
 import org.omniai.sdk.core.ports.InferenceServicePort
 import org.omniai.sdk.domain.common.Provider
+import org.omniai.sdk.domain.errors.DomainError
 
 class AnthropicInboundAdapter(
     private val service: InferenceServicePort,
@@ -17,14 +21,25 @@ class AnthropicInboundAdapter(
 
     override val provider: Provider = Provider.ANTHROPIC
 
-    override suspend fun generate(request: AnthropicMessagesRequest, map: TypedMap): AnthropicMessageResponse {
+    override suspend fun generate(
+        request: AnthropicMessagesRequest,
+        map: TypedMap,
+    ): Either<DomainError, AnthropicMessageResponse> {
         val domainRequest = translator.toDomain(request)
-        val domainResponse = service.generate(domainRequest)
-        return translator.fromDomain(domainResponse)
+        return when (val domainResponse = service.generate(domainRequest)) {
+            is Either.Right -> success(translator.fromDomain(domainResponse.value))
+            is Either.Left -> failure(domainResponse.value)
+        }
     }
 
-    override fun generateStream(request: AnthropicMessagesRequest, map: TypedMap): Flow<AnthropicStreamEvent> {
+    override suspend fun generateStream(
+        request: AnthropicMessagesRequest,
+        map: TypedMap,
+    ): Either<DomainError, Flow<AnthropicStreamEvent>> {
         val domainRequest = translator.toDomain(request)
-        return service.generateStream(domainRequest).map(translator::fromDomainEvent)
+        return when (val streamResult = service.generateStream(domainRequest)) {
+            is Either.Right -> success(streamResult.value.map(translator::fromDomainEvent))
+            is Either.Left -> failure(streamResult.value)
+        }
     }
 }
