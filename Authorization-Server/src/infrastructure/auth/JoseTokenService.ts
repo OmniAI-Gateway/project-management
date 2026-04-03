@@ -2,7 +2,8 @@ import * as jose from 'jose';
 import fs from 'fs/promises';
 import path from 'path';
 import { createPrivateKey } from 'crypto';
-import {ITokenService} from '../../contracts/services/ITokenService';
+import { ITokenService } from '../../contracts/services/ITokenService';
+import { AuthTokenPayload } from '../../domain/token/AuthTokenPayload';
 
 export class JoseTokenService implements ITokenService {
     private signingCertificatePath = process.env.JWT_SIGNING_CERT_PATH
@@ -12,7 +13,7 @@ export class JoseTokenService implements ITokenService {
     private certificatePassphrase = process.env.JWT_SIGNING_CERT_PASSPHRASE;
     private issuer = process.env.JWT_ISSUER ?? 'teu-servidor-auth';
 
-    async generateToken(payload: any): Promise<string> {
+    async generateToken(payload: AuthTokenPayload): Promise<string> {
         let certificatePem: string;
         try {
             certificatePem = await fs.readFile(this.signingCertificatePath, 'utf8');
@@ -28,7 +29,7 @@ export class JoseTokenService implements ITokenService {
         });
 
         return await new jose.SignJWT(payload)
-            .setProtectedHeader({alg: 'RS256'})
+            .setProtectedHeader({ alg: 'RS256' })
             .setIssuedAt()
             .setIssuer(this.issuer)
             .setExpirationTime('2h')

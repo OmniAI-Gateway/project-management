@@ -1,5 +1,6 @@
 import passport from 'passport';
 import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
+import { GoogleUser } from '../../domain/identity/GoogleUser';
 
 function getRequiredEnv(name: string): string {
     const value = process.env[name];
@@ -24,8 +25,7 @@ export const setupGoogleStrategy = () => {
             (_accessToken, _refreshToken, profile, done) => {
                 console.log('Perfil recebido do Google:', profile.id);
 
-
-                const user = {
+                const user: GoogleUser = {
                     id: profile.id,
                     email: profile.emails?.[0]?.value,
                     name: profile.displayName

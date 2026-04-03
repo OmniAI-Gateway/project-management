@@ -1,3 +1,5 @@
+import { AuthTokenPayload } from "../../domain/token/AuthTokenPayload";
+
 export interface ITokenService {
-    generateToken(payload: any): Promise<string>;
+  generateToken(payload: AuthTokenPayload): Promise<string>;
 }

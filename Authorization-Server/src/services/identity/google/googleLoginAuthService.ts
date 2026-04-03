@@ -3,6 +3,8 @@ import passport from "passport";
 
 import { IGoogleLoginAuthService } from "./IGoogleLoginAuthService";
 import { JoseTokenService } from "../../../infrastructure/auth/JoseTokenService";
+import { GoogleUser } from "../../../domain/identity/GoogleUser";
+import { AuthTokenPayload } from "../../../domain/token/AuthTokenPayload";
 
 type PassportAdapter = Pick<typeof passport, "authenticate">;
 type TokenService = Pick<JoseTokenService, "generateToken">;
@@ -30,7 +32,7 @@ export function createGoogleLoginAuthService(
       passportAdapter.authenticate(
         "google",
         { session: false },
-        async (err: unknown, user?: { id: string; email?: string; name?: string }) => {
+        async (err: unknown, user?: GoogleUser) => {
           if (err) {
             next(err);
             return;
@@ -42,12 +44,14 @@ export function createGoogleLoginAuthService(
           }
 
           try {
-            const token = await tokenService.generateToken({
+            const payload: AuthTokenPayload = {
               sub: user.id,
               email: user.email,
               name: user.name,
               provider: "google",
-            });
+            };
+
+            const token = await tokenService.generateToken(payload);
 
             res.status(200).json({
               message: "Google login successful",
@@ -62,4 +66,3 @@ export function createGoogleLoginAuthService(
     },
   };
 }
-
