@@ -7,6 +7,7 @@ import kotlin.test.assertTrue
 import org.omniai.sdk.contracts.openai.output.OpenAiChatCompletionsResponse
 import org.omniai.sdk.contracts.openai.output.OpenAiChoice
 import org.omniai.sdk.contracts.openai.output.OpenAiDelta
+import org.omniai.sdk.contracts.openai.output.OpenAiEventStream
 import org.omniai.sdk.contracts.openai.output.OpenAiMessageOutput
 import org.omniai.sdk.contracts.openai.output.OpenAiToolCallFunctionOutput
 import org.omniai.sdk.contracts.openai.output.OpenAiToolCallOutput
@@ -86,7 +87,7 @@ class OpenAiAdapterTranslatorTest {
             )
         )
 
-        val domainEvent = translator.toDomainEvent(event)
+        val domainEvent = translator.toDomainEvent(OpenAiEventStream.Chunk(event))
 
         val textDelta = assertIs<TextDeltaEvent>(domainEvent)
         assertEquals(Provider.OPENAI, textDelta.provider)
@@ -153,10 +154,8 @@ class OpenAiAdapterTranslatorTest {
             )
         )
 
-        val domainEvent = translator.toDomainEvent(event)
+        val domainEvent = translator.toDomainEvent(OpenAiEventStream.Chunk(event))
         val argsDelta = assertIs<ToolCallArgumentsDeltaEvent>(domainEvent)
         assertTrue(argsDelta.argumentsFragment.startsWith("{\"city\""))
     }
 }
-
-

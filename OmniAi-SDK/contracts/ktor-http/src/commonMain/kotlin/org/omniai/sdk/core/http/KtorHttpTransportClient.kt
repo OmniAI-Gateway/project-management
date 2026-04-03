@@ -75,8 +75,8 @@ class KtorHttpTransportClient(
         return HttpCallResult.UnknownError(IllegalStateException("Retry limit reached"))
     }
 
-    override fun <T> listen(
-        config: RequestConfig<Unit>,
+    override fun <T, V> listen(
+        config: RequestConfig<V>,
         eventName: String?,
         responseSerializer: KSerializer<T>
     ): Flow<HttpCallResult<T>> = flow {
@@ -100,8 +100,8 @@ class KtorHttpTransportClient(
         emit(cause.toCallResult())
     }
 
-    override fun <E : Any> listenMany(
-        config: RequestConfig<Unit>,
+    override fun <E : Any, V> listenMany(
+        config: RequestConfig<V>,
         serializersByEvent: Map<String, KSerializer<out E>>
     ): Flow<HttpCallResult<E>> = flow {
         client.sse(

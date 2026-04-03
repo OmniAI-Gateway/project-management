@@ -23,6 +23,7 @@ import org.omniai.sdk.contracts.anthropic.input.AnthropicToolChoice
 import org.omniai.sdk.contracts.anthropic.input.AnthropicToolDefinition
 import org.omniai.sdk.contracts.anthropic.input.ListContentBlock
 import org.omniai.sdk.contracts.anthropic.input.RawText
+import org.omniai.sdk.contracts.anthropic.output.AnthropicErrorResponse
 import org.omniai.sdk.contracts.anthropic.output.AnthropicMessageResponse
 import org.omniai.sdk.contracts.anthropic.output.AnthropicOutputContent
 import org.omniai.sdk.contracts.anthropic.output.AnthropicStreamDelta
@@ -328,6 +329,26 @@ class AnthropicOfficialSdkContractTest {
         assertEquals("reason", assertIs<AnthropicStreamDelta.ThinkingDelta>(thinking).thinking)
         assertEquals("sig_42", assertIs<AnthropicStreamDelta.SignatureDelta>(signature).signature)
         //assertEquals("{\"k\":1}", assertIs<AnthropicStreamDelta.InputJsonDelta>(inputJson).partialJson)
+    }
+
+    @Test
+    fun `error DTO parses canonical Anthropic error envelope`() {
+        val payload =
+            """
+            {
+              "type": "error",
+              "error": {
+                "type": "authentication_error",
+                "message": "Invalid API key"
+              }
+            }
+            """.trimIndent()
+
+        val error = json.decodeFromString<AnthropicErrorResponse>(payload)
+
+        assertEquals("error", error.type)
+        assertEquals("authentication_error", error.error.type)
+        assertEquals("Invalid API key", error.error.message)
     }
 
     @Test

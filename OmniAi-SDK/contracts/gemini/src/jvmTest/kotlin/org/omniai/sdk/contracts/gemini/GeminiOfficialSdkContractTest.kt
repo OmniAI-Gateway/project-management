@@ -25,6 +25,7 @@ import org.omniai.sdk.contracts.gemini.input.GeminiThinkingConfig
 import org.omniai.sdk.contracts.gemini.input.GeminiTool
 import org.omniai.sdk.contracts.gemini.input.GeminiToolConfig
 import org.omniai.sdk.contracts.gemini.output.GeminiFunctionCall as GeminiOutputFunctionCall
+import org.omniai.sdk.contracts.gemini.output.GeminiErrorResponse
 import org.omniai.sdk.contracts.gemini.output.GeminiGenerateContentResponse
 import org.omniai.sdk.contracts.gemini.output.GeminiResponsePart
 
@@ -251,6 +252,37 @@ class GeminiOfficialSdkContractTest {
         assertFailsWith<SerializationException> {
             json.decodeFromString<GeminiGenerateContentRequest>(payload)
         }
+    }
+
+    @Test
+    fun `error DTO parses canonical Gemini error envelope`() {
+        val payload =
+            """
+            {
+              "error": {
+                "code": 429,
+                "message": "Quota exceeded for requests per minute.",
+                "status": "RESOURCE_EXHAUSTED",
+                "details": [
+                  {
+                    "@type": "type.googleapis.com/google.rpc.ErrorInfo",
+                    "reason": "RATE_LIMIT_EXCEEDED",
+                    "domain": "googleapis.com",
+                    "metadata": {
+                      "service": "generativelanguage.googleapis.com"
+                    }
+                  }
+                ]
+              }
+            }
+            """.trimIndent()
+
+        val error = json.decodeFromString<GeminiErrorResponse>(payload)
+
+        assertEquals(429, error.error.code)
+        assertEquals("RESOURCE_EXHAUSTED", error.error.status)
+        assertEquals("RATE_LIMIT_EXCEEDED", error.error.details.first().reason)
+        assertEquals("generativelanguage.googleapis.com", error.error.details.first().metadata.service)
     }
 
     private fun sdkResponseJson(text: String): String =

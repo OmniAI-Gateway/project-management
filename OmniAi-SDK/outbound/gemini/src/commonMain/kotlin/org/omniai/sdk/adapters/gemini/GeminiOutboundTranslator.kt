@@ -12,6 +12,12 @@ import org.omniai.sdk.contracts.gemini.input.GeminiSystemInstruction
 import org.omniai.sdk.contracts.gemini.input.GeminiThinkingConfig
 import org.omniai.sdk.contracts.gemini.input.GeminiTool
 import org.omniai.sdk.contracts.gemini.input.GeminiToolConfig
+import org.omniai.sdk.contracts.gemini.output.GeminiCandidate
+import org.omniai.sdk.contracts.gemini.output.GeminiEventStream
+import org.omniai.sdk.contracts.gemini.output.GeminiGenerateContentResponse
+import org.omniai.sdk.contracts.gemini.output.GeminiResponsePart
+import org.omniai.sdk.contracts.gemini.output.GeminiUsageMetadata
+import org.omniai.sdk.core.ports.OutboundTranslator
 import org.omniai.sdk.domain.common.CommonRole
 import org.omniai.sdk.domain.common.CommonTool
 import org.omniai.sdk.domain.common.Model
@@ -37,20 +43,16 @@ import org.omniai.sdk.domain.responses.CommonResponse
 import org.omniai.sdk.domain.responses.CommonResponseEvent
 import org.omniai.sdk.domain.responses.CommonUsage
 import org.omniai.sdk.domain.responses.FinishReason
+import org.omniai.sdk.domain.responses.ResponseCompleted
 import org.omniai.sdk.domain.responses.ResponseErrored
 import org.omniai.sdk.domain.responses.ResponseStarted
 import org.omniai.sdk.domain.responses.TextDeltaEvent
 import org.omniai.sdk.domain.responses.ToolCallArgumentsDeltaEvent
 import org.omniai.sdk.domain.responses.ToolCallStartedEvent
 import org.omniai.sdk.domain.responses.UsageReported
-import org.omniai.sdk.contracts.gemini.output.GeminiCandidate
-import org.omniai.sdk.contracts.gemini.output.GeminiGenerateContentResponse
-import org.omniai.sdk.contracts.gemini.output.GeminiResponsePart
-import org.omniai.sdk.contracts.gemini.output.GeminiUsageMetadata
-import org.omniai.sdk.core.ports.OutboundTranslator
 import kotlin.random.Random
 
-class GeminiOutboundTranslator : OutboundTranslator<GeminiGenerateContentRequest, GeminiGenerateContentResponse, GeminiGenerateContentResponse> {
+class GeminiOutboundTranslator : OutboundTranslator<GeminiGenerateContentRequest, GeminiGenerateContentResponse, GeminiEventStream> {
 
     override fun fromDomain(domainRequest: CommonRequest): GeminiGenerateContentRequest {
         val providerOptions = domainRequest.providerOptions
@@ -85,127 +87,163 @@ class GeminiOutboundTranslator : OutboundTranslator<GeminiGenerateContentRequest
             providerOptions = providerResponse.promptFeedback?.let { mapOf("promptFeedback" to it.blockReason) } ?: emptyMap()
         )
 
-    override fun toDomainEvent(providerEvent: GeminiGenerateContentResponse): CommonResponseEvent {
-        val model = Model(providerEvent.modelVersion ?: "")
-        val sequence = 0L
-        val firstCandidate = providerEvent.candidates.firstOrNull()
-
-        providerEvent.promptFeedback?.blockReason?.let {
-            return ResponseErrored(
+    override fun toDomainEvent(providerEvent: GeminiEventStream): CommonResponseEvent =
+        when (providerEvent) {
+            is GeminiEventStream.Chunk -> providerEvent.data.toDomainChunkEvent()
+            GeminiEventStream.Done -> ResponseCompleted(
                 provider = Provider.GEMINI,
-                id = providerEvent.responseId,
-                model = model,
-                sequence = sequence,
-                message = it,
-                retryable = it.contains("TRANSIENT", ignoreCase = true),
-                providerEventType = "prompt_feedback"
+                id = null,
+                model = Model(""),
+                sequence = 0L,
+                providerEventType = "done"
             )
-        }
-
-        if (providerEvent.candidates.isEmpty()) {
-            providerEvent.usageMetadata?.let {
-                return UsageReported(
+            is GeminiEventStream.Error -> {
+                val error = providerEvent.error.error
+                ResponseErrored(
                     provider = Provider.GEMINI,
-                    id = providerEvent.responseId,
-                    model = model,
-                    sequence = sequence,
-                    usage = it.toDomainUsage(),
-                    providerEventType = "usage"
+                    id = null,
+                    model = Model(""),
+                    sequence = 0L,
+                    message = error.message,
+                    retryable = error.status.isRetryableGeminiStatus(),
+                    providerEventType = "error"
                 )
             }
-
-            return ResponseStarted(
-                provider = Provider.GEMINI,
-                id = providerEvent.responseId,
-                model = model,
-                sequence = sequence,
-                providerEventType = "response_start"
-            )
         }
+}
 
-        val candidate = firstCandidate ?: return ResponseStarted(
+private fun GeminiGenerateContentResponse.toDomainChunkEvent(): CommonResponseEvent {
+    val model = Model(modelVersion ?: "")
+    val sequence = 0L
+    val firstCandidate = candidates.firstOrNull()
+
+    promptFeedback?.blockReason?.let { blockReason ->
+        return ResponseErrored(
             provider = Provider.GEMINI,
-            id = providerEvent.responseId,
+            id = responseId,
             model = model,
             sequence = sequence,
-            providerEventType = "response_start"
+            message = blockReason,
+            retryable = blockReason.contains("TRANSIENT", ignoreCase = true),
+            providerEventType = "prompt_feedback"
         )
+    }
 
-        candidate.finishReason?.let {
-            return ChoiceFinished(
+    if (candidates.isEmpty()) {
+        usageMetadata?.let {
+            return UsageReported(
                 provider = Provider.GEMINI,
-                id = providerEvent.responseId,
+                id = responseId,
                 model = model,
                 sequence = sequence,
-                choiceIndex = candidate.index ?: 0,
-                finishReason = it.toDomainFinishReason(),
-                providerEventType = "choice_finished"
-            )
-        }
-
-        val functionCall = candidate.content?.parts.orEmpty().firstNotNullOfOrNull { it.functionCall }
-        if (functionCall != null) {
-            val partialJson = functionCall.args?.get("partialJson") as? String
-            if (partialJson != null && functionCall.name.isBlank()) {
-                return ToolCallArgumentsDeltaEvent(
-                    provider = Provider.GEMINI,
-                    id = providerEvent.responseId,
-                    model = model,
-                    sequence = sequence,
-                    choiceIndex = candidate.index ?: 0,
-                    toolCallIndex = 0,
-                    argumentsFragment = partialJson,
-                    providerEventType = "tool_call_arguments_delta"
-                )
-            }
-
-            return ToolCallStartedEvent(
-                provider = Provider.GEMINI,
-                id = providerEvent.responseId,
-                model = model,
-                sequence = sequence,
-                choiceIndex = candidate.index ?: 0,
-                toolCallIndex = 0,
-                toolCallId = functionCall.id ?: "gemini-tool-call-${Random.nextInt(100000, 999999)}",
-                functionName = functionCall.name,
-                providerEventType = "tool_call_started"
-            )
-        }
-
-        val textDelta = candidate.content?.parts.orEmpty().firstNotNullOfOrNull { it.text }
-        if (textDelta != null) {
-            return TextDeltaEvent(
-                provider = Provider.GEMINI,
-                id = providerEvent.responseId,
-                model = model,
-                sequence = sequence,
-                choiceIndex = candidate.index ?: 0,
-                text = textDelta,
-                providerEventType = "text_delta"
-            )
-        }
-
-        candidate.content?.role?.let {
-            return ChoiceStarted(
-                provider = Provider.GEMINI,
-                id = providerEvent.responseId,
-                model = model,
-                sequence = sequence,
-                choiceIndex = candidate.index ?: 0,
-                role = it.toCommonRole(),
-                providerEventType = "choice_started"
+                usage = it.toDomainUsage(),
+                providerEventType = "usage"
             )
         }
 
         return ResponseStarted(
             provider = Provider.GEMINI,
-            id = providerEvent.responseId,
+            id = responseId,
             model = model,
             sequence = sequence,
             providerEventType = "response_start"
         )
     }
 
+    val candidate = firstCandidate ?: return ResponseStarted(
+        provider = Provider.GEMINI,
+        id = responseId,
+        model = model,
+        sequence = sequence,
+        providerEventType = "response_start"
+    )
+
+    candidate.finishReason?.let {
+        return ChoiceFinished(
+            provider = Provider.GEMINI,
+            id = responseId,
+            model = model,
+            sequence = sequence,
+            choiceIndex = candidate.index ?: 0,
+            finishReason = it.toDomainFinishReason(),
+            providerEventType = "choice_finished"
+        )
+    }
+
+    val functionCall = candidate.content?.parts.orEmpty().firstNotNullOfOrNull { it.functionCall }
+    if (functionCall != null) {
+        val argumentsFragment = functionCall.args.extractArgumentsFragment()
+        if (argumentsFragment != null && functionCall.name.isBlank()) {
+            return ToolCallArgumentsDeltaEvent(
+                provider = Provider.GEMINI,
+                id = responseId,
+                model = model,
+                sequence = sequence,
+                choiceIndex = candidate.index ?: 0,
+                toolCallIndex = 0,
+                argumentsFragment = argumentsFragment,
+                providerEventType = "tool_call_arguments_delta"
+            )
+        }
+
+        return ToolCallStartedEvent(
+            provider = Provider.GEMINI,
+            id = responseId,
+            model = model,
+            sequence = sequence,
+            choiceIndex = candidate.index ?: 0,
+            toolCallIndex = 0,
+            toolCallId = functionCall.id ?: "gemini-tool-call-${Random.nextInt(100000, 999999)}",
+            functionName = functionCall.name,
+            providerEventType = "tool_call_started"
+        )
+    }
+
+    val textDelta = candidate.content?.parts.orEmpty().firstNotNullOfOrNull { it.text }
+    if (textDelta != null) {
+        return TextDeltaEvent(
+            provider = Provider.GEMINI,
+            id = responseId,
+            model = model,
+            sequence = sequence,
+            choiceIndex = candidate.index ?: 0,
+            text = textDelta,
+            providerEventType = "text_delta"
+        )
+    }
+
+    candidate.content?.role?.let {
+        return ChoiceStarted(
+            provider = Provider.GEMINI,
+            id = responseId,
+            model = model,
+            sequence = sequence,
+            choiceIndex = candidate.index ?: 0,
+            role = it.toCommonRole(),
+            providerEventType = "choice_started"
+        )
+    }
+
+    return ResponseStarted(
+        provider = Provider.GEMINI,
+        id = responseId,
+        model = model,
+        sequence = sequence,
+        providerEventType = "response_start"
+    )
+}
+
+private fun Map<String, Any?>?.extractArgumentsFragment(): String? {
+    val args = this ?: return null
+    val partialJson = args["partialJson"] as? String
+    if (partialJson != null) return partialJson
+    if (args.isEmpty()) return null
+    return args.toJsonObject().toJsonString()
+}
+
+private fun String?.isRetryableGeminiStatus(): Boolean {
+    val status = this?.uppercase() ?: return false
+    return status in setOf("UNAVAILABLE", "RESOURCE_EXHAUSTED", "DEADLINE_EXCEEDED", "ABORTED", "INTERNAL")
 }
 
 private fun CommonRequestMessage.toGeminiContent(): GeminiContent =
@@ -270,7 +308,7 @@ private fun toDomainChoice(candidate: GeminiCandidate): CommonChoice {
             role = candidate.content?.role.toCommonRole(),
             content = parts
         ),
-        finishReason =  if (hasToolCalls) {
+        finishReason = if (hasToolCalls) {
             FinishReason.TOOL_CALL
         } else {
             candidate.finishReason.toDomainFinishReason()
@@ -325,7 +363,6 @@ private fun CommonRole.toGeminiRole(): String =
         CommonRole.ASSISTANT -> "model"
         CommonRole.TOOL -> "tool"
     }
-
 
 // deve ser passada para uma funcao de traducao de apis
 private fun Map<*, *>.cleanGeminiParameters(): Map<String, Any?> {

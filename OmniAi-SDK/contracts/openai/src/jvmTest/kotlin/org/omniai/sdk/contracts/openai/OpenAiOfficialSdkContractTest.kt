@@ -26,7 +26,7 @@ import org.omniai.sdk.contracts.openai.input.OpenAiToolCallFunction
 import org.omniai.sdk.contracts.openai.input.OpenAiToolChoice
 import org.omniai.sdk.contracts.openai.output.OpenAiChatCompletionsResponse
 import org.omniai.sdk.contracts.openai.output.OpenAiDelta
-import org.omniai.sdk.contracts.openai.output.OpenAiError
+import org.omniai.sdk.contracts.openai.output.OpenAiErrorResponse
 import org.omniai.sdk.contracts.openai.output.OpenAiMessageOutput
 
 class OpenAiOfficialSdkContractTest {
@@ -233,14 +233,17 @@ class OpenAiOfficialSdkContractTest {
         val payload =
             """
             {
-              "message": "Invalid request",
-              "type": "invalid_request_error",
-              "param": "messages",
-              "code": "bad_request"
+              "error": {
+                "message": "Invalid request",
+                "type": "invalid_request_error",
+                "param": "messages",
+                "code": "bad_request"
+              }
             }
             """.trimIndent()
 
-        val error = json.decodeFromString<OpenAiError>(payload)
+        val response = json.decodeFromString<OpenAiErrorResponse>(payload)
+        val error = response.error
 
         assertEquals("Invalid request", error.message)
         assertEquals("invalid_request_error", error.type)
