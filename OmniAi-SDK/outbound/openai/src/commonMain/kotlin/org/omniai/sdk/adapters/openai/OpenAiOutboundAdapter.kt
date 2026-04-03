@@ -2,15 +2,21 @@ package org.omniai.sdk.adapters.openai
 
 import kotlinx.coroutines.flow.Flow
 import org.omniai.sdk.contracts.openai.output.OpenAiChatCompletionsResponse
+import org.omniai.sdk.core.commom.Either
+import org.omniai.sdk.core.commom.failure
+import org.omniai.sdk.core.commom.success
 import org.omniai.sdk.core.http.HttpCallResult
 import org.omniai.sdk.core.http.HttpMethod
 import org.omniai.sdk.core.http.HttpTransportClient
 import org.omniai.sdk.core.http.defaultHttpTransportClient
 import org.omniai.sdk.core.http.executeRequest
 import org.omniai.sdk.core.http.requestConfig
+import org.omniai.sdk.core.http.toDomainError
 import org.omniai.sdk.core.ports.OutboundPort
 import org.omniai.sdk.domain.common.Model
 import org.omniai.sdk.domain.common.Provider
+import org.omniai.sdk.domain.errors.DomainError
+import org.omniai.sdk.domain.errors.InvalidRequest
 import org.omniai.sdk.domain.requests.CommonRequest
 import org.omniai.sdk.domain.responses.CommonResponse
 import org.omniai.sdk.domain.responses.CommonResponseEvent
@@ -26,7 +32,7 @@ class OpenAiOutboundAdapter(
 
     override val provider: Provider = Provider.OPENAI
 
-    override suspend fun generate(request: CommonRequest): CommonResponse {
+    override suspend fun generate(request: CommonRequest): Either<DomainError, CommonResponse> {
         val providerRequest = translator.fromDomain(request)
         val requestConfig = requestConfig(url = "$baseUrl/chat/completions") {
             method = HttpMethod.POST
@@ -37,30 +43,13 @@ class OpenAiOutboundAdapter(
 
         val callResult = transportClient.executeRequest<OpenAiChatCompletionsResponse, _>(requestConfig)
 
-        val providerResponse = when (callResult) {
-            is HttpCallResult.Success -> callResult.data
-            is HttpCallResult.ApiError -> throw IllegalStateException(
-                "OpenAI request failed with status ${callResult.code}. body=${callResult.message.orEmpty()}"
-            )
-            is HttpCallResult.NetworkError -> throw IllegalStateException(
-                "OpenAI request failed due to network error",
-                callResult.exception
-            )
-            is HttpCallResult.SerializationError -> throw IllegalStateException(
-                "OpenAI request failed while decoding the response",
-                callResult.exception
-            )
-            is HttpCallResult.UnknownError -> throw IllegalStateException(
-                "OpenAI request failed with unknown error",
-                callResult.exception
-            )
+        return when (callResult) {
+            is HttpCallResult.Success -> success(translator.toDomain(callResult.data))
+            else -> failure(callResult.toDomainError(provider))
         }
-
-        return translator.toDomain(providerResponse)
     }
 
-    override fun generateStream(request: CommonRequest): Flow<CommonResponseEvent> {
-        TODO("Not yet implemented")
+    override suspend fun generateStream(request: CommonRequest): Either<DomainError, Flow<CommonResponseEvent>> {
+        return failure(InvalidRequest("OpenAI stream generation is not implemented yet"))
     }
 }
-

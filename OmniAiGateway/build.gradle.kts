@@ -17,7 +17,8 @@ subprojects {
     dependencies {
         "testImplementation"(kotlin("test"))
         "implementation"("org.omniai.sdk:OmniAi-SDK:1.0.0-SNAPSHOT")
-
+        "implementation"("org.slf4j:slf4j-api:2.0.12")
+        "implementation"("ch.qos.logback:logback-classic:1.5.3")
     }
 
     extensions.configure<org.jetbrains.kotlin.gradle.dsl.KotlinJvmProjectExtension> {

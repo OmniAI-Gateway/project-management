@@ -64,13 +64,13 @@ class GeminiOutboundTranslator : OutboundTranslator<GeminiGenerateContentRequest
                 stopSequences = domainRequest.config?.stopSequences,
                 temperature = domainRequest.config?.temperature,
                 topP = domainRequest.config?.topP,
-                topK = providerOptions["topK"] as? Int,
-                thinkingConfig = providerOptions["thinkingConfig"] as? GeminiThinkingConfig,
+                topK = providerOptions.get<Int>("topK"),
+                thinkingConfig = providerOptions.get<GeminiThinkingConfig>("thinkingConfig"),
                 responseMimeType = when {
                     domainRequest.jsonResponse -> "application/json"
-                    else -> providerOptions["responseMimeType"] as? String
+                    else -> providerOptions.get<String>("responseMimeType")
                 },
-                responseJsonSchema = providerOptions["responseJsonSchema"] as? Map<String, Any?>
+                responseJsonSchema = providerOptions.get<Map<String, Any?>>("responseJsonSchema")
             )
         )
     }

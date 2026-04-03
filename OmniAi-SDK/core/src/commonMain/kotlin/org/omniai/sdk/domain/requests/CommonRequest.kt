@@ -1,5 +1,8 @@
 package org.omniai.sdk.domain.requests
 
+import org.omniai.sdk.core.commom.AttributeKey
+import org.omniai.sdk.core.commom.TypedMap
+import org.omniai.sdk.core.commom.key
 import org.omniai.sdk.domain.common.CommonGenerationConfig
 import org.omniai.sdk.domain.common.CommonRole
 import org.omniai.sdk.domain.common.CommonTool
@@ -22,5 +25,5 @@ data class CommonRequest(
     val tools: List<CommonTool> = emptyList(),
     val toolChoice: ToolChoice? = null,
     val jsonResponse: Boolean = false,
-    val providerOptions: Map<String, Any?> = emptyMap()
+    val providerOptions: TypedMap = TypedMap()
 )

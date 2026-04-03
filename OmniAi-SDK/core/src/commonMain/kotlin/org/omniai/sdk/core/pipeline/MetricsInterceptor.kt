@@ -7,6 +7,7 @@ import kotlinx.coroutines.sync.withLock
 import org.omniai.sdk.core.commom.AttributeKey
 import org.omniai.sdk.core.commom.key
 import kotlin.time.TimeSource
+import org.omniai.sdk.domain.errors.UnknownDomainError
 import org.omniai.sdk.domain.responses.CommonUsage
 import org.omniai.sdk.domain.responses.ResponseErrored
 import org.omniai.sdk.domain.responses.UsageReported
@@ -93,12 +94,22 @@ class MetricsInterceptor : Interceptor {
             chain.proceed(context)
         } catch (t: Throwable) {
             recordError(context, key, startedAt)
-            throw t
+            return PipelineResult.Error(
+                UnknownDomainError(
+                    message = "Unhandled error while processing request",
+                    cause = t,
+                )
+            )
         }
 
         return when (result) {
             is PipelineResult.Unary -> handleUnary(context, key, startedAt, result)
             is PipelineResult.Stream -> handleStream(context, key, startedAt, result)
+            is PipelineResult.Error -> {
+                recordError(context, key, startedAt)
+                result
+            }
+            is PipelineResult.NoResult -> PipelineResult.NoResult
         }
     }
 
