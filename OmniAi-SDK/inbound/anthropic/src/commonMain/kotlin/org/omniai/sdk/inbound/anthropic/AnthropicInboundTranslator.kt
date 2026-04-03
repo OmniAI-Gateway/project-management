@@ -15,6 +15,7 @@ import org.omniai.sdk.contracts.anthropic.output.AnthropicStreamDelta
 import org.omniai.sdk.contracts.anthropic.output.AnthropicStreamEvent
 import org.omniai.sdk.contracts.anthropic.output.AnthropicUsage
 import org.omniai.sdk.contracts.anthropic.output.MessageDeltaInfo
+import org.omniai.sdk.core.commom.TypedMap
 import org.omniai.sdk.core.ports.InboundTranslator
 import org.omniai.sdk.domain.common.CommonGenerationConfig
 import org.omniai.sdk.domain.common.CommonRole
@@ -52,12 +53,12 @@ class AnthropicInboundTranslator : InboundTranslator<AnthropicMessagesRequest, A
 	override val provider: Provider = Provider.ANTHROPIC
 
 	override fun toDomain(clientRequest: AnthropicMessagesRequest): CommonRequest {
-		val providerOptions = buildMap {
-			if (clientRequest.stream != null) put("stream", clientRequest.stream)
-			if (clientRequest.topK != null) put("topK", clientRequest.topK)
-			if (clientRequest.stopToken != null) put("stopToken", clientRequest.stopToken)
-			if (clientRequest.thinking != null) put("thinking", clientRequest.thinking)
-			if (clientRequest.metadata != null) put("metadata", clientRequest.metadata)
+		val providerOptions = TypedMap().apply {
+			clientRequest.stream?.let { put("stream", it) }
+			clientRequest.topK?.let { put("topK", it) }
+			clientRequest.stopToken?.let { put("stopToken", it) }
+			clientRequest.thinking?.let { put("thinking", it) }
+			clientRequest.metadata?.let { put("metadata", it) }
 		}
 
 		return CommonRequest(

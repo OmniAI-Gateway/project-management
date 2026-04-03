@@ -67,14 +67,14 @@ class AnthropicOutboundTranslator : OutboundTranslator<AnthropicMessagesRequest,
                 ?.let(::RawText),
             tools = domainRequest.tools.map(CommonTool::toAnthropicToolDefinition).ifEmpty { null },
             toolChoice = domainRequest.toolChoice?.toAnthropicToolChoice(),
-            stream = providerOptions["stream"] as? Boolean,
+            stream = providerOptions.get<Boolean>("stream"),
             temperature = domainRequest.config?.temperature,
             topP = domainRequest.config?.topP,
-            topK = providerOptions["topK"] as? Int,
+            topK = providerOptions.get<Int>("topK"),
             stopSequences = domainRequest.config?.stopSequences,
-            stopToken = providerOptions["stopToken"] as? String,
-            thinking = providerOptions["thinking"] as? AnthropicThinkingConfig,
-            metadata = providerOptions["metadata"] as? Map<String, Any?>  // criar type alias para isto
+            stopToken = providerOptions.get<String>("stopToken"),
+            thinking = providerOptions.get<AnthropicThinkingConfig>("thinking"),
+            metadata = providerOptions.get<Map<String, Any?>>("metadata")  // criar type alias para isto
         )
     }
 

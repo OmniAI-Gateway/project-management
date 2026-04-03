@@ -31,7 +31,7 @@ class GeminiInboundAdapter(
     }
 }
 
-private fun CommonRequest.withModelOverride(map: TypedMap): org.omniai.sdk.domain.requests.CommonRequest {
+private fun CommonRequest.withModelOverride(map: TypedMap): CommonRequest {
     val modelOverride: String? = map[GEMINI_MODEL_KEY]
     return if (modelOverride.isNullOrBlank()) this else copy(model = modelOverride)
 }

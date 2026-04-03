@@ -1,46 +1,67 @@
 package org.omniai.gateway.services
 
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.emitAll
+import kotlinx.coroutines.flow.flow
+import org.omniai.sdk.core.commom.AttributeKey
+import org.omniai.sdk.core.commom.key
 import org.omniai.sdk.core.ports.InferenceServicePort
 import org.omniai.sdk.core.ports.OutboundPort
 import org.omniai.sdk.core.ports.serviceAdapter
-import org.omniai.sdk.domain.common.Provider
 import org.omniai.sdk.domain.requests.CommonRequest
 
-object RoutingInferenceServiceFactory {
-    fun create(
-        outbounds: List<OutboundPort>,
-        fallbackProvider: Provider? = null
-    ): InferenceServicePort {
-        val outboundsByProvider = outbounds.groupBy { it.provider }
+object Keys {
+    val ROUTING_OUTBOUND_INDEX: AttributeKey<Int> = key("routing.outbound.index")
+    val ROUTING_ATTEMPTED_OUTBOUNDS: AttributeKey<MutableList<String>> = key("routing.outbound.attempted")
+}
 
-        return serviceAdapter {
-            unary { request ->
-                val outbound = resolveOutbound(request, outboundsByProvider, fallbackProvider)
-                outbound.generate(request)
-            }
-            stream { request ->
-                val outbound = resolveOutbound(request, outboundsByProvider, fallbackProvider)
-                outbound.generateStream(request)
-            }
+fun routingInferenceServiceFactory(outbounds: List<OutboundPort>): InferenceServicePort {
+    return serviceAdapter {
+        unary { request ->
+            generateWithFallback(request, outbounds)
+        }
+        stream { request ->
+            generateStreamWithFallback(request, outbounds)
         }
     }
 }
 
-private fun resolveOutbound(
-    request: CommonRequest,
-    outboundsByProvider: Map<Provider, List<OutboundPort>>,
-    fallbackProvider: Provider?
-): OutboundPort {
-    val providerCandidates = outboundsByProvider[request.provider].orEmpty()
-    val selectedFromProvider = providerCandidates.firstOrNull { it.model.model == request.model } ?: providerCandidates.firstOrNull()
-    if (selectedFromProvider != null) return selectedFromProvider
-
-    if (fallbackProvider != null) {
-        val fallbackCandidates = outboundsByProvider[fallbackProvider].orEmpty()
-        val selectedFallback = fallbackCandidates.firstOrNull { it.model.model == request.model } ?: fallbackCandidates.firstOrNull()
-        if (selectedFallback != null) return selectedFallback
+private suspend fun generateWithFallback(request: CommonRequest, outbounds: List<OutboundPort>) =
+    tryOutbounds(request, outbounds) { outbound, req ->
+        outbound.generate(req)
     }
 
-    error("No outbound configured for provider=${request.provider.value} model=${request.model}")
-}
+private fun generateStreamWithFallback(request: CommonRequest, outbounds: List<OutboundPort>): Flow<org.omniai.sdk.domain.responses.CommonResponseEvent> =
+    flow {
+        emitAll(tryOutbounds(request, outbounds) { outbound, req -> outbound.generateStream(req) })
+    }
 
+private suspend fun <T> tryOutbounds(
+    request: CommonRequest,
+    outbounds: List<OutboundPort>,
+    action: suspend (OutboundPort, CommonRequest) -> T
+): T {
+    val startIndex = request.providerOptions.getOrPut(Keys.ROUTING_OUTBOUND_INDEX) { 0 }
+    val attempted = request.providerOptions.getOrPut(Keys.ROUTING_ATTEMPTED_OUTBOUNDS) { mutableListOf() }
+
+    var lastError: Throwable? = null
+    var index = startIndex
+
+    while (index < outbounds.size) {
+        val outbound = outbounds[index]
+        request.providerOptions[Keys.ROUTING_OUTBOUND_INDEX] = index
+        attempted += "${outbound.provider.value}:${outbound.model.model}"
+
+        try {
+            return action(outbound, request)
+        } catch (ex: Throwable) {
+            lastError = ex
+            index += 1
+            request.providerOptions[Keys.ROUTING_OUTBOUND_INDEX] = index
+        }
+    }
+    throw IllegalStateException(
+        "No outbound succeeded for provider=${request.provider.value} model=${request.model}",
+        lastError
+    )
+}

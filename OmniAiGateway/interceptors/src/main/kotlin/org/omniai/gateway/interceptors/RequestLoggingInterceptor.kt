@@ -1,29 +1,35 @@
-package org.omniai.gateway.interceptors
-
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.onCompletion
 import org.omniai.sdk.core.pipeline.Interceptor
 import org.omniai.sdk.core.pipeline.InterceptorChain
 import org.omniai.sdk.core.pipeline.PipelineResult
+import org.slf4j.LoggerFactory
 
 class RequestLoggingInterceptor : Interceptor {
+
+    companion object {
+        private val logger = LoggerFactory.getLogger(RequestLoggingInterceptor::class.java)
+    }
+
     override suspend fun handle(
         context: org.omniai.sdk.core.pipeline.GatewayContext,
         chain: InterceptorChain
     ): PipelineResult {
-        println("[gateway] request provider=${context.request.provider.value} model=${context.request.model}")
+
+        logger.info("[gateway] request provider={} model={}", context.request.provider.value, context.request.model)
 
         return when (val result = chain.proceed(context)) {
             is PipelineResult.Unary -> {
-                println("[gateway] unary response provider=${result.response.provider.value} model=${result.response.model}")
+                logger.info("[gateway] unary response provider={} model={}", result.response.provider.value, result.response.model)
                 result
             }
             is PipelineResult.Stream -> {
                 val traced: Flow<org.omniai.sdk.domain.responses.CommonResponseEvent> = result.eventFlow.onCompletion { cause ->
                     if (cause == null) {
-                        println("[gateway] stream completed")
+                        logger.info("[gateway] stream completed")
                     } else {
-                        println("[gateway] stream failed: ${cause.message}")
+                        // Passar o "cause" como último argumento imprime a stack trace completa no log
+                        logger.error("[gateway] stream failed: {}", cause.message, cause)
                     }
                 }
                 PipelineResult.Stream(traced)
@@ -31,4 +37,3 @@ class RequestLoggingInterceptor : Interceptor {
         }
     }
 }
-

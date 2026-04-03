@@ -8,7 +8,7 @@ import io.ktor.server.netty.Netty
 import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
 import kotlinx.serialization.json.Json
 import org.omniai.gateway.inbound.web.GatewayInboundAdapters
-import org.omniai.gateway.inbound.web.installGatewayRoutes
+import org.omniai.gateway.inbound.web.installWebRoutes
 import org.omniai.gateway.outbound.builder.GatewayOutboundBuilder
 import org.omniai.gateway.services.gatewayServiceAssembler
 import org.omniai.sdk.adapters.anthropic.AnthropicOutboundAdapter
@@ -116,7 +116,7 @@ private fun startServer(
 ) {
     embeddedServer(Netty, port = port) {
         configureHttp(jsonConfig)
-        installGatewayRoutes(jsonConfig, adapters)
+        installWebRoutes(jsonConfig, adapters)
     }.start(wait = true)
 }
 
@@ -125,7 +125,6 @@ private fun Application.configureHttp(jsonConfig: Json) {
         json(jsonConfig)
     }
 }
-
 
 private fun requireEnv(name: String): String =
     System.getenv(name) ?: throw IllegalStateException("Environment variable '$name' is required")

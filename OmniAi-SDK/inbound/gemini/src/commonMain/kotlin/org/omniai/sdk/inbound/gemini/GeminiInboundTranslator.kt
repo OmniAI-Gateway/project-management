@@ -13,6 +13,7 @@ import org.omniai.sdk.contracts.gemini.output.GeminiPromptFeedback
 import org.omniai.sdk.contracts.gemini.output.GeminiResponseContent
 import org.omniai.sdk.contracts.gemini.output.GeminiResponsePart
 import org.omniai.sdk.contracts.gemini.output.GeminiUsageMetadata
+import org.omniai.sdk.core.commom.TypedMap
 import org.omniai.sdk.core.ports.InboundTranslator
 import org.omniai.sdk.domain.common.CommonGenerationConfig
 import org.omniai.sdk.domain.common.CommonRole
@@ -52,7 +53,7 @@ class GeminiInboundTranslator :
     override val provider: Provider = Provider.GEMINI
 
     override fun toDomain(clientRequest: GeminiGenerateContentRequest): CommonRequest {
-        val providerOptions = buildMap<String, Any?> {
+        val providerOptions = TypedMap().apply {
             clientRequest.generationConfig?.topK?.let { put("topK", it) }
             clientRequest.generationConfig?.thinkingConfig?.let { put("thinkingConfig", it) }
             clientRequest.generationConfig?.responseMimeType?.let { put("responseMimeType", it) }

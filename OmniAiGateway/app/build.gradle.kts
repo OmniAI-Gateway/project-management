@@ -6,8 +6,8 @@ plugins {
 description = "Executable application module"
 
 dependencies {
-    implementation(project(":inbound:web"))
-    implementation(project(":outbound:builder"))
+    implementation(project(":inbound"))
+    implementation(project(":outbound"))
     implementation(project(":services"))
     implementation(project(":interceptors"))
 

@@ -6,6 +6,6 @@ import org.omniai.sdk.domain.requests.CommonRequest
 
 data class GatewayContext(
     val request: CommonRequest,
-    val res: PipelineResult,
+    val res: PipelineResult? = null,
     val attributes: TypedMap = TypedMap()
 )

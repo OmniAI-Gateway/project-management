@@ -17,6 +17,7 @@ import org.omniai.sdk.contracts.openai.output.OpenAiMessageOutput
 import org.omniai.sdk.contracts.openai.output.OpenAiToolCallFunctionOutput
 import org.omniai.sdk.contracts.openai.output.OpenAiToolCallOutput
 import org.omniai.sdk.contracts.openai.output.OpenAiUsage
+import org.omniai.sdk.core.commom.TypedMap
 import org.omniai.sdk.core.ports.InboundTranslator
 import org.omniai.sdk.domain.common.CommonGenerationConfig
 import org.omniai.sdk.domain.common.CommonRole
@@ -55,17 +56,17 @@ class OpenAiInboundTranslator :
     override val provider: Provider = Provider.OPENAI
 
     override fun toDomain(clientRequest: OpenAiChatCompletionsRequest): CommonRequest {
-        val providerOptions = buildMap {
-            if (clientRequest.stream != null) put("stream", clientRequest.stream)
-            if (clientRequest.frequencyPenalty != null) put("frequencyPenalty", clientRequest.frequencyPenalty)
-            if (clientRequest.presencePenalty != null) put("presencePenalty", clientRequest.presencePenalty)
-            if (clientRequest.n != null) put("n", clientRequest.n)
-            if (clientRequest.seed != null) put("seed", clientRequest.seed)
-            if (clientRequest.user != null) put("user", clientRequest.user)
-            if (clientRequest.logitBias != null) put("logitBias", clientRequest.logitBias)
-            if (clientRequest.logProbs != null) put("logProbs", clientRequest.logProbs)
-            if (clientRequest.topLogProbs != null) put("topLogProbs", clientRequest.topLogProbs)
-            if (clientRequest.responseFormat != null) put("responseFormat", clientRequest.responseFormat)
+        val providerOptions = TypedMap().apply {
+            clientRequest.stream?.let { put("stream", it) }
+            clientRequest.frequencyPenalty?.let { put("frequencyPenalty", it) }
+            clientRequest.presencePenalty?.let { put("presencePenalty", it) }
+            clientRequest.n?.let { put("n", it) }
+            clientRequest.seed?.let { put("seed", it) }
+            clientRequest.user?.let { put("user", it) }
+            clientRequest.logitBias?.let { put("logitBias", it) }
+            clientRequest.logProbs?.let { put("logProbs", it) }
+            clientRequest.topLogProbs?.let { put("topLogProbs", it) }
+            clientRequest.responseFormat?.let { put("responseFormat", it) }
         }
 
         val responseFormatType = clientRequest.responseFormat?.type?.lowercase()
