@@ -15,7 +15,6 @@ import org.omniai.sdk.adapters.anthropic.AnthropicOutboundAdapter
 import org.omniai.sdk.adapters.gemini.GeminiOutboundAdapter
 import org.omniai.sdk.adapters.openai.OpenAiOutboundAdapter
 import org.omniai.sdk.core.ports.OutboundPort
-import org.omniai.sdk.domain.common.Provider
 import org.omniai.sdk.inbound.anthropic.AnthropicInboundAdapter
 import org.omniai.sdk.inbound.gemini.GeminiInboundAdapter
 import org.omniai.sdk.inbound.openai.OpenAiInboundAdapter
