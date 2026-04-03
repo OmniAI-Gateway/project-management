@@ -12,6 +12,7 @@ internal class GatewayPipelineChain(
             return when (context.res) {
                 is PipelineResult.Unary -> PipelineResult.Unary(service.generate(context.request))
                 is PipelineResult.Stream -> PipelineResult.Stream(service.generateStream(context.request))
+                is PipelineResult.NoResult -> PipelineResult.NoResult
             }
         }
 

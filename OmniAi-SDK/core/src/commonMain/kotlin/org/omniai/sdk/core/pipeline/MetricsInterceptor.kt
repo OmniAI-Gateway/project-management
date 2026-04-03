@@ -99,6 +99,7 @@ class MetricsInterceptor : Interceptor {
         return when (result) {
             is PipelineResult.Unary -> handleUnary(context, key, startedAt, result)
             is PipelineResult.Stream -> handleStream(context, key, startedAt, result)
+            is PipelineResult.NoResult -> PipelineResult.NoResult
         }
     }
 

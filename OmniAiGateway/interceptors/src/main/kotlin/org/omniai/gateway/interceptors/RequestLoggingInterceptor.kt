@@ -34,6 +34,7 @@ class RequestLoggingInterceptor : Interceptor {
                 }
                 PipelineResult.Stream(traced)
             }
+            is PipelineResult.NoResult -> PipelineResult.NoResult
         }
     }
 }

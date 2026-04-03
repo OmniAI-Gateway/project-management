@@ -38,17 +38,7 @@ fun main() {
     val jsonConfig = buildJsonConfig()
     val outbounds = buildOutbounds(config)
 
-    val service = gatewayServiceAssembler(
-        outbounds = outbounds,
-        fallbackProvider = Provider.GEMINI,
-        onMetricsCaptured = { _, metrics ->
-            println(
-                "[metrics] provider=${metrics.provider} model=${metrics.model} " +
-                    "requests=${metrics.totalRequests} success=${metrics.successCount} errors=${metrics.errorCount} " +
-                    "successRate=${metrics.successRate} avgLatencyMs=${metrics.averageLatencyMs} totalTokens=${metrics.totalTokens}"
-            )
-        }
-    )
+    val service = gatewayServiceAssembler(outbounds = outbounds)
 
     val adapters = GatewayInboundAdapters(
         anthropic = AnthropicInboundAdapter(service),

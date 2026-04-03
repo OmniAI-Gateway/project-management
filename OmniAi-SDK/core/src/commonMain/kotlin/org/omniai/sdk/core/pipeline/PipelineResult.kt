@@ -7,14 +7,17 @@ import org.omniai.sdk.domain.responses.CommonResponseEvent
 sealed interface PipelineResult {
     data class Unary(val response: CommonResponse) : PipelineResult
     data class Stream(val eventFlow: Flow<CommonResponseEvent>) : PipelineResult
+    data object NoResult: PipelineResult
 }
 
 inline fun <T> PipelineResult.fold(
     onUnary: (CommonResponse) -> T,
-    onStream: (Flow<CommonResponseEvent>) -> T
+    onStream: (Flow<CommonResponseEvent>) -> T,
+    onNothing: () -> T
 ): T = when (this) {
     is PipelineResult.Unary -> onUnary(response)
     is PipelineResult.Stream -> onStream(eventFlow)
+    is PipelineResult.NoResult -> onNothing()
 }
 
 /**
@@ -24,7 +27,7 @@ inline fun <T> PipelineResult.fold(
 @Throws(IllegalStateException::class)
 fun PipelineResult.requireUnaryResponse(): CommonResponse = when (this) {
     is PipelineResult.Unary -> response
-    is PipelineResult.Stream -> error("Contract violation: Expected a Unary response, but received a Stream.")
+    else -> error("Contract violation: Expected a Unary response, but received a Stream.")
 }
 
 /**
@@ -34,5 +37,5 @@ fun PipelineResult.requireUnaryResponse(): CommonResponse = when (this) {
 @Throws(IllegalStateException::class)
 fun PipelineResult.requireStreamEvents(): Flow<CommonResponseEvent> = when (this) {
     is PipelineResult.Stream -> eventFlow
-    is PipelineResult.Unary -> error("Contract violation: Expected a Stream response, but received a Unary result.")
+    else -> error("Contract violation: Expected a Stream response, but received a Unary result.")
 }
