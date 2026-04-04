@@ -7,7 +7,7 @@ import io.ktor.server.routing.routing
 import kotlinx.serialization.json.Json
 import org.omniai.sdk.contracts.gemini.input.GeminiGenerateContentRequest
 import org.omniai.sdk.core.commom.TypedMap
-import org.omniai.sdk.inbound.gemini.GEMINI_MODEL_KEY
+import org.omniai.sdk.inbound.gemini.GeminiInboundAdapter.Companion.GEMINI_MODEL_KEY
 
 fun Application.installGeminiRoute(
     json: Json,

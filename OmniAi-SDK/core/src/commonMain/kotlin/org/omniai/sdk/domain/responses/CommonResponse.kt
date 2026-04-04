@@ -31,7 +31,7 @@ data class CommonChoice(
 
 data class CommonResponse(
     val provider: Provider,
-    val id: String? = null,
+    val id: String,
     val model: String,
     val choices: List<CommonChoice>,
     val usage: CommonUsage? = null,

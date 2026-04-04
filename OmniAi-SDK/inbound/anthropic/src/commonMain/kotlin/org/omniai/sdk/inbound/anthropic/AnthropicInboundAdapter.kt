@@ -5,6 +5,8 @@ import org.omniai.sdk.contracts.anthropic.input.AnthropicMessagesRequest
 import org.omniai.sdk.contracts.anthropic.output.AnthropicMessageResponse
 import org.omniai.sdk.contracts.anthropic.output.AnthropicStreamEvent
 import org.omniai.sdk.core.commom.Either
+import org.omniai.sdk.core.commom.Failure
+import org.omniai.sdk.core.commom.Success
 import org.omniai.sdk.core.commom.TypedMap
 import org.omniai.sdk.core.commom.failure
 import org.omniai.sdk.core.commom.success
@@ -26,8 +28,8 @@ class AnthropicInboundAdapter(
     ): Either<DomainError, AnthropicMessageResponse> {
         val domainRequest = translator.toDomain(request)
         return when (val domainResponse = service.generate(domainRequest)) {
-            is Either.Right -> success(translator.fromDomain(domainResponse.value))
-            is Either.Left -> failure(domainResponse.value)
+            is Success -> success(translator.fromDomain(domainResponse.value))
+            is Failure -> failure(domainResponse.value)
         }
     }
 
@@ -37,8 +39,8 @@ class AnthropicInboundAdapter(
     ): Either<DomainError, Flow<AnthropicStreamEvent>> {
         val domainRequest = translator.toDomain(request)
         return when (val streamResult = service.generateStream(domainRequest)) {
-            is Either.Right -> success(translator.fromDomainEvent(streamResult.value))
-            is Either.Left -> failure(streamResult.value)
+            is Success -> success(translator.fromDomainEvent(streamResult.value))
+            is Failure -> failure(streamResult.value)
         }
     }
 }

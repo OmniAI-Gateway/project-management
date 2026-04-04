@@ -60,6 +60,8 @@ import org.omniai.sdk.domain.responses.ToolCallArgumentsDeltaEvent
 import org.omniai.sdk.domain.responses.ToolCallStartedEvent
 import org.omniai.sdk.domain.responses.UsageReported
 import kotlin.random.Random
+import kotlin.uuid.ExperimentalUuidApi
+import kotlin.uuid.Uuid
 
 class GeminiOutboundTranslator : OutboundTranslator<GeminiGenerateContentRequest, GeminiGenerateContentResponse, GeminiEventStream> {
 
@@ -89,7 +91,7 @@ class GeminiOutboundTranslator : OutboundTranslator<GeminiGenerateContentRequest
     override fun toDomain(providerResponse: GeminiGenerateContentResponse): CommonResponse =
         CommonResponse(
             provider = Provider.GEMINI,
-            id = providerResponse.responseId,
+            id = providerResponse.responseId ?: generateGeminiId(),
             model = providerResponse.modelVersion ?: "",
             choices = providerResponse.candidates.map(::toDomainChoice),
             usage = providerResponse.usageMetadata?.toDomainUsage(),
@@ -106,6 +108,9 @@ class GeminiOutboundTranslator : OutboundTranslator<GeminiGenerateContentRequest
 
 
 }
+
+@OptIn(ExperimentalUuidApi::class)
+private fun generateGeminiId() = Uuid.random().toHexString()
 
 private data class GeminiEventContext(
     val id: String = "",

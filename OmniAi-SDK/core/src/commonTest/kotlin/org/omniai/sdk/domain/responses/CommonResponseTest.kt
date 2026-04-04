@@ -8,6 +8,7 @@ import org.omniai.sdk.domain.common.CommonRole
 import org.omniai.sdk.domain.common.Provider
 import org.omniai.sdk.domain.common.content.RefusalPart
 import org.omniai.sdk.domain.common.content.TextPart
+import kotlin.test.assertNotNull
 
 class CommonResponseTest {
     @Test
@@ -41,11 +42,12 @@ class CommonResponseTest {
     fun `keeps defaults when optional fields are omitted`() {
         val response = CommonResponse(
             provider = Provider.ANTHROPIC,
+            id = "",
             model = "claude-sonnet",
             choices = emptyList()
         )
 
-        assertNull(response.id)
+        assertNotNull( response.id)
         assertNull(response.usage)
         assertTrue(response.providerOptions.isEmpty())
     }

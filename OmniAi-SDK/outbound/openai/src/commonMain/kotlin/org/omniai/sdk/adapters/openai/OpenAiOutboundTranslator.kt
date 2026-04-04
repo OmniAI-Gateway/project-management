@@ -5,6 +5,7 @@ import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.flow.runningFold
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonPrimitive
 import org.omniai.sdk.contracts.openai.input.FunctionRef
 import org.omniai.sdk.contracts.openai.input.OpenAiChatCompletionsRequest
 import org.omniai.sdk.contracts.openai.input.OpenAiFunctionDefinition
@@ -32,6 +33,7 @@ import org.omniai.sdk.domain.common.content.SharedContentPart
 import org.omniai.sdk.domain.common.content.TextPart
 import org.omniai.sdk.domain.common.content.ToolCallPart
 import org.omniai.sdk.domain.common.content.ToolResultPart
+import org.omniai.sdk.domain.common.json.JsonObjectMap
 import org.omniai.sdk.domain.common.json.JsonValue
 import org.omniai.sdk.domain.common.json.toDomainJsonObject
 import org.omniai.sdk.domain.common.json.toDomainJsonValue
@@ -55,6 +57,7 @@ import org.omniai.sdk.domain.responses.ToolCallArgumentsDeltaEvent
 import org.omniai.sdk.domain.responses.ToolCallStartedEvent
 import org.omniai.sdk.domain.responses.UsageReported
 import org.omniai.sdk.domain.responses.ResponseErrored
+import kotlin.text.orEmpty
 
 class OpenAiOutboundTranslator : OutboundTranslator<OpenAiChatCompletionsRequest, OpenAiChatCompletionsResponse, OpenAiEventStream> {
 
@@ -258,12 +261,19 @@ private fun CommonRole.toOpenAiRole(): String =
 private fun Map<String, JsonValue>.toOpenAiJsonObject(): JsonObject =
     JsonObject(entries.associate { (key, value) -> key to value.toKotlinxJsonElement() })
 
-private fun String.toDomainToolArguments(): Map<String, JsonValue> {
-    val parsed = runCatching { Json.parseToJsonElement(this) }.getOrNull()
-    val jsonObject = parsed as? JsonObject
-    return jsonObject?.toDomainJsonObject()?.properties ?: mapOf("raw" to JsonValue.JsonString(this))
+private fun String.toDomainToolArguments(): JsonObjectMap {
+    parseObject(this)?.let { return it.toDomainJsonObject().properties }
+    val nestedJson = (runCatching { Json.parseToJsonElement(this) }.getOrNull() as? JsonPrimitive)
+        ?.takeIf { it.isString }
+        ?.content
+    return nestedJson
+        ?.let(::parseObject)
+        ?.toDomainJsonObject()
+        ?.properties
+        .orEmpty()
 }
 
+fun parseObject(value: String): JsonObject? = runCatching { Json.parseToJsonElement(value) }.getOrNull() as? JsonObject
 
 private fun OpenAiChatCompletionsResponse.toDomainChunkEvent(previousId: String, previousModel: Model): CommonResponseEvent {
     val resolvedId = id.takeUnless { it.isBlank() } ?: previousId

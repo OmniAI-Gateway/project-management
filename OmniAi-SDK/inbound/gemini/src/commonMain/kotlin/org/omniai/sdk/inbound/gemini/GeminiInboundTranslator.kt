@@ -59,30 +59,24 @@ class GeminiInboundTranslator :
     override val provider: Provider = Provider.GEMINI
 
     override fun toDomain(clientRequest: GeminiGenerateContentRequest): CommonRequest {
-        val providerOptions = TypedMap().apply {
-            clientRequest.generationConfig?.topK?.let { put("topK", it) }
-            clientRequest.generationConfig?.thinkingConfig?.let { put("thinkingConfig", it) }
-            clientRequest.generationConfig?.responseMimeType?.let { put("responseMimeType", it) }
-            clientRequest.generationConfig?.responseJsonSchema?.let { put("responseJsonSchema", it) }
-        }
-
+        val generationConfig = CommonGenerationConfig(
+            temperature = clientRequest.generationConfig?.temperature,
+            topP = clientRequest.generationConfig?.topP,
+            stopSequences = clientRequest.generationConfig?.stopSequences
+        )
         return CommonRequest(
             provider = provider,
-            model = "NO MODEL",
+            model = clientRequest.model ?: "NO MODEL",
             messages = clientRequest.contents.map { it.toDomainMessage() },
             systemPrompt = clientRequest.systemInstruction?.toSystemPrompt(),
-            config = CommonGenerationConfig(
-                temperature = clientRequest.generationConfig?.temperature,
-                topP = clientRequest.generationConfig?.topP,
-                stopSequences = clientRequest.generationConfig?.stopSequences
-            ),
+            config = generationConfig,
             tools = clientRequest.tools.orEmpty().flatMap { tool ->
                 tool.functionDeclarations.orEmpty().map { declaration -> declaration.toDomainTool() }
             },
             toolChoice = clientRequest.toolConfig?.functionCallingConfig?.toDomainToolChoice(),
-            jsonResponse = clientRequest.generationConfig?.responseMimeType.equals("application/json", ignoreCase = true)
+            jsonResponse = clientRequest.generationConfig?.responseMimeType?.lowercase() == "application/json"
                     || clientRequest.generationConfig?.responseJsonSchema != null,
-            providerOptions = providerOptions
+            providerOptions = toDomainTypedMapInput(clientRequest)
         )
     }
 
@@ -96,6 +90,13 @@ class GeminiInboundTranslator :
 
     override fun fromDomainEvent(domainEvent: Flow<CommonResponseEvent>): Flow<GeminiGenerateContentResponse> =
         domainEvent.map(::toGeminiEvent)
+}
+
+private fun toDomainTypedMapInput(clientRequest: GeminiGenerateContentRequest): TypedMap = TypedMap().apply {
+    clientRequest.generationConfig?.topK?.let { put("topK", it) }
+    clientRequest.generationConfig?.thinkingConfig?.let { put("thinkingConfig", it) }
+    clientRequest.generationConfig?.responseMimeType?.let { put("responseMimeType", it) }
+    clientRequest.generationConfig?.responseJsonSchema?.let { put("responseJsonSchema", it) }
 }
 
 private fun toGeminiEvent(domainEvent: CommonResponseEvent): GeminiGenerateContentResponse =
@@ -292,7 +293,7 @@ private fun CommonRole.toGeminiRole(): String =
         CommonRole.SYSTEM -> "model"
         CommonRole.USER -> "user"
         CommonRole.ASSISTANT -> "model"
-        CommonRole.TOOL -> "tool"
+        CommonRole.TOOL -> "function"
     }
 
 private fun FinishReason?.toGeminiFinishReason(): String? =

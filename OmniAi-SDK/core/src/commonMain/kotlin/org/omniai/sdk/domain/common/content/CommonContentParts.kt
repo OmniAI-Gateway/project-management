@@ -1,7 +1,9 @@
 package org.omniai.sdk.domain.common.content
 
+import kotlinx.serialization.json.Json
 import org.omniai.sdk.domain.common.json.JsonObjectMap
 import org.omniai.sdk.domain.common.json.JsonValue
+import org.omniai.sdk.domain.common.json.toDomainJsonValue
 
 sealed interface RequestContentPart
 
@@ -34,4 +36,5 @@ data class ToolResultPart(
 data class RefusalPart(
     val reason: String
 ) : ResponseContentPart
+
 
