@@ -1,5 +1,6 @@
 package org.omniai.sdk.inbound.anthropic
 
+import kotlinx.serialization.json.JsonObject
 import org.omniai.sdk.contracts.anthropic.input.AnthropicContent
 import org.omniai.sdk.contracts.anthropic.input.AnthropicInputContentBlock
 import org.omniai.sdk.contracts.anthropic.input.AnthropicMessageInput
@@ -30,8 +31,10 @@ import org.omniai.sdk.domain.common.content.ResponseContentPart
 import org.omniai.sdk.domain.common.content.TextPart
 import org.omniai.sdk.domain.common.content.ToolCallPart
 import org.omniai.sdk.domain.common.content.ToolResultPart
-import org.omniai.sdk.domain.common.json.toJsonObject
-import org.omniai.sdk.domain.common.json.toRawMap
+import org.omniai.sdk.domain.common.json.JsonValue
+import org.omniai.sdk.domain.common.json.toDomainJsonObject
+import org.omniai.sdk.domain.common.json.toDomainJsonValue
+import org.omniai.sdk.domain.common.json.toKotlinxJsonObject
 import org.omniai.sdk.domain.common.json.toJsonValue
 import org.omniai.sdk.domain.requests.CommonRequest
 import org.omniai.sdk.domain.requests.CommonRequestMessage
@@ -116,7 +119,7 @@ class AnthropicInboundTranslator : InboundTranslator<AnthropicMessagesRequest, A
 				contentBlock = AnthropicOutputContent.ToolUse(
 					id = domainEvent.toolCallId,
 					name = domainEvent.functionName,
-					input = emptyMap()
+					input = JsonObject(emptyMap())
 				)
 			)
 			is ToolCallArgumentsDeltaEvent -> AnthropicStreamEvent.ContentBlockDelta(
@@ -165,7 +168,7 @@ private fun AnthropicInputContentBlock.toDomainPart(index: Int): RequestContentP
 		is AnthropicInputContentBlock.ToolUse -> ToolCallPart(
 			toolCallId = id ?: "anthropic-tool-use-$index",
 			functionName = name,
-			argumentsJson = input.orEmpty().toJsonObject().properties
+			argumentsJson = input?.toDomainJsonObject()?.properties.orEmpty()
 		)
 		is AnthropicInputContentBlock.ToolResult -> ToolResultPart(
 			toolCallId = toolUseId,
@@ -190,7 +193,7 @@ private fun AnthropicToolDefinition.toDomainTool(): CommonTool =
 	CommonTool(
 		name = name,
 		description = description,
-		parametersSchema = inputSchema.toJsonObject().properties
+		parametersSchema = (inputSchema.toDomainJsonValue() as? JsonValue.JsonObject)?.properties.orEmpty()
 	)
 
 private fun AnthropicToolChoice.toDomainToolChoice(): ToolChoice? =
@@ -211,7 +214,7 @@ private fun toAnthropicContentPart(part: ResponseContentPart): AnthropicOutputCo
 		is ToolCallPart -> AnthropicOutputContent.ToolUse(
 			id = part.toolCallId,
 			name = part.functionName,
-			input = org.omniai.sdk.domain.common.json.JsonValue.JsonObject(part.argumentsJson).toRawMap()
+			input = JsonValue.JsonObject(part.argumentsJson).toKotlinxJsonObject()
 		)
 		is JsonPart -> AnthropicOutputContent.Text(text = part.json.toJsonString())
 		is RefusalPart -> null

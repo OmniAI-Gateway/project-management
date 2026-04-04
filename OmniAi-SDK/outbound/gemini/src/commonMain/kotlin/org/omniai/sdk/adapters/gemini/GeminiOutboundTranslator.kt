@@ -1,5 +1,11 @@
 package org.omniai.sdk.adapters.gemini
 
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonNull
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.contentOrNull
 import org.omniai.sdk.contracts.gemini.input.GeminiContent
 import org.omniai.sdk.contracts.gemini.input.GeminiFunctionCall as GeminiInputFunctionCall
 import org.omniai.sdk.contracts.gemini.input.GeminiFunctionCallingConfig
@@ -31,9 +37,9 @@ import org.omniai.sdk.domain.common.content.TextPart
 import org.omniai.sdk.domain.common.content.ToolCallPart
 import org.omniai.sdk.domain.common.content.ToolResultPart
 import org.omniai.sdk.domain.common.json.JsonValue
-import org.omniai.sdk.domain.common.json.toJsonObject
-import org.omniai.sdk.domain.common.json.toRawAny
-import org.omniai.sdk.domain.common.json.toRawMap
+import org.omniai.sdk.domain.common.json.toDomainJsonObject
+import org.omniai.sdk.domain.common.json.toKotlinxJsonElement
+import org.omniai.sdk.domain.common.json.toKotlinxJsonObject
 import org.omniai.sdk.domain.requests.CommonRequest
 import org.omniai.sdk.domain.requests.CommonRequestMessage
 import org.omniai.sdk.domain.responses.ChoiceFinished
@@ -72,7 +78,7 @@ class GeminiOutboundTranslator : OutboundTranslator<GeminiGenerateContentRequest
                     domainRequest.jsonResponse -> "application/json"
                     else -> providerOptions.get<String>("responseMimeType")
                 },
-                responseJsonSchema = providerOptions.get<Map<String, Any?>>("responseJsonSchema")
+                responseJsonSchema = providerOptions.get<JsonObject>("responseJsonSchema")
             )
         )
     }
@@ -233,12 +239,12 @@ private fun GeminiGenerateContentResponse.toDomainChunkEvent(): CommonResponseEv
     )
 }
 
-private fun Map<String, Any?>?.extractArgumentsFragment(): String? {
+private fun JsonObject?.extractArgumentsFragment(): String? {
     val args = this ?: return null
-    val partialJson = args["partialJson"] as? String
+    val partialJson = (args["partialJson"] as? JsonPrimitive)?.contentOrNull
     if (partialJson != null) return partialJson
     if (args.isEmpty()) return null
-    return args.toJsonObject().toJsonString()
+    return args.toString()
 }
 
 private fun String?.isRetryableGeminiStatus(): Boolean {
@@ -259,13 +265,13 @@ private fun RequestContentPart.toGeminiPart(): GeminiPart? =
             functionCall = GeminiInputFunctionCall(
                 id = toolCallId,
                 name = functionName,
-                args = JsonValue.JsonObject(argumentsJson).toRawMap()
+                args = JsonValue.JsonObject(argumentsJson).toKotlinxJsonObject()
             )
         )
         is ToolResultPart -> GeminiPart(
             functionResponse = GeminiFunctionResponse(
                 name = toolCallId,
-                response = content.firstOrNull()?.toRawAny() as? Map<String, Any?> ?: mapOf("value" to content.firstOrNull()?.toRawAny())
+                response = content.firstOrNull().toGeminiToolResponseJson()
             )
         )
         is JsonPart -> GeminiPart(text = json.toString())
@@ -282,7 +288,7 @@ private fun List<CommonTool>.toGeminiTools(): List<GeminiTool>? {
                 GeminiFunctionDeclaration(
                     name = it.name,
                     description = it.description,
-                    parameters = JsonValue.JsonObject(it.parametersSchema).toRawMap().cleanGeminiParameters()
+                    parameters = JsonValue.JsonObject(it.parametersSchema).toKotlinxJsonObject().cleanGeminiParameters()
                 )
             }
         )
@@ -324,7 +330,7 @@ private fun GeminiResponsePart.toDomainPart(): ResponseContentPart? {
             ToolCallPart(
                 toolCallId = fc.id ?: "gemini-tool-call-0",
                 functionName = fc.name,
-                argumentsJson = fc.args.orEmpty().toJsonObject().properties
+                argumentsJson = fc.args?.toDomainJsonObject()?.properties.orEmpty()
             )
         }
         else -> null
@@ -365,7 +371,7 @@ private fun CommonRole.toGeminiRole(): String =
     }
 
 // deve ser passada para uma funcao de traducao de apis
-private fun Map<*, *>.cleanGeminiParameters(): Map<String, Any?> {
+private fun JsonObject.cleanGeminiParameters(): JsonObject {
     val keysToRemove = setOf(
         "\$schema",
         "additionalProperties",
@@ -375,24 +381,44 @@ private fun Map<*, *>.cleanGeminiParameters(): Map<String, Any?> {
         "\$id"
     )
 
-    val cleaned = mutableMapOf<String, Any?>()
+    val cleaned = mutableMapOf<String, JsonElement>()
 
-    for ((k, value) in this) {
-        val key = k.toString()
+    for ((key, value) in this) {
         if (key in keysToRemove) continue
         if (key == "const") {
-            cleaned["enum"] = listOf(value)
+            cleaned["enum"] = JsonArray(listOf(value))
             continue
         }
-        val cleanedValue = when (value) {
-            is Map<*, *> -> value.cleanGeminiParameters()
-            is List<*> -> value.map { item ->
-                if (item is Map<*, *>) item.cleanGeminiParameters() else item
-            }
-            else -> value
-        }
+        val cleanedValue = value.cleanGeminiElement(keysToRemove)
         cleaned[key] = cleanedValue
     }
 
-    return cleaned
+    return JsonObject(cleaned)
 }
+
+private fun JsonElement.cleanGeminiElement(keysToRemove: Set<String>): JsonElement =
+    when (this) {
+        is JsonObject -> JsonObject(
+            entries
+                .filterNot { (key, _) -> key in keysToRemove || key == "const" }
+                .associate { (key, value) -> key to value.cleanGeminiElement(keysToRemove) }
+                .toMutableMap()
+                .apply {
+                    this@cleanGeminiElement["const"]?.let { constValue ->
+                        this["enum"] = JsonArray(listOf(constValue.cleanGeminiElement(keysToRemove)))
+                    }
+                }
+        )
+
+        is JsonArray -> JsonArray(map { it.cleanGeminiElement(keysToRemove) })
+        else -> this
+    }
+
+private fun JsonValue?.toGeminiToolResponseJson(): JsonObject {
+    val value = this ?: return JsonObject(mapOf("value" to JsonNull))
+    return when (value) {
+        is JsonValue.JsonObject -> value.toKotlinxJsonObject()
+        else -> JsonObject(mapOf("value" to value.toKotlinxJsonElement()))
+    }
+}
+

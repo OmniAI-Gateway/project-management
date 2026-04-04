@@ -2,7 +2,7 @@ package org.omniai.sdk.contracts.anthropic.input
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import org.omniai.sdk.contracts.anthropic.serialization.NullableStringAnyMapSerializer
+import kotlinx.serialization.json.JsonElement
 
 @Serializable
 data class AnthropicMessagesRequest(
@@ -27,6 +27,5 @@ data class AnthropicMessagesRequest(
     @SerialName("output_config")
     val outputConfig: AnthropicOutputConfig? = null,
     val thinking: AnthropicThinkingConfig? = null,
-    @Serializable(with = NullableStringAnyMapSerializer::class)
-    val metadata: Map<String, Any?>? = null
+    val metadata: JsonElement? = null
 )

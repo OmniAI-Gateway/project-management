@@ -1,8 +1,8 @@
 package org.omniai.sdk.contracts.anthropic.output
 
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonObject
 import org.omniai.sdk.contracts.anthropic.serialization.AnthropicOutputContentSerializer
-import org.omniai.sdk.contracts.anthropic.serialization.NullableStringAnyMapSerializer
 
 @Serializable(with = AnthropicOutputContentSerializer::class)
 sealed interface AnthropicOutputContent {
@@ -25,8 +25,7 @@ sealed interface AnthropicOutputContent {
     data class ToolUse(
         val id: String,
         val name: String,
-        @Serializable(with = NullableStringAnyMapSerializer::class)
-        val input: Map<String, Any?>? = null,
+        val input: JsonObject? = null,
         override val type: String = "tool_use"
     ) : AnthropicOutputContent
 }

@@ -1,5 +1,8 @@
 package org.omniai.sdk.inbound.gemini
 
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.jsonPrimitive
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
@@ -44,7 +47,7 @@ class GeminiInboundTranslatorTest {
                             functionCall = GeminiFunctionCall(
                                 id = "call_1",
                                 name = "weather",
-                                args = mapOf("city" to "Lisbon")
+                                args = JsonObject(mapOf("city" to JsonPrimitive("Lisbon")))
                             )
                         )
                     )
@@ -56,7 +59,7 @@ class GeminiInboundTranslatorTest {
                         GeminiFunctionDeclaration(
                             name = "weather",
                             description = "Get weather",
-                            parameters = mapOf("type" to "object")
+                            parameters = JsonObject(mapOf("type" to JsonPrimitive("object")))
                         )
                     )
                 )
@@ -118,7 +121,10 @@ class GeminiInboundTranslatorTest {
         assertEquals("STOP", response.candidates.first().finishReason)
         assertEquals("model", response.candidates.first().content?.role)
         assertEquals("Done", response.candidates.first().content?.parts?.first()?.text)
-        assertEquals("Lisbon", response.candidates.first().content?.parts?.get(1)?.functionCall?.args?.get("city"))
+        assertEquals(
+            "Lisbon",
+            response.candidates.first().content?.parts?.get(1)?.functionCall?.args?.get("city")?.jsonPrimitive?.content
+        )
         assertEquals(10, response.usageMetadata?.promptTokenCount)
     }
 

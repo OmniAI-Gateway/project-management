@@ -1,5 +1,7 @@
 package org.omniai.sdk.inbound.anthropic
 
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
@@ -41,7 +43,7 @@ class AnthropicInboundTranslatorTest {
                             AnthropicInputContentBlock.ToolUse(
                                 id = "call-1",
                                 name = "weather",
-                                input = mapOf("city" to "Lisbon")
+                                input = JsonObject(mapOf("city" to JsonPrimitive("Lisbon")))
                             )
                         )
                     )
@@ -51,13 +53,13 @@ class AnthropicInboundTranslatorTest {
                 AnthropicToolDefinition(
                     name = "weather",
                     description = "Get weather",
-                    inputSchema = mapOf("type" to "object")
+                    inputSchema = JsonObject(mapOf("type" to JsonPrimitive("object")))
                 )
             ),
             toolChoice = AnthropicToolChoice(type = "tool", name = "weather"),
             temperature = 0.3,
             stream = true,
-            metadata = mapOf("traceId" to "abc-123")
+            metadata = JsonObject(mapOf("traceId" to JsonPrimitive("abc-123")))
         )
 
         val domain = translator.toDomain(request)
