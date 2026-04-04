@@ -1,5 +1,6 @@
 package org.omniai.sdk.adapters.anthropic
 
+import kotlinx.serialization.json.JsonElement
 import org.omniai.sdk.contracts.anthropic.input.AnthropicContent
 import org.omniai.sdk.contracts.anthropic.input.AnthropicInputContentBlock
 import org.omniai.sdk.contracts.anthropic.input.AnthropicMessageInput
@@ -28,9 +29,9 @@ import org.omniai.sdk.domain.common.content.TextPart
 import org.omniai.sdk.domain.common.content.ToolCallPart
 import org.omniai.sdk.domain.common.content.ToolResultPart
 import org.omniai.sdk.domain.common.json.JsonValue
+import org.omniai.sdk.domain.common.json.toDomainJsonObject
+import org.omniai.sdk.domain.common.json.toKotlinxJsonObject
 import org.omniai.sdk.domain.common.json.toRawAny
-import org.omniai.sdk.domain.common.json.toRawMap
-import org.omniai.sdk.domain.common.json.toJsonObject
 import org.omniai.sdk.domain.requests.CommonRequest
 import org.omniai.sdk.domain.requests.CommonRequestMessage
 import org.omniai.sdk.domain.responses.ChoiceFinished
@@ -74,7 +75,7 @@ class AnthropicOutboundTranslator : OutboundTranslator<AnthropicMessagesRequest,
             stopSequences = domainRequest.config?.stopSequences,
             stopToken = providerOptions.get<String>("stopToken"),
             thinking = providerOptions.get<AnthropicThinkingConfig>("thinking"),
-            metadata = providerOptions.get<Map<String, Any?>>("metadata")  // criar type alias para isto
+            metadata = providerOptions.get<JsonElement>("metadata")
         )
     }
 
@@ -255,7 +256,7 @@ private fun List<RequestContentPart>.toAnthropicContent(): AnthropicContent {
                 is ToolCallPart -> AnthropicInputContentBlock.ToolUse(
                     id = part.toolCallId,
                     name = part.functionName,
-                    input = JsonValue.JsonObject(part.argumentsJson).toRawMap()
+                    input = JsonValue.JsonObject(part.argumentsJson).toKotlinxJsonObject()
                 )
                 is ToolResultPart -> AnthropicInputContentBlock.ToolResult(
                     toolUseId = part.toolCallId,
@@ -271,7 +272,7 @@ private fun CommonTool.toAnthropicToolDefinition(): AnthropicToolDefinition =
     AnthropicToolDefinition(
         name = name,
         description = description,
-        inputSchema = JsonValue.JsonObject(parametersSchema).toRawMap()
+        inputSchema = JsonValue.JsonObject(parametersSchema).toKotlinxJsonObject()
     )
 
 private fun ToolChoice.toAnthropicToolChoice(): AnthropicToolChoice =
@@ -297,7 +298,7 @@ private fun toDomainContentPart(part: AnthropicOutputContent): ResponseContentPa
         is AnthropicOutputContent.ToolUse -> ToolCallPart(
             toolCallId = part.id,
             functionName = part.name,
-            argumentsJson = part.input.orEmpty().toJsonObject().properties
+            argumentsJson = part.input?.toDomainJsonObject()?.properties.orEmpty()
         )
         is AnthropicOutputContent.Thinking -> RefusalPart(reason = part.thinking)
     }
@@ -326,4 +327,5 @@ private fun CommonRole.toAnthropicRole(): String =
         CommonRole.ASSISTANT -> "assistant"
         CommonRole.TOOL -> "assistant"
     }
+
 

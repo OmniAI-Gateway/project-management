@@ -5,6 +5,7 @@ import com.google.genai.types.HttpOptions
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -78,14 +79,14 @@ class GeminiOfficialSdkContractTest {
                         GeminiPart(
                             functionCall = GeminiInputFunctionCall(
                                 name = "get_weather",
-                                args = mapOf("city" to "Lisbon", "days" to 2L),
+                                args = json.parseToJsonElement("""{"city":"Lisbon","days":2}""").jsonObject,
                                 id = "call_1"
                             )
                         ),
                         GeminiPart(
                             functionResponse = GeminiFunctionResponse(
                                 name = "get_weather",
-                                response = mapOf("forecast" to "sunny", "confidence" to 99L)
+                                response = json.parseToJsonElement("""{"forecast":"sunny","confidence":99}""").jsonObject
                             )
                         )
                     )
@@ -100,14 +101,13 @@ class GeminiOfficialSdkContractTest {
                         GeminiFunctionDeclaration(
                             name = "get_weather",
                             description = "Gets weather",
-                            parameters = mapOf(
-                                "type" to "object",
-                                "properties" to mapOf("city" to mapOf("type" to "string"))
-                            )
+                            parameters = json.parseToJsonElement(
+                                """{"type":"object","properties":{"city":{"type":"string"}}}"""
+                            ).jsonObject
                         )
                     ),
-                    googleSearch = mapOf("enabled" to true),
-                    urlContext = mapOf("enabled" to true)
+                    googleSearch = json.parseToJsonElement("""{"enabled":true}""").jsonObject,
+                    urlContext = json.parseToJsonElement("""{"enabled":true}""").jsonObject
                 )
             ),
             toolConfig = GeminiToolConfig(
@@ -127,7 +127,7 @@ class GeminiOfficialSdkContractTest {
                     thinkingLevel = "HIGH"
                 ),
                 responseMimeType = "application/json",
-                responseJsonSchema = mapOf("type" to "object", "strict" to true)
+                responseJsonSchema = json.parseToJsonElement("""{"type":"object","strict":true}""").jsonObject
             )
         )
 
@@ -191,7 +191,7 @@ class GeminiOfficialSdkContractTest {
 
         val functionCall = response.candidates.first().content?.parts?.get(1)?.functionCall
         assertEquals("get_weather", assertIs<GeminiOutputFunctionCall>(functionCall).name)
-        assertEquals("Lisbon", functionCall.args?.get("city"))
+        assertEquals("Lisbon", functionCall.args?.get("city")?.jsonPrimitive?.content)
     }
 
     @Test
@@ -223,10 +223,10 @@ class GeminiOfficialSdkContractTest {
         val request = json.decodeFromString<GeminiGenerateContentRequest>(payload)
         val args = request.contents.first().parts.first().functionCall?.args ?: error("missing args")
 
-        assertEquals(true, args["ok"])
-        assertEquals(3L, args["attempt"])
-        assertEquals(0.75, args["ratio"])
-        assertEquals("v", (args["nested"] as Map<*, *>)["k"])
+        assertEquals("true", args["ok"]?.jsonPrimitive?.content)
+        assertEquals(3L, args["attempt"]?.jsonPrimitive?.content?.toLong())
+        assertEquals(0.75, args["ratio"]?.jsonPrimitive?.content?.toDouble())
+        assertEquals("v", args["nested"]?.jsonObject?.get("k")?.jsonPrimitive?.content)
     }
 
     @Test

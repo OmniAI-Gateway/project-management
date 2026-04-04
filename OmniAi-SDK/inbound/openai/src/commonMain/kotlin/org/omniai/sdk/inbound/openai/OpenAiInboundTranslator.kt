@@ -1,9 +1,5 @@
 package org.omniai.sdk.inbound.openai
-import kotlinx.serialization.json.JsonArray
-import kotlinx.serialization.json.JsonElement
-import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.JsonPrimitive
 import org.omniai.sdk.contracts.openai.input.OpenAiChatCompletionsRequest
 import org.omniai.sdk.contracts.openai.input.OpenAiMessageInput
 import org.omniai.sdk.contracts.openai.input.OpenAiStop
@@ -31,6 +27,8 @@ import org.omniai.sdk.domain.common.content.TextPart
 import org.omniai.sdk.domain.common.content.ToolCallPart
 import org.omniai.sdk.domain.common.content.ToolResultPart
 import org.omniai.sdk.domain.common.json.JsonValue
+import org.omniai.sdk.domain.common.json.toDomainJsonObject
+import org.omniai.sdk.domain.common.json.toKotlinxJsonElement
 import org.omniai.sdk.domain.common.json.toRawAny
 import org.omniai.sdk.domain.common.json.toJsonValue
 import org.omniai.sdk.domain.requests.CommonRequest
@@ -338,34 +336,5 @@ private fun FinishReason?.toOpenAiFinishReason(): String? =
         FinishReason.OTHER, null -> null
     }
 
-// temos no inbound e outbound, secalhar criar um helper faria sentido.
 private fun Map<String, JsonValue>.toOpenAiJsonObject(): JsonObject =
-    JsonObject(entries.associate { (key, value) -> key to value.toOpenAiJsonElement() })
-
-private fun JsonValue.toOpenAiJsonElement(): JsonElement =
-    when (this) {
-        is JsonValue.JsonObject -> JsonObject(properties.mapValues { (_, value) -> value.toOpenAiJsonElement() })
-        is JsonValue.JsonArray -> JsonArray(items.map(JsonValue::toOpenAiJsonElement))
-        is JsonValue.JsonString -> JsonPrimitive(value)
-        is JsonValue.JsonNumber -> JsonPrimitive(value)
-        is JsonValue.JsonBoolean -> JsonPrimitive(value)
-        JsonValue.JsonNull -> JsonNull
-    }
-
-private fun JsonObject.toDomainJsonObject(): JsonValue.JsonObject =
-    JsonValue.JsonObject(properties = mapValues { (_, value) -> value.toDomainJsonValue() })
-
-private fun JsonElement.toDomainJsonValue(): JsonValue =
-    when (this) {
-        is JsonObject -> JsonValue.JsonObject(properties = mapValues { (_, value) -> value.toDomainJsonValue() })
-        is JsonArray -> JsonValue.JsonArray(items = map(JsonElement::toDomainJsonValue))
-        is JsonPrimitive -> when {
-            isString -> JsonValue.JsonString(content)
-            content == "true" -> JsonValue.JsonBoolean(true)
-            content == "false" -> JsonValue.JsonBoolean(false)
-            content.toLongOrNull() != null -> JsonValue.JsonNumber(content.toLong())
-            content.toDoubleOrNull() != null -> JsonValue.JsonNumber(content.toDouble())
-            else -> JsonValue.JsonString(content)
-        }
-        JsonNull -> JsonValue.JsonNull
-    }
+    JsonObject(entries.associate { (key, value) -> key to value.toKotlinxJsonElement() })

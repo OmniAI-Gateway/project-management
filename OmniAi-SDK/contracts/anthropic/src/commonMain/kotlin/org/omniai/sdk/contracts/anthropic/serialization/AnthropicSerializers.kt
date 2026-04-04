@@ -2,7 +2,6 @@ package org.omniai.sdk.contracts.anthropic.serialization
 
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerializationException
-import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.descriptors.PrimitiveKind
@@ -29,47 +28,6 @@ import org.omniai.sdk.contracts.anthropic.input.RawText
 import org.omniai.sdk.contracts.anthropic.output.AnthropicOutputContent
 import org.omniai.sdk.contracts.anthropic.output.AnthropicStreamDelta
 import org.omniai.sdk.contracts.anthropic.output.AnthropicStreamEvent
-import kotlin.text.get
-
-object StringAnyMapSerializer : KSerializer<Map<String, Any?>> {
-    override val descriptor: SerialDescriptor = JsonObject.serializer().descriptor
-
-    override fun serialize(encoder: Encoder, value: Map<String, Any?>) {
-        val jsonEncoder = encoder as? JsonEncoder
-            ?: throw SerializationException("StringAnyMapSerializer only works with JSON")
-        jsonEncoder.encodeJsonElement(JsonObject(value.mapValues { (_, v) -> v.toJsonElement() }))
-    }
-
-    override fun deserialize(decoder: Decoder): Map<String, Any?> {
-        val jsonDecoder = decoder as? JsonDecoder
-            ?: throw SerializationException("StringAnyMapSerializer only works with JSON")
-        val element = jsonDecoder.decodeJsonElement()
-        val jsonObject = element as? JsonObject
-            ?: throw SerializationException("Expected an object for Map<String, Any?>")
-        return jsonObject.mapValues { (_, v) -> v.toDynamicValue() }
-    }
-}
-
-@OptIn(ExperimentalSerializationApi::class)
-object NullableStringAnyMapSerializer : KSerializer<Map<String, Any?>?> {
-    override val descriptor: SerialDescriptor = StringAnyMapSerializer.descriptor
-
-    override fun serialize(encoder: Encoder, value: Map<String, Any?>?) {
-        if (value == null) {
-            encoder.encodeNull()
-            return
-        }
-        StringAnyMapSerializer.serialize(encoder, value)
-    }
-
-    override fun deserialize(decoder: Decoder): Map<String, Any?>? {
-        if (!decoder.decodeNotNullMark()) {
-            decoder.decodeNull()
-            return null
-        }
-        return StringAnyMapSerializer.deserialize(decoder)
-    }
-}
 
 object AnthropicContentSerializer : KSerializer<AnthropicContent> {
     override val descriptor: SerialDescriptor = PrimitiveSerialDescriptor("AnthropicContent", PrimitiveKind.STRING)
@@ -130,8 +88,7 @@ object AnthropicInputContentBlockSerializer :
 object AnthropicOutputContentSerializer :
     JsonContentPolymorphicSerializer<AnthropicOutputContent>(AnthropicOutputContent::class) {
     override fun selectDeserializer(element: JsonElement): KSerializer<out AnthropicOutputContent> {
-        val type = element.jsonObject["type"]?.jsonPrimitive?.content
-        return when (type) {
+        return when (val type = element.jsonObject["type"]?.jsonPrimitive?.content) {
             "text" -> AnthropicOutputContent.Text.serializer()
             "thinking" -> AnthropicOutputContent.Thinking.serializer()
             "tool_use" -> AnthropicOutputContent.ToolUse.serializer()
@@ -143,8 +100,7 @@ object AnthropicOutputContentSerializer :
 object AnthropicStreamDeltaSerializer :
     JsonContentPolymorphicSerializer<AnthropicStreamDelta>(AnthropicStreamDelta::class) {
     override fun selectDeserializer(element: JsonElement): KSerializer<out AnthropicStreamDelta> {
-        val type = element.jsonObject["type"]?.jsonPrimitive?.content
-        return when (type) {
+        return when (val type = element.jsonObject["type"]?.jsonPrimitive?.content) {
             "text_delta" -> AnthropicStreamDelta.TextDelta.serializer()
             "thinking_delta" -> AnthropicStreamDelta.ThinkingDelta.serializer()
             "signature_delta" -> AnthropicStreamDelta.SignatureDelta.serializer()
@@ -157,8 +113,7 @@ object AnthropicStreamDeltaSerializer :
 object AnthropicStreamEventSerializer :
     JsonContentPolymorphicSerializer<AnthropicStreamEvent>(AnthropicStreamEvent::class) {
     override fun selectDeserializer(element: JsonElement): KSerializer<out AnthropicStreamEvent> {
-        val type = element.jsonObject["type"]?.jsonPrimitive?.content
-        return when (type) {
+        return when (val type = element.jsonObject["type"]?.jsonPrimitive?.content) {
             "message_start" -> AnthropicStreamEvent.MessageStart.serializer()
             "content_block_start" -> AnthropicStreamEvent.ContentBlockStart.serializer()
             "content_block_delta" -> AnthropicStreamEvent.ContentBlockDelta.serializer()
@@ -171,34 +126,4 @@ object AnthropicStreamEventSerializer :
         }
     }
 }
-
-private fun Any?.toJsonElement(): JsonElement =
-    when (this) {
-        null -> JsonNull
-        is JsonElement -> this
-        is String -> JsonPrimitive(this)
-        is Boolean -> JsonPrimitive(this)
-        is Int -> JsonPrimitive(this)
-        is Long -> JsonPrimitive(this)
-        is Float -> JsonPrimitive(this)
-        is Double -> JsonPrimitive(this)
-        is Number -> JsonPrimitive(this.toDouble())
-        is Map<*, *> -> JsonObject(entries.associate { (k, v) -> k.toString() to v.toJsonElement() })
-        is Iterable<*> -> JsonArray(map { it.toJsonElement() })
-        else -> JsonPrimitive(toString())
-    }
-
-private fun JsonElement.toDynamicValue(): Any? =
-    when (this) {
-        JsonNull -> null
-        is JsonObject -> mapValues { (_, v) -> v.toDynamicValue() }
-        is JsonArray -> map { it.toDynamicValue() }
-        is JsonPrimitive -> when {
-            isString -> content
-            booleanOrNull != null -> booleanOrNull
-            longOrNull != null -> longOrNull
-            doubleOrNull != null -> doubleOrNull
-            else -> content
-        }
-    }
 

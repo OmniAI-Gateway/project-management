@@ -6,7 +6,10 @@ import com.anthropic.models.messages.MessageCreateParams
 import com.anthropic.models.messages.Model
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -148,7 +151,7 @@ class AnthropicOfficialSdkContractTest {
                             AnthropicInputContentBlock.ToolUse(
                                 id = "toolu_1",
                                 name = "weather",
-                                input = mapOf("city" to "Porto")
+                                input = json.parseToJsonElement("""{"city":"Porto"}""").jsonObject
                             ),
                             AnthropicInputContentBlock.ToolResult(
                                 toolUseId = "toolu_1",
@@ -164,9 +167,17 @@ class AnthropicOfficialSdkContractTest {
                 AnthropicToolDefinition(
                     name = "weather",
                     description = "Get weather",
-                    inputSchema = mapOf(
-                        "type" to "object",
-                        "properties" to mapOf("city" to mapOf("type" to "string"))
+                    inputSchema = JsonObject(
+                        mapOf(
+                            "type" to JsonPrimitive("object"),
+                            "properties" to JsonObject(
+                                mapOf(
+                                    "city" to JsonObject(
+                                        mapOf("type" to JsonPrimitive("string"))
+                                    )
+                                )
+                            )
+                        )
                     )
                 )
             ),
@@ -184,11 +195,8 @@ class AnthropicOfficialSdkContractTest {
                 )
             ),
             thinking = AnthropicThinkingConfig(type = "enabled", budgetTokens = 2048),
-            metadata = mapOf(
-                "traceId" to "abc-123",
-                "attempt" to 1L,
-                "ok" to true,
-                "tags" to listOf("a", "b")
+            metadata = json.parseToJsonElement(
+                """{"traceId":"abc-123","attempt":1,"ok":true,"tags":["a","b"]}"""
             )
         )
 
@@ -246,8 +254,8 @@ class AnthropicOfficialSdkContractTest {
 
         val toolUse = assertIs<AnthropicOutputContent.ToolUse>(response.content[2])
         assertEquals("weather", toolUse.name)
-        assertEquals("Lisbon", toolUse.input?.get("city"))
-        assertEquals(2L, toolUse.input?.get("days"))
+        assertEquals("Lisbon", toolUse.input?.get("city")?.jsonPrimitive?.content)
+        assertEquals(2L, toolUse.input?.get("days")?.jsonPrimitive?.content?.toLong())
 
         assertEquals(12, response.usage?.inputTokens)
         assertEquals(7, response.usage?.outputTokens)
@@ -323,12 +331,12 @@ class AnthropicOfficialSdkContractTest {
         val text = json.decodeFromString<AnthropicStreamDelta>("""{"type":"text_delta","text":"abc"}""")
         val thinking = json.decodeFromString<AnthropicStreamDelta>("""{"type":"thinking_delta","thinking":"reason"}""")
         val signature = json.decodeFromString<AnthropicStreamDelta>("""{"type":"signature_delta","signature":"sig_42"}""")
-        val inputJson = json.decodeFromString<AnthropicStreamDelta>("""{"type":"input_json_delta","partial_json":"{\\\"k\\\":1}"}""")
+        val inputJson = json.decodeFromString<AnthropicStreamDelta>("""{"type":"input_json_delta","partial_json":"{\"k\":1}"}""")
 
         assertEquals("abc", assertIs<AnthropicStreamDelta.TextDelta>(text).text)
         assertEquals("reason", assertIs<AnthropicStreamDelta.ThinkingDelta>(thinking).thinking)
         assertEquals("sig_42", assertIs<AnthropicStreamDelta.SignatureDelta>(signature).signature)
-        //assertEquals("{\"k\":1}", assertIs<AnthropicStreamDelta.InputJsonDelta>(inputJson).partialJson)
+        assertEquals("{\"k\":1}", assertIs<AnthropicStreamDelta.InputJsonDelta>(inputJson).partialJson)
     }
 
     @Test

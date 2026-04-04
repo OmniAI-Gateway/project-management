@@ -1,5 +1,7 @@
 package org.omniai.sdk.inbound.gemini
 
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 import org.omniai.sdk.contracts.gemini.input.GeminiContent
 import org.omniai.sdk.contracts.gemini.input.GeminiFunctionCallingConfig
 import org.omniai.sdk.contracts.gemini.input.GeminiFunctionDeclaration
@@ -28,8 +30,10 @@ import org.omniai.sdk.domain.common.content.ResponseContentPart
 import org.omniai.sdk.domain.common.content.TextPart
 import org.omniai.sdk.domain.common.content.ToolCallPart
 import org.omniai.sdk.domain.common.content.ToolResultPart
+import org.omniai.sdk.domain.common.json.JsonValue
+import org.omniai.sdk.domain.common.json.toDomainJsonObject
 import org.omniai.sdk.domain.common.json.toJsonObject
-import org.omniai.sdk.domain.common.json.toRawMap
+import org.omniai.sdk.domain.common.json.toKotlinxJsonObject
 import org.omniai.sdk.domain.common.json.toJsonValue
 import org.omniai.sdk.domain.requests.CommonRequest
 import org.omniai.sdk.domain.requests.CommonRequestMessage
@@ -124,7 +128,7 @@ class GeminiInboundTranslator :
                                     functionCall = GeminiFunctionCall(
                                         id = domainEvent.toolCallId,
                                         name = domainEvent.functionName,
-                                        args = emptyMap()
+                                        args = JsonObject(emptyMap())
                                     )
                                 )
                             )
@@ -144,7 +148,7 @@ class GeminiInboundTranslator :
                                     functionCall = GeminiFunctionCall(
                                         id = null,
                                         name = "",
-                                        args = mapOf("partialJson" to domainEvent.argumentsFragment)
+                                        args = JsonObject(mapOf("partialJson" to JsonPrimitive(domainEvent.argumentsFragment)))
                                     )
                                 )
                             )
@@ -204,7 +208,7 @@ private fun GeminiPart.toDomainPart(index: Int): RequestContentPart? =
             ToolCallPart(
                 toolCallId = call.id ?: "gemini-tool-call-$index",
                 functionName = call.name,
-                argumentsJson = call.args.orEmpty().toJsonObject().properties
+                argumentsJson = call.args?.toDomainJsonObject()?.properties.orEmpty()
             )
         }
         functionResponse != null -> {
@@ -263,7 +267,7 @@ private fun toGeminiPart(part: ResponseContentPart): GeminiResponsePart =
         is ToolCallPart -> GeminiResponsePart(
             functionCall = GeminiFunctionCall(
                 name = part.functionName,
-                args = org.omniai.sdk.domain.common.json.JsonValue.JsonObject(part.argumentsJson).toRawMap(),
+                args = JsonValue.JsonObject(part.argumentsJson).toKotlinxJsonObject(),
                 id = part.toolCallId
             )
         )
