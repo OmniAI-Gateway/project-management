@@ -1,5 +1,8 @@
 package org.omniai.sdk.adapters.anthropic
 
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.test.runTest
 import org.omniai.sdk.contracts.anthropic.input.RawText
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -59,7 +62,7 @@ class AnthropicAdapterTranslatorTest {
     }
 
     @Test
-    fun `maps anthropic stream event to domain event`() {
+    fun `maps anthropic stream event to domain event`() = runTest {
         val event = AnthropicStreamEvent.MessageStart(
             message = AnthropicMessageResponse(
                 id = "msg_1",
@@ -69,7 +72,7 @@ class AnthropicAdapterTranslatorTest {
             )
         )
 
-        val domainEvent = translator.toDomainEvent(event)
+        val domainEvent = translator.toDomainEvent(flowOf(event)).first()
 
         val started = assertIs<ResponseStarted>(domainEvent)
         assertEquals(Provider.ANTHROPIC, started.provider)

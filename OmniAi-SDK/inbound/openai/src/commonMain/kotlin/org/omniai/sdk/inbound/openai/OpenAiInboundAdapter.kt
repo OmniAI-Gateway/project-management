@@ -1,7 +1,6 @@
 package org.omniai.sdk.inbound.openai
 
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.map
 import org.omniai.sdk.contracts.openai.input.OpenAiChatCompletionsRequest
 import org.omniai.sdk.contracts.openai.output.OpenAiChatCompletionsResponse
 import org.omniai.sdk.core.commom.Either
@@ -39,7 +38,7 @@ class OpenAiInboundAdapter(
     ): Either<DomainError, Flow<OpenAiChatCompletionsResponse>> {
         val domainRequest = translator.toDomain(request)
         return when (val streamResult = service.generateStream(domainRequest)) {
-            is Success -> success(streamResult.value.map(translator::fromDomainEvent))
+            is Success -> success(translator.fromDomainEvent(streamResult.value))
             is Failure -> failure(streamResult.value)
         }
     }

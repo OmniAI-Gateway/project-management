@@ -5,6 +5,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onCompletion
 import org.omniai.sdk.contracts.openai.input.OpenAiChatCompletionsRequest
 import org.omniai.sdk.contracts.openai.output.OpenAiChatCompletionsResponse
+import org.omniai.sdk.contracts.openai.output.OpenAiError
 import org.omniai.sdk.contracts.openai.output.OpenAiEventStream
 import org.omniai.sdk.core.commom.Either
 import org.omniai.sdk.core.commom.failure
@@ -25,7 +26,6 @@ import org.omniai.sdk.domain.errors.DomainError
 import org.omniai.sdk.domain.requests.CommonRequest
 import org.omniai.sdk.domain.responses.CommonResponse
 import org.omniai.sdk.domain.responses.CommonResponseEvent
-import org.omniai.sdk.domain.responses.ResponseErrored
 
 class OpenAiOutboundAdapter(
     override val model: Model,
@@ -46,8 +46,8 @@ class OpenAiOutboundAdapter(
             header("Content-Type", "application/json")
             body = providerRequest
         }
-        return when (val callResult = transportClient.
-            executeRequest<OpenAiChatCompletionsResponse,OpenAiChatCompletionsRequest>(requestConfig)) {
+        val callResult = transportClient.executeRequest<OpenAiChatCompletionsResponse, OpenAiChatCompletionsRequest>(requestConfig)
+        return when (callResult) {
             is HttpCallResult.Success -> success(translator.toDomain(callResult.data))
             else -> failure(callResult.toDomainError(provider))
         }
@@ -57,49 +57,57 @@ class OpenAiOutboundAdapter(
         val providerRequest = translator.fromDomain(request).copy(stream = true)
         val requestConfig = providerRequest.toSimplePost()
 
-        val eventFlow: Flow<CommonResponseEvent> = transportClient
+        val providerEventFlow: Flow<OpenAiEventStream> = transportClient
             .listenEvents<OpenAiChatCompletionsResponse, OpenAiChatCompletionsRequest>(
                 config = requestConfig,
                 eventName = null
             )
             .map { callResult ->
                 when (callResult) {
-                    is HttpCallResult.Success -> translator.toDomainEvent(OpenAiEventStream.Chunk(callResult.data))
-                    is HttpCallResult.SerializationError -> {
-                        if (callResult.exception.message?.contains("[DONE]", ignoreCase = true) == true) {
-                            translator.toDomainEvent(OpenAiEventStream.Done)
-                        } else {
-                            ResponseErrored(
-                                provider = provider,
-                                id = "",
-                                model = model,
-                                sequence = 0,
-                                message = callResult.toDomainError(provider).message,
-                                retryable = false,
-                                providerEventType = "transport_error"
+                    is HttpCallResult.Success -> OpenAiEventStream.Chunk(callResult.data)
+                    is HttpCallResult.NetworkError -> OpenAiEventStream.Error(
+                        OpenAiError(
+                            message = callResult.exception.message ?: "Network error",
+                            type = "network_error"
+                        )
+                    )
+                    is HttpCallResult.ApiError -> OpenAiEventStream.Error(
+                        OpenAiError(
+                            message = callResult.message ?: "API error",
+                            type = "api_error",
+                            code = callResult.code.toString()
+                        )
+                    )
+                    is HttpCallResult.SerializationError -> if (
+                        callResult.exception.message?.contains("[DONE]") == true
+                    ) {
+                        OpenAiEventStream.Done
+                    } else {
+                        OpenAiEventStream.Error(
+                            OpenAiError(
+                                message = callResult.exception.message ?: "Serialization error",
+                                type = "serialization_error"
                             )
-                        }
+                        )
                     }
-                    else -> ResponseErrored(
-                        provider = provider,
-                        id = "",
-                        model = model,
-                        sequence = 0,
-                        message = callResult.toDomainError(provider).message,
-                        retryable = callResult is HttpCallResult.NetworkError ||
-                            (callResult is HttpCallResult.ApiError && callResult.code in 500..599),
-                        providerEventType = "transport_error"
+                    is HttpCallResult.UnknownError -> OpenAiEventStream.Error(
+                        OpenAiError(
+                            message = callResult.exception.message ?: "Unknown error",
+                            type = "unknown_error"
+                        )
                     )
                 }
             }
             .onCompletion { cause ->
                 if (cause == null) {
-                    emit(translator.toDomainEvent(OpenAiEventStream.Done))
+                    emit(OpenAiEventStream.Done)
                 }
             }
 
+        val eventFlow = translator.toDomainEvent(providerEventFlow)
         return success(eventFlow)
     }
+
 
     private fun OpenAiChatCompletionsRequest.toSimplePost(): RequestConfig<OpenAiChatCompletionsRequest> =
         requestConfig(url = "$baseUrl/chat/completions") {

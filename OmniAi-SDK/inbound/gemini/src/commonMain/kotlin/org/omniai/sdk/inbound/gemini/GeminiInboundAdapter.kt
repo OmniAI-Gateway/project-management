@@ -1,7 +1,6 @@
 package org.omniai.sdk.inbound.gemini
 
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.map
 import org.omniai.sdk.contracts.gemini.input.GeminiGenerateContentRequest
 import org.omniai.sdk.contracts.gemini.output.GeminiGenerateContentResponse
 import org.omniai.sdk.core.commom.Either
@@ -40,7 +39,7 @@ class GeminiInboundAdapter(
     ): Either<DomainError, Flow<GeminiGenerateContentResponse>> {
         val domainRequest = translator.toDomain(request).withModelOverride(map)
         return when (val streamResult = service.generateStream(domainRequest)) {
-            is Either.Right -> success(streamResult.value.map(translator::fromDomainEvent))
+            is Either.Right -> success(translator.fromDomainEvent(streamResult.value))
             is Either.Left -> failure(streamResult.value)
         }
     }

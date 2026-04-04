@@ -1,5 +1,8 @@
 package org.omniai.sdk.inbound.anthropic
 
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlin.test.Test
@@ -103,30 +106,35 @@ class AnthropicInboundTranslatorTest {
     }
 
     @Test
-    fun `maps common stream events to anthropic events`() {
+    fun `maps common stream events to anthropic events`() = runTest {
         val started = translator.fromDomainEvent(
-            ResponseStarted(
-                provider = Provider.ANTHROPIC,
-                id = "msg_abc",
-                model = Model("claude-3-5-sonnet"),
-                sequence = 1
+            flowOf(
+                ResponseStarted(
+                    provider = Provider.ANTHROPIC,
+                    id = "msg_abc",
+                    model = Model("claude-3-5-sonnet"),
+                    sequence = 1
+                )
             )
-        )
+        ).first()
         assertTrue(started is AnthropicStreamEvent.MessageStart)
+        assertEquals("msg_abc", started.message.id)
         assertEquals("msg_abc", started.message.id)
 
         val usage = translator.fromDomainEvent(
-            UsageReported(
-                provider = Provider.ANTHROPIC,
-                id = "msg_abc",
-                model = Model("claude-3-5-sonnet"),
-                sequence = 2,
-                usage = CommonUsage(inputTokens = 3, outputTokens = 4)
+            flowOf(
+                UsageReported(
+                    provider = Provider.ANTHROPIC,
+                    id = "msg_abc",
+                    model = Model("claude-3-5-sonnet"),
+                    sequence = 2,
+                    usage = CommonUsage(inputTokens = 3, outputTokens = 4)
+                )
             )
-        )
+        ).first()
         assertTrue(usage is AnthropicStreamEvent.MessageDelta)
+        assertEquals(3, usage.usage?.inputTokens)
         assertEquals(3, usage.usage?.inputTokens)
         assertEquals(4, usage.usage?.outputTokens)
     }
 }
-

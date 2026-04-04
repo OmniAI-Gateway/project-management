@@ -1,4 +1,6 @@
 package org.omniai.sdk.inbound.openai
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 import kotlinx.serialization.json.JsonObject
 import org.omniai.sdk.contracts.openai.input.OpenAiChatCompletionsRequest
 import org.omniai.sdk.contracts.openai.input.OpenAiMessageInput
@@ -90,8 +92,12 @@ class OpenAiInboundTranslator :
             usage = domainResponse.usage?.toOpenAiUsage()
         )
 
-    override fun fromDomainEvent(domainEvent: CommonResponseEvent): OpenAiChatCompletionsResponse =
-        when (domainEvent) {
+    override fun fromDomainEvent(domainEvent: Flow<CommonResponseEvent>): Flow<OpenAiChatCompletionsResponse> =
+        domainEvent.map(::toOpenAiEvent)
+}
+
+private fun toOpenAiEvent(domainEvent: CommonResponseEvent): OpenAiChatCompletionsResponse =
+    when (domainEvent) {
             is ResponseStarted -> chunkResponse(
                 id = domainEvent.id,
                 model = domainEvent.model.model,
@@ -192,8 +198,7 @@ class OpenAiInboundTranslator :
                     )
                 )
             )
-        }
-}
+    }
 
 @OptIn(ExperimentalUuidApi::class)
 private fun generateOpenAiID(): String {

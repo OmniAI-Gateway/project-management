@@ -1,5 +1,7 @@
 package org.omniai.sdk.inbound.gemini
 
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import org.omniai.sdk.contracts.gemini.input.GeminiContent
@@ -79,7 +81,7 @@ class GeminiInboundTranslator :
             },
             toolChoice = clientRequest.toolConfig?.functionCallingConfig?.toDomainToolChoice(),
             jsonResponse = clientRequest.generationConfig?.responseMimeType.equals("application/json", ignoreCase = true)
-                || clientRequest.generationConfig?.responseJsonSchema != null,
+                    || clientRequest.generationConfig?.responseJsonSchema != null,
             providerOptions = providerOptions
         )
     }
@@ -92,8 +94,12 @@ class GeminiInboundTranslator :
             responseId = domainResponse.id
         )
 
-    override fun fromDomainEvent(domainEvent: CommonResponseEvent): GeminiGenerateContentResponse =
-        when (domainEvent) {
+    override fun fromDomainEvent(domainEvent: Flow<CommonResponseEvent>): Flow<GeminiGenerateContentResponse> =
+        domainEvent.map(::toGeminiEvent)
+}
+
+private fun toGeminiEvent(domainEvent: CommonResponseEvent): GeminiGenerateContentResponse =
+    when (domainEvent) {
             is ResponseStarted -> GeminiGenerateContentResponse(
                 modelVersion = domainEvent.model.model,
                 responseId = domainEvent.id
@@ -188,8 +194,7 @@ class GeminiInboundTranslator :
                 modelVersion = domainEvent.model.model,
                 responseId = domainEvent.id
             )
-        }
-}
+    }
 
 private fun String?.toCommonRole(): CommonRole =
     when (this?.lowercase()) {
