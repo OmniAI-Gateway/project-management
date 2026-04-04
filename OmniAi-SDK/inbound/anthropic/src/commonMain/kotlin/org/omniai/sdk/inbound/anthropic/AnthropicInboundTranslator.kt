@@ -133,7 +133,7 @@ class AnthropicInboundTranslator : InboundTranslator<AnthropicMessagesRequest, A
 				delta = MessageDeltaInfo(),
 				usage = domainEvent.usage.toAnthropicUsage()
 			)
-			is ResponseCompleted -> AnthropicStreamEvent.MessageStop()
+			is ResponseCompleted -> AnthropicStreamEvent.MessageStop
 			is ResponseErrored -> AnthropicStreamEvent.Error(
 				error = AnthropicError(
 					type = if (domainEvent.retryable) "overloaded_error" else "api_error",

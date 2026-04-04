@@ -4,8 +4,8 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onCompletion
 import org.omniai.sdk.contracts.openai.input.OpenAiChatCompletionsRequest
-import org.omniai.sdk.contracts.openai.output.OpenAiEventStream
 import org.omniai.sdk.contracts.openai.output.OpenAiChatCompletionsResponse
+import org.omniai.sdk.contracts.openai.output.OpenAiEventStream
 import org.omniai.sdk.core.commom.Either
 import org.omniai.sdk.core.commom.failure
 import org.omniai.sdk.core.commom.success
@@ -57,7 +57,7 @@ class OpenAiOutboundAdapter(
         val providerRequest = translator.fromDomain(request).copy(stream = true)
         val requestConfig = providerRequest.toSimplePost()
 
-        val eventFlow = transportClient
+        val eventFlow: Flow<CommonResponseEvent> = transportClient
             .listenEvents<OpenAiChatCompletionsResponse, OpenAiChatCompletionsRequest>(
                 config = requestConfig,
                 eventName = null
@@ -71,6 +71,7 @@ class OpenAiOutboundAdapter(
                         } else {
                             ResponseErrored(
                                 provider = provider,
+                                id = "",
                                 model = model,
                                 sequence = 0,
                                 message = callResult.toDomainError(provider).message,
@@ -81,6 +82,7 @@ class OpenAiOutboundAdapter(
                     }
                     else -> ResponseErrored(
                         provider = provider,
+                        id = "",
                         model = model,
                         sequence = 0,
                         message = callResult.toDomainError(provider).message,

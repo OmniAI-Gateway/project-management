@@ -1,60 +1,61 @@
 package org.omniai.sdk.contracts.anthropic.output
 
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import org.omniai.sdk.contracts.anthropic.serialization.AnthropicStreamEventSerializer
+import kotlinx.serialization.json.JsonClassDiscriminator
 
-@Serializable(with = AnthropicStreamEventSerializer::class)
+@Serializable
+@OptIn(ExperimentalSerializationApi::class)
+@JsonClassDiscriminator("type")
 sealed interface AnthropicStreamEvent {
-    val type: String
 
     @Serializable
+    @SerialName("message_start")
     data class MessageStart(
-        val message: AnthropicMessageResponse,
-        override val type: String = "message_start"
+        val message: AnthropicMessageResponse
     ) : AnthropicStreamEvent
 
     @Serializable
+    @SerialName("content_block_start")
     data class ContentBlockStart(
         val index: Int,
         @SerialName("content_block")
-        val contentBlock: AnthropicOutputContent,
-        override val type: String = "content_block_start"
+        val contentBlock: AnthropicOutputContent
     ) : AnthropicStreamEvent
 
     @Serializable
+    @SerialName("content_block_delta")
     data class ContentBlockDelta(
         val index: Int,
-        val delta: AnthropicStreamDelta,
-        override val type: String = "content_block_delta"
+        val delta: AnthropicStreamDelta
     ) : AnthropicStreamEvent
 
     @Serializable
+    @SerialName("content_block_stop")
     data class ContentBlockStop(
-        val index: Int,
-        override val type: String = "content_block_stop"
+        val index: Int
     ) : AnthropicStreamEvent
 
     @Serializable
+    @SerialName("message_delta")
     data class MessageDelta(
         val delta: MessageDeltaInfo,
-        val usage: AnthropicUsage? = null,
-        override val type: String = "message_delta"
+        val usage: AnthropicUsage? = null
     ) : AnthropicStreamEvent
 
     @Serializable
-    data class MessageStop(
-        override val type: String = "message_stop"
-    ) : AnthropicStreamEvent
+    @SerialName("message_stop")
+    object MessageStop : AnthropicStreamEvent
 
     @Serializable
-    data class Ping(
-        override val type: String = "ping"
-    ) : AnthropicStreamEvent
+    @SerialName("ping")
+    object Ping : AnthropicStreamEvent
 
     @Serializable
+    @SerialName("error")
     data class Error(
-        val error: AnthropicError,
-        override val type: String = "error"
+        val error: AnthropicError
     ) : AnthropicStreamEvent
+
 }

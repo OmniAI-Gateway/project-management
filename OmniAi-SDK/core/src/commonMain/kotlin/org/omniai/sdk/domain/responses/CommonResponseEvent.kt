@@ -6,7 +6,7 @@ import org.omniai.sdk.domain.common.Provider
 
 sealed interface CommonResponseEvent {
     val provider: Provider
-    val id: String?
+    val id: String
     val model: Model
     val sequence: Long
     val providerEventType: String?
@@ -14,7 +14,7 @@ sealed interface CommonResponseEvent {
 
 data class ResponseStarted(
     override val provider: Provider,
-    override val id: String? = null,
+    override val id: String,
     override val model: Model,
     override val sequence: Long,
     override val providerEventType: String? = null
@@ -22,7 +22,7 @@ data class ResponseStarted(
 
 data class ChoiceStarted(
     override val provider: Provider,
-    override val id: String? = null,
+    override val id: String,
     override val model: Model,
     override val sequence: Long,
     val choiceIndex: Int,
@@ -32,7 +32,7 @@ data class ChoiceStarted(
 
 data class TextDeltaEvent(
     override val provider: Provider,
-    override val id: String? = null,
+    override val id: String,
     override val model: Model,
     override val sequence: Long,
     val choiceIndex: Int,
@@ -42,7 +42,7 @@ data class TextDeltaEvent(
 
 data class ToolCallStartedEvent(
     override val provider: Provider,
-    override val id: String? = null,
+    override val id: String,
     override val model: Model,
     override val sequence: Long,
     val choiceIndex: Int,
@@ -54,7 +54,7 @@ data class ToolCallStartedEvent(
 
 data class ToolCallArgumentsDeltaEvent(
     override val provider: Provider,
-    override val id: String? = null,
+    override val id: String,
     override val model: Model,
     override val sequence: Long,
     val choiceIndex: Int,
@@ -65,7 +65,7 @@ data class ToolCallArgumentsDeltaEvent(
 
 data class ChoiceFinished(
     override val provider: Provider,
-    override val id: String? = null,
+    override val id: String,
     override val model: Model,
     override val sequence: Long,
     val choiceIndex: Int,
@@ -75,7 +75,7 @@ data class ChoiceFinished(
 
 data class UsageReported(
     override val provider: Provider,
-    override val id: String? = null,
+    override val id: String,
     override val model: Model,
     override val sequence: Long,
     val usage: CommonUsage,
@@ -84,7 +84,7 @@ data class UsageReported(
 
 data class ResponseCompleted(
     override val provider: Provider,
-    override val id: String? = null,
+    override val id: String,
     override val model: Model,
     override val sequence: Long,
     override val providerEventType: String? = null
@@ -92,7 +92,7 @@ data class ResponseCompleted(
 
 data class ResponseErrored(
     override val provider: Provider,
-    override val id: String? = null,
+    override val id: String,
     override val model: Model,
     override val sequence: Long,
     val message: String,

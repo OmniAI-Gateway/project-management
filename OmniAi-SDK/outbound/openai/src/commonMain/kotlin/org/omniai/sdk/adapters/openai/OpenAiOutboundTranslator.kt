@@ -1,6 +1,8 @@
 package org.omniai.sdk.adapters.openai
 
-import kotlinx.serialization.json.JsonElement
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.mapNotNull
+import kotlinx.coroutines.flow.runningFold
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.Json
 import org.omniai.sdk.contracts.openai.input.FunctionRef
@@ -93,28 +95,42 @@ class OpenAiOutboundTranslator : OutboundTranslator<OpenAiChatCompletionsRequest
             }
         )
 
-    override fun toDomainEvent(providerEvent: OpenAiEventStream): CommonResponseEvent =
-        when (providerEvent) {
-            is OpenAiEventStream.Chunk -> providerEvent.data.toDomainChunkEvent()
-            OpenAiEventStream.Done -> ResponseCompleted(
-                provider = Provider.OPENAI,
-                id = null,
-                model = Model(""),
-                sequence = 0L,
-                providerEventType = "done"
-            )
-            is OpenAiEventStream.Error -> ResponseErrored(
-                provider = Provider.OPENAI,
-                id = null,
-                model = Model(""),
-                sequence = 0L,
-                message = providerEvent.error.message,
-                retryable = providerEvent.error.type.isRetryableOpenAiError(),
-                providerEventType = "error"
-            )
-        }
+    override fun toDomainEvent(providerEvent: Flow<OpenAiEventStream>): Flow<CommonResponseEvent> =
+        providerEvent
+            .runningFold(OpenAiEventContext()) { context, event ->
+                val translatedEvent = event.toDomainStreamEvent(context.id, context.model)
+                context.copy(id = translatedEvent.id, model = translatedEvent.model, event = translatedEvent)
+            }
+            .mapNotNull { it.event }
 
 }
+
+private data class OpenAiEventContext(
+    val id: String = "",
+    val model: Model = Model(""),
+    val event: CommonResponseEvent? = null
+)
+
+private fun OpenAiEventStream.toDomainStreamEvent(previousId: String, previousModel: Model): CommonResponseEvent =
+    when (this) {
+        is OpenAiEventStream.Chunk -> data.toDomainChunkEvent(previousId, previousModel)
+        OpenAiEventStream.Done -> ResponseCompleted(
+            provider = Provider.OPENAI,
+            id = previousId,
+            model = previousModel,
+            sequence = 0L,
+            providerEventType = "done"
+        )
+        is OpenAiEventStream.Error -> ResponseErrored(
+            provider = Provider.OPENAI,
+            id = previousId,
+            model = previousModel,
+            sequence = 0L,
+            message = error.message,
+            retryable = error.type.isRetryableOpenAiError(),
+            providerEventType = "error"
+        )
+    }
 
 private fun List<String>?.toOpenAiStop(): OpenAiStop? = this?.takeIf { it.isNotEmpty() }?.let { stops ->
         if (stops.size == 1) OpenAiStop.Single(stops.first()) else OpenAiStop.Multiple(stops)
@@ -198,7 +214,7 @@ private fun String.toDomainContentPart(): SharedContentPart{
 
 private fun OpenAiToolCallOutput.toDomainToolCallPart(): ToolCallPart =
     ToolCallPart(
-        toolCallId = id,
+        toolCallId = id ?: "openai-tool-call-0",
         functionName = function.name ?: "unknown",
         argumentsJson = function.arguments.toDomainToolArguments()
     )
@@ -249,16 +265,17 @@ private fun String.toDomainToolArguments(): Map<String, JsonValue> {
 }
 
 
-private fun OpenAiChatCompletionsResponse.toDomainChunkEvent(): CommonResponseEvent {
-    val model = Model(model)
+private fun OpenAiChatCompletionsResponse.toDomainChunkEvent(previousId: String, previousModel: Model): CommonResponseEvent {
+    val resolvedId = id.takeUnless { it.isBlank() } ?: previousId
+    val resolvedModel = model.takeUnless { it.isBlank() }?.let(::Model) ?: previousModel
     val sequence = created
     val firstChoice = choices.firstOrNull()
 
     if (obj != "chat.completion.chunk") {
         return ResponseCompleted(
             provider = Provider.OPENAI,
-            id = id,
-            model = model,
+            id = resolvedId,
+            model = resolvedModel,
             sequence = sequence,
             providerEventType = obj
         )
@@ -269,8 +286,8 @@ private fun OpenAiChatCompletionsResponse.toDomainChunkEvent(): CommonResponseEv
         if (usage != null) {
             return UsageReported(
                 provider = Provider.OPENAI,
-                id = id,
-                model = model,
+                id = resolvedId,
+                model = resolvedModel,
                 sequence = sequence,
                 usage = usage.toDomainUsage(),
                 providerEventType = obj
@@ -279,8 +296,8 @@ private fun OpenAiChatCompletionsResponse.toDomainChunkEvent(): CommonResponseEv
 
         return ResponseStarted(
             provider = Provider.OPENAI,
-            id = id,
-            model = model,
+            id = resolvedId,
+            model = resolvedModel,
             sequence = sequence,
             providerEventType = obj
         )
@@ -288,8 +305,8 @@ private fun OpenAiChatCompletionsResponse.toDomainChunkEvent(): CommonResponseEv
 
     val choice = firstChoice ?: return ResponseCompleted(
         provider = Provider.OPENAI,
-        id = id,
-        model = model,
+        id = resolvedId,
+        model = resolvedModel,
         sequence = sequence,
         providerEventType = obj
     )
@@ -297,8 +314,8 @@ private fun OpenAiChatCompletionsResponse.toDomainChunkEvent(): CommonResponseEv
     choice.finishReason?.let {
         return ChoiceFinished(
             provider = Provider.OPENAI,
-            id = id,
-            model = model,
+            id = resolvedId,
+            model = resolvedModel,
             sequence = sequence,
             choiceIndex = choice.index,
             finishReason = it.toDomainFinishReason(),
@@ -313,8 +330,8 @@ private fun OpenAiChatCompletionsResponse.toDomainChunkEvent(): CommonResponseEv
         if (partialJson.isNotBlank() && functionName.isNullOrBlank()) {
             return ToolCallArgumentsDeltaEvent(
                 provider = Provider.OPENAI,
-                id = id,
-                model = model,
+                id = resolvedId,
+                model = resolvedModel,
                 sequence = sequence,
                 choiceIndex = choice.index,
                 toolCallIndex = toolCall.index ?: 0,
@@ -325,12 +342,12 @@ private fun OpenAiChatCompletionsResponse.toDomainChunkEvent(): CommonResponseEv
 
         return ToolCallStartedEvent(
             provider = Provider.OPENAI,
-            id = id,
-            model = model,
+            id = resolvedId,
+            model = resolvedModel,
             sequence = sequence,
             choiceIndex = choice.index,
             toolCallIndex = toolCall.index ?: 0,
-            toolCallId = toolCall.id,
+            toolCallId = toolCall.id ?: "openai-tool-call-${toolCall.index ?: 0}",
             functionName = functionName ?: "unknown",
             providerEventType = obj
         )
@@ -339,8 +356,8 @@ private fun OpenAiChatCompletionsResponse.toDomainChunkEvent(): CommonResponseEv
     choice.delta?.content?.let {
         return TextDeltaEvent(
             provider = Provider.OPENAI,
-            id = id,
-            model = model,
+            id = resolvedId,
+            model = resolvedModel,
             sequence = sequence,
             choiceIndex = choice.index,
             text = it,
@@ -351,8 +368,8 @@ private fun OpenAiChatCompletionsResponse.toDomainChunkEvent(): CommonResponseEv
     choice.delta?.role?.let {
         return ChoiceStarted(
             provider = Provider.OPENAI,
-            id = id,
-            model = model,
+            id = resolvedId,
+            model = resolvedModel,
             sequence = sequence,
             choiceIndex = choice.index,
             role = it.toCommonRole(),
@@ -362,8 +379,8 @@ private fun OpenAiChatCompletionsResponse.toDomainChunkEvent(): CommonResponseEv
 
     return ResponseCompleted(
         provider = Provider.OPENAI,
-        id = id,
-        model = model,
+        id = resolvedId,
+        model = resolvedModel,
         sequence = sequence,
         providerEventType = obj
     )

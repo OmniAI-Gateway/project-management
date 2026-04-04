@@ -47,49 +47,43 @@ import org.omniai.sdk.domain.responses.TextDeltaEvent
 import org.omniai.sdk.domain.responses.ToolCallArgumentsDeltaEvent
 import org.omniai.sdk.domain.responses.ToolCallStartedEvent
 import org.omniai.sdk.domain.responses.UsageReported
+import kotlin.time.Clock
+import kotlin.time.ExperimentalTime
+import kotlin.uuid.ExperimentalUuidApi
+import kotlin.uuid.Uuid
 
 
 class OpenAiInboundTranslator :
     InboundTranslator<OpenAiChatCompletionsRequest, OpenAiChatCompletionsResponse, OpenAiChatCompletionsResponse> {
+
     override val provider: Provider = Provider.OPENAI
 
     override fun toDomain(clientRequest: OpenAiChatCompletionsRequest): CommonRequest {
-        val providerOptions = TypedMap().apply {
-            clientRequest.stream?.let { put("stream", it) }
-            clientRequest.frequencyPenalty?.let { put("frequencyPenalty", it) }
-            clientRequest.presencePenalty?.let { put("presencePenalty", it) }
-            clientRequest.n?.let { put("n", it) }
-            clientRequest.seed?.let { put("seed", it) }
-            clientRequest.user?.let { put("user", it) }
-            clientRequest.logitBias?.let { put("logitBias", it) }
-            clientRequest.logProbs?.let { put("logProbs", it) }
-            clientRequest.topLogProbs?.let { put("topLogProbs", it) }
-            clientRequest.responseFormat?.let { put("responseFormat", it) }
-        }
-
         val responseFormatType = clientRequest.responseFormat?.type?.lowercase()
+        val config = CommonGenerationConfig(
+            temperature = clientRequest.temperature,
+            maxTokens = clientRequest.maxTokens,
+            topP = clientRequest.topP,
+            stopSequences = clientRequest.stop.toStopSequences()
+        )
         return CommonRequest(
             provider = provider,
             model = clientRequest.model,
             messages = clientRequest.messages.map(OpenAiMessageInput::toDomainMessage),
-            config = CommonGenerationConfig(
-                temperature = clientRequest.temperature,
-                maxTokens = clientRequest.maxTokens,
-                topP = clientRequest.topP,
-                stopSequences = clientRequest.stop.toStopSequences()
-            ),
+            config = config,
             tools = clientRequest.tools?.map(OpenAiTool::toDomainTool).orEmpty(),
             toolChoice = clientRequest.toolChoice?.toDomainToolChoice(),
             jsonResponse = responseFormatType == "json_object" || responseFormatType == "json_schema",
-            providerOptions = providerOptions
+            providerOptions = clientRequest.buildToDomainTypeMap()
         )
     }
 
+
     override fun fromDomain(domainResponse: CommonResponse): OpenAiChatCompletionsResponse =
         OpenAiChatCompletionsResponse(
-            id = domainResponse.id?.takeIf { it.isNotBlank() } ?: "chatcmpl_${currentTimeMillis()}",
+            id = domainResponse.id?.takeIf { it.isNotBlank() } ?: generateOpenAiID(),
             obj = "chat.completion",
-            created = ((domainResponse.providerOptions["created"] as? Number)?.toLong() ?: (currentTimeMillis() / 1000)),
+            created = ((domainResponse.providerOptions["created"] as? Number)?.toLong() ?: getTime()),
             model = domainResponse.model,
             systemFingerprint = domainResponse.providerOptions["systemFingerprint"] as? String,
             choices = domainResponse.choices.map(::toOpenAiChoice),
@@ -154,11 +148,9 @@ class OpenAiInboundTranslator :
                         delta = OpenAiDelta(
                             toolCalls = listOf(
                                 OpenAiToolCallOutput(
-                                    id = "openai-tool-call-${domainEvent.toolCallIndex}",
                                     index = domainEvent.toolCallIndex,
                                     type = "function",
                                     function = OpenAiToolCallFunctionOutput(
-                                        name = "",
                                         arguments = domainEvent.argumentsFragment
                                     )
                                 )
@@ -188,6 +180,8 @@ class OpenAiInboundTranslator :
                 model = domainEvent.model.model,
                 choices = emptyList()
             )
+
+            // this is not ritgh
             is ResponseErrored -> chunkResponse(
                 id = domainEvent.id,
                 model = domainEvent.model.model,
@@ -199,6 +193,27 @@ class OpenAiInboundTranslator :
                 )
             )
         }
+}
+
+@OptIn(ExperimentalUuidApi::class)
+private fun generateOpenAiID(): String {
+    return "chatcmpl-${Uuid.random().toHexString()}"
+}
+
+@OptIn(ExperimentalTime::class)
+private fun getTime() = Clock.System.now().epochSeconds
+
+private fun OpenAiChatCompletionsRequest.buildToDomainTypeMap(): TypedMap = TypedMap().apply {
+    stream?.let { put("stream", it) }
+    frequencyPenalty?.let { put("frequencyPenalty", it) }
+    presencePenalty?.let { put("presencePenalty", it) }
+    n?.let { put("n", it) }
+    seed?.let { put("seed", it) }
+    user?.let { put("user", it) }
+    logitBias?.let { put("logitBias", it) }
+    logProbs?.let { put("logProbs", it) }
+    topLogProbs?.let { put("topLogProbs", it) }
+    responseFormat?.let { put("responseFormat", it) }
 }
 
 private fun OpenAiStop?.toStopSequences(): List<String>? =
@@ -262,15 +277,15 @@ private fun String.toToolChoice(): ToolChoice? =
     }
 
 private fun chunkResponse(
-    id: String?,
+    id: String,
     model: String,
     choices: List<OpenAiChoice>,
     usage: OpenAiUsage? = null
 ): OpenAiChatCompletionsResponse =
     OpenAiChatCompletionsResponse(
-        id = id ?: "catchall_${currentTimeMillis()}",
+        id = id,
         obj = "chat.completion.chunk",
-        created = currentTimeMillis() / 1000,
+        created = getTime(),
         model = model,
         choices = choices,
         usage = usage
