@@ -1,10 +1,11 @@
 package org.omniai.sdk.inbound.openai
 
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.map
 import org.omniai.sdk.contracts.openai.input.OpenAiChatCompletionsRequest
 import org.omniai.sdk.contracts.openai.output.OpenAiChatCompletionsResponse
 import org.omniai.sdk.core.commom.Either
+import org.omniai.sdk.core.commom.Failure
+import org.omniai.sdk.core.commom.Success
 import org.omniai.sdk.core.commom.TypedMap
 import org.omniai.sdk.core.commom.failure
 import org.omniai.sdk.core.commom.success
@@ -26,8 +27,8 @@ class OpenAiInboundAdapter(
     ): Either<DomainError, OpenAiChatCompletionsResponse> {
         val domainRequest = translator.toDomain(request)
         return when (val domainResponse = service.generate(domainRequest)) {
-            is Either.Right -> success(translator.fromDomain(domainResponse.value))
-            is Either.Left -> failure(domainResponse.value)
+            is Success -> success(translator.fromDomain(domainResponse.value))
+            is Failure -> failure(domainResponse.value)
         }
     }
 
@@ -37,8 +38,8 @@ class OpenAiInboundAdapter(
     ): Either<DomainError, Flow<OpenAiChatCompletionsResponse>> {
         val domainRequest = translator.toDomain(request)
         return when (val streamResult = service.generateStream(domainRequest)) {
-            is Either.Right -> success(streamResult.value.map(translator::fromDomainEvent))
-            is Either.Left -> failure(streamResult.value)
+            is Success -> success(translator.fromDomainEvent(streamResult.value))
+            is Failure -> failure(streamResult.value)
         }
     }
 }

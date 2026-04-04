@@ -1,5 +1,6 @@
 package org.omniai.sdk.core.ports
 
+import kotlinx.coroutines.flow.Flow
 import org.omniai.sdk.domain.requests.CommonRequest
 import org.omniai.sdk.domain.responses.CommonResponse
 import org.omniai.sdk.domain.responses.CommonResponseEvent
@@ -27,5 +28,5 @@ interface OutboundTranslator<out ProviderReq, in ProviderRes, in ProviderEvent> 
     /**
      * Converts a provider-specific streaming event into the core domain event model.
      */
-    fun toDomainEvent(providerEvent: ProviderEvent): CommonResponseEvent
+    fun toDomainEvent(providerEvent: Flow<ProviderEvent>): Flow<CommonResponseEvent>
 }

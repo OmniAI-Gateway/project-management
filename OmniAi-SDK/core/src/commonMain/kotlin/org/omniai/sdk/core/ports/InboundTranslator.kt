@@ -1,5 +1,6 @@
 package org.omniai.sdk.core.ports
 
+import kotlinx.coroutines.flow.Flow
 import org.omniai.sdk.domain.common.Provider // Consider using ProviderId as discussed earlier!
 import org.omniai.sdk.domain.requests.CommonRequest
 import org.omniai.sdk.domain.responses.CommonResponse
@@ -33,5 +34,5 @@ interface InboundTranslator<in ClientReq, out ClientRes, out ClientEvent> {
     /**
      * Converts a core domain streaming event into the client-specific event format.
      */
-    fun fromDomainEvent(domainEvent: CommonResponseEvent): ClientEvent
+    fun fromDomainEvent(domainEvent: Flow<CommonResponseEvent>): Flow<ClientEvent>
 }

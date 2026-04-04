@@ -1,35 +1,38 @@
 package org.omniai.sdk.contracts.anthropic.output
 
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import org.omniai.sdk.contracts.anthropic.serialization.AnthropicStreamDeltaSerializer
+import kotlinx.serialization.json.JsonClassDiscriminator
 
-@Serializable(with = AnthropicStreamDeltaSerializer::class)
+@Serializable
+@OptIn(ExperimentalSerializationApi::class)
+@JsonClassDiscriminator("type")
 sealed interface AnthropicStreamDelta {
-    val type: String
 
     @Serializable
+    @SerialName("text_delta")
     data class TextDelta(
-        val text: String,
-        override val type: String = "text_delta"
+        val text: String
     ) : AnthropicStreamDelta
 
     @Serializable
+    @SerialName("thinking_delta")
     data class ThinkingDelta(
-        val thinking: String,
-        override val type: String = "thinking_delta"
+        val thinking: String
     ) : AnthropicStreamDelta
 
     @Serializable
+    @SerialName("signature_delta")
     data class SignatureDelta(
-        val signature: String,
-        override val type: String = "signature_delta"
+        val signature: String
     ) : AnthropicStreamDelta
 
     @Serializable
+    @SerialName("input_json_delta")
     data class InputJsonDelta(
         @SerialName("partial_json")
-        val partialJson: String,
-        override val type: String = "input_json_delta"
+        val partialJson: String
     ) : AnthropicStreamDelta
+
 }

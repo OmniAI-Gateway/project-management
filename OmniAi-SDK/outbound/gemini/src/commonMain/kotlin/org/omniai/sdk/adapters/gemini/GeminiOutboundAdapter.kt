@@ -3,6 +3,8 @@ package org.omniai.sdk.adapters.gemini
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onCompletion
+import org.omniai.sdk.contracts.gemini.output.GeminiError
+import org.omniai.sdk.contracts.gemini.output.GeminiErrorResponse
 import org.omniai.sdk.contracts.gemini.input.GeminiGenerateContentRequest
 import org.omniai.sdk.contracts.gemini.output.GeminiEventStream
 import org.omniai.sdk.contracts.gemini.output.GeminiGenerateContentResponse
@@ -25,7 +27,6 @@ import org.omniai.sdk.domain.errors.DomainError
 import org.omniai.sdk.domain.requests.CommonRequest
 import org.omniai.sdk.domain.responses.CommonResponse
 import org.omniai.sdk.domain.responses.CommonResponseEvent
-import org.omniai.sdk.domain.responses.ResponseErrored
 
 class GeminiOutboundAdapter(
     override val model: Model,
@@ -63,30 +64,63 @@ class GeminiOutboundAdapter(
         val providerRequest = translator.fromDomain(request)
         val requestConfig = providerRequest.toStreamPost(request.model)
 
-        val eventFlow = transportClient
+        val providerEventFlow = transportClient
             .listenEvents<GeminiGenerateContentResponse, GeminiGenerateContentRequest>(
                 config = requestConfig,
                 eventName = null
             )
             .map { callResult ->
                 when (callResult) {
-                    is HttpCallResult.Success -> translator.toDomainEvent(GeminiEventStream.Chunk(callResult.data))
-                    else -> ResponseErrored(
-                        provider = provider,
-                        model = model,
-                        sequence = 0,
-                        message = callResult.toDomainError(provider).message,
-                        retryable = callResult is HttpCallResult.NetworkError ||
-                            (callResult is HttpCallResult.ApiError && callResult.code in 500..599),
-                        providerEventType = "transport_error"
+                    is HttpCallResult.Success -> GeminiEventStream.Chunk(callResult.data)
+                    is HttpCallResult.NetworkError -> GeminiEventStream.Error(
+                        GeminiErrorResponse(
+                            error = GeminiError(
+                                code = -1,
+                                message = callResult.exception.message ?: "Network error",
+                                status = "UNAVAILABLE",
+                                details = emptyList()
+                            )
+                        )
+                    )
+                    is HttpCallResult.ApiError -> GeminiEventStream.Error(
+                        GeminiErrorResponse(
+                            error = GeminiError(
+                                code = callResult.code,
+                                message = callResult.message ?: "API error",
+                                status = "API_ERROR",
+                                details = emptyList()
+                            )
+                        )
+                    )
+                    is HttpCallResult.SerializationError -> GeminiEventStream.Error(
+                        GeminiErrorResponse(
+                            error = GeminiError(
+                                code = -2,
+                                message = callResult.exception.message ?: "Serialization error",
+                                status = "INTERNAL",
+                                details = emptyList()
+                            )
+                        )
+                    )
+                    is HttpCallResult.UnknownError -> GeminiEventStream.Error(
+                        GeminiErrorResponse(
+                            error = GeminiError(
+                                code = -3,
+                                message = callResult.exception.message ?: "Unknown error",
+                                status = "INTERNAL",
+                                details = emptyList()
+                            )
+                        )
                     )
                 }
             }
             .onCompletion { cause ->
                 if (cause == null) {
-                    emit(translator.toDomainEvent(GeminiEventStream.Done))
+                    emit(GeminiEventStream.Done)
                 }
             }
+
+        val eventFlow = translator.toDomainEvent(providerEventFlow)
 
         return success(eventFlow)
     }

@@ -2,6 +2,8 @@ package org.omniai.sdk.adapters.anthropic
 
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onCompletion
+import org.omniai.sdk.contracts.anthropic.output.AnthropicError
 import org.omniai.sdk.contracts.anthropic.input.AnthropicMessagesRequest
 import org.omniai.sdk.contracts.anthropic.output.AnthropicMessageResponse
 import org.omniai.sdk.contracts.anthropic.output.AnthropicStreamEvent
@@ -24,7 +26,6 @@ import org.omniai.sdk.domain.errors.DomainError
 import org.omniai.sdk.domain.requests.CommonRequest
 import org.omniai.sdk.domain.responses.CommonResponse
 import org.omniai.sdk.domain.responses.CommonResponseEvent
-import org.omniai.sdk.domain.responses.ResponseErrored
 
 class AnthropicOutboundAdapter(
     override val model: Model,
@@ -40,8 +41,9 @@ class AnthropicOutboundAdapter(
 
     override suspend fun generate(request: CommonRequest): Either<DomainError, CommonResponse> {
         val providerRequest = translator.fromDomain(request)
-        val requestConfig =  providerRequest.toSimplePost()
+        val requestConfig = providerRequest.toSimplePost()
         val callResult = transportClient.executeRequest<AnthropicMessageResponse, AnthropicMessagesRequest>(requestConfig)
+
         return when (callResult) {
             is HttpCallResult.Success -> success(translator.toDomain(callResult.data))
             else -> failure(callResult.toDomainError(provider))
@@ -51,7 +53,8 @@ class AnthropicOutboundAdapter(
     override suspend fun generateStream(request: CommonRequest): Either<DomainError, Flow<CommonResponseEvent>> {
         val providerRequest = translator.fromDomain(request).copy(stream = true)
         val requestConfig = providerRequest.toSimplePost()
-        val eventFlow = transportClient.listenEvents<AnthropicStreamEvent, AnthropicMessagesRequest>(config = requestConfig) {
+        val providerEventFlow: Flow<AnthropicStreamEvent> = transportClient
+            .listenEvents<AnthropicStreamEvent, AnthropicMessagesRequest>(config = requestConfig) {
             on<AnthropicStreamEvent.MessageStart>("message_start")
             on<AnthropicStreamEvent.ContentBlockStart>("content_block_start")
             on<AnthropicStreamEvent.ContentBlockDelta>("content_block_delta")
@@ -60,20 +63,44 @@ class AnthropicOutboundAdapter(
             on<AnthropicStreamEvent.MessageStop>("message_stop")
             on<AnthropicStreamEvent.Ping>("ping")
             on<AnthropicStreamEvent.Error>("error")
-        }.map { callResult ->
-            when (callResult) {
-                is HttpCallResult.Success -> translator.toDomainEvent(callResult.data)
-                else -> ResponseErrored(
-                    provider = provider,
-                    model = model,
-                    sequence = 0,
-                    message = callResult.toDomainError(provider).message,
-                    retryable = callResult is HttpCallResult.NetworkError ||
-                        (callResult is HttpCallResult.ApiError && callResult.code in 500..599),
-                    providerEventType = "transport_error"
-                )
             }
-        }
+            .map { callResult ->
+                when (callResult) {
+                    is HttpCallResult.Success -> callResult.data
+                    is HttpCallResult.NetworkError -> AnthropicStreamEvent.Error(
+                        error = AnthropicError(
+                            type = "network_error",
+                            message = callResult.exception.message ?: "Network error"
+                        )
+                    )
+                    is HttpCallResult.ApiError -> AnthropicStreamEvent.Error(
+                        error = AnthropicError(
+                            type = "api_error",
+                            message = callResult.message ?: "API error"
+                        )
+                    )
+                    is HttpCallResult.SerializationError -> AnthropicStreamEvent.Error(
+                        error = AnthropicError(
+                            type = "serialization_error",
+                            message = callResult.exception.message ?: "Serialization error"
+                        )
+                    )
+                    is HttpCallResult.UnknownError -> AnthropicStreamEvent.Error(
+                        error = AnthropicError(
+                            type = "unknown_error",
+                            message = callResult.exception.message ?: "Unknown error"
+                        )
+                    )
+                }
+            }
+            .onCompletion { cause ->
+                if (cause == null) {
+                    emit(AnthropicStreamEvent.MessageStop)
+                }
+            }
+
+        val eventFlow = translator.toDomainEvent(providerEventFlow)
+
         return success(eventFlow)
     }
 

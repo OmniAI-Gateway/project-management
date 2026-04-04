@@ -1,5 +1,8 @@
 package org.omniai.sdk.adapters.openai
 
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
@@ -56,7 +59,7 @@ class OpenAiAdapterTranslatorTest {
             choices = listOf(
                 OpenAiChoice(
                     index = 0,
-                    message = org.omniai.sdk.contracts.openai.output.OpenAiMessageOutput(
+                    message = OpenAiMessageOutput(
                         role = "assistant",
                         content = "Done"
                     ),
@@ -73,7 +76,7 @@ class OpenAiAdapterTranslatorTest {
     }
 
     @Test
-    fun `maps openai chunk event to domain event`() {
+    fun `maps openai chunk event to domain event`() = runTest {
         val event = OpenAiChatCompletionsResponse(
             id = "chatcmpl_1",
             obj = "chat.completion.chunk",
@@ -87,12 +90,15 @@ class OpenAiAdapterTranslatorTest {
             )
         )
 
-        val domainEvent = translator.toDomainEvent(OpenAiEventStream.Chunk(event))
+        val domainEvent = translator
+            .toDomainEvent(flowOf(OpenAiEventStream.Chunk(event)))
+            .first()
 
         val textDelta = assertIs<TextDeltaEvent>(domainEvent)
         assertEquals(Provider.OPENAI, textDelta.provider)
         assertEquals(Model("gpt-4o-mini"), textDelta.model)
     }
+
 
     @Test
     fun `maps tool call arguments JSON string to domain object`() {
@@ -128,7 +134,7 @@ class OpenAiAdapterTranslatorTest {
     }
 
     @Test
-    fun `maps tool call argument fragment event from string`() {
+    fun `maps tool call argument fragment event from string`() = runTest {
         val event = OpenAiChatCompletionsResponse(
             id = "chatcmpl_1",
             obj = "chat.completion.chunk",
@@ -154,8 +160,12 @@ class OpenAiAdapterTranslatorTest {
             )
         )
 
-        val domainEvent = translator.toDomainEvent(OpenAiEventStream.Chunk(event))
+        val domainEvent = translator
+            .toDomainEvent(flowOf(OpenAiEventStream.Chunk(event)))
+            .first()
+
         val argsDelta = assertIs<ToolCallArgumentsDeltaEvent>(domainEvent)
         assertTrue(argsDelta.argumentsFragment.startsWith("{\"city\""))
     }
+
 }

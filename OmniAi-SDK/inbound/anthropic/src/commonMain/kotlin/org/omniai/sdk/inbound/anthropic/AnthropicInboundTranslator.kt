@@ -1,5 +1,7 @@
 package org.omniai.sdk.inbound.anthropic
 
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 import kotlinx.serialization.json.JsonObject
 import org.omniai.sdk.contracts.anthropic.input.AnthropicContent
 import org.omniai.sdk.contracts.anthropic.input.AnthropicInputContentBlock
@@ -56,29 +58,22 @@ class AnthropicInboundTranslator : InboundTranslator<AnthropicMessagesRequest, A
 	override val provider: Provider = Provider.ANTHROPIC
 
 	override fun toDomain(clientRequest: AnthropicMessagesRequest): CommonRequest {
-		val providerOptions = TypedMap().apply {
-			clientRequest.stream?.let { put("stream", it) }
-			clientRequest.topK?.let { put("topK", it) }
-			clientRequest.stopToken?.let { put("stopToken", it) }
-			clientRequest.thinking?.let { put("thinking", it) }
-			clientRequest.metadata?.let { put("metadata", it) }
-		}
-
-		return CommonRequest(
+        val generationConfig = CommonGenerationConfig(
+            temperature = clientRequest.temperature,
+            maxTokens = clientRequest.maxTokens,
+            topP = clientRequest.topP,
+            stopSequences = clientRequest.stopSequences
+        )
+        return CommonRequest(
 			provider = provider,
 			model = clientRequest.model,
 			messages = clientRequest.messages.map(AnthropicMessageInput::toDomainMessage),
 			systemPrompt = clientRequest.system.toPlainSystemText()?.takeIf(String::isNotBlank)?.let(::SystemPrompt),
-			config = CommonGenerationConfig(
-				temperature = clientRequest.temperature,
-				maxTokens = clientRequest.maxTokens,
-				topP = clientRequest.topP,
-				stopSequences = clientRequest.stopSequences
-			),
+			config = generationConfig,
 			tools = clientRequest.tools?.map(AnthropicToolDefinition::toDomainTool).orEmpty(),
 			toolChoice = clientRequest.toolChoice?.toDomainToolChoice(),
 			jsonResponse = false,
-			providerOptions = providerOptions
+			providerOptions = commonRequestTypedMapInputs(clientRequest)
 		)
 	}
 
@@ -86,7 +81,7 @@ class AnthropicInboundTranslator : InboundTranslator<AnthropicMessagesRequest, A
 		val firstChoice = domainResponse.choices.firstOrNull()
 
 		return AnthropicMessageResponse(
-			id = domainResponse.id ?: "", // tratar ids de melhor forma no futuro
+			id = domainResponse.id,
 			type = "message",
 			role = firstChoice?.message?.role?.toAnthropicRole() ?: "assistant",
 			model = domainResponse.model,
@@ -96,52 +91,64 @@ class AnthropicInboundTranslator : InboundTranslator<AnthropicMessagesRequest, A
 		)
 	}
 
-	override fun fromDomainEvent(domainEvent: CommonResponseEvent): AnthropicStreamEvent =
-		when (domainEvent) {
-			is ResponseStarted -> AnthropicStreamEvent.MessageStart(
-				message = AnthropicMessageResponse(
-					id = domainEvent.id ?: "",
-					type = "message",
-					role = "assistant",
-					model = domainEvent.model.model
-				)
-			)
-			is ChoiceStarted -> AnthropicStreamEvent.ContentBlockStart(
-				index = domainEvent.choiceIndex,
-				contentBlock = AnthropicOutputContent.Text(text = "")
-			)
-			is TextDeltaEvent -> AnthropicStreamEvent.ContentBlockDelta(
-				index = domainEvent.choiceIndex,
-				delta = AnthropicStreamDelta.TextDelta(text = domainEvent.text)
-			)
-			is ToolCallStartedEvent -> AnthropicStreamEvent.ContentBlockStart(
-				index = domainEvent.toolCallIndex,
-				contentBlock = AnthropicOutputContent.ToolUse(
-					id = domainEvent.toolCallId,
-					name = domainEvent.functionName,
-					input = JsonObject(emptyMap())
-				)
-			)
-			is ToolCallArgumentsDeltaEvent -> AnthropicStreamEvent.ContentBlockDelta(
-				index = domainEvent.toolCallIndex,
-				delta = AnthropicStreamDelta.InputJsonDelta(partialJson = domainEvent.argumentsFragment)
-			)
-			is ChoiceFinished -> AnthropicStreamEvent.MessageDelta(
-				delta = MessageDeltaInfo(stopReason = domainEvent.finishReason.toAnthropicStopReason())
-			)
-			is UsageReported -> AnthropicStreamEvent.MessageDelta(
-				delta = MessageDeltaInfo(),
-				usage = domainEvent.usage.toAnthropicUsage()
-			)
-			is ResponseCompleted -> AnthropicStreamEvent.MessageStop()
-			is ResponseErrored -> AnthropicStreamEvent.Error(
-				error = AnthropicError(
-					type = if (domainEvent.retryable) "overloaded_error" else "api_error",
-					message = domainEvent.message
-				)
-			)
-		}
+	override fun fromDomainEvent(domainEvent: Flow<CommonResponseEvent>): Flow<AnthropicStreamEvent> =
+		domainEvent.map(CommonResponseEvent::toAnthropicStreamEvent)
 }
+
+private fun commonRequestTypedMapInputs(clientRequest: AnthropicMessagesRequest): TypedMap = TypedMap().apply {
+        clientRequest.stream?.let { put("stream", it) }
+        clientRequest.topK?.let { put("topK", it) }
+        clientRequest.stopToken?.let { put("stopToken", it) }
+        clientRequest.thinking?.let { put("thinking", it) }
+        clientRequest.metadata?.let { put("metadata", it) }
+    }
+
+
+private fun CommonResponseEvent.toAnthropicStreamEvent(): AnthropicStreamEvent =
+	when (this) {
+		is ResponseStarted -> AnthropicStreamEvent.MessageStart(
+			message = AnthropicMessageResponse(
+				id = id,
+				type = "message",
+				role = "assistant",
+				model = model.model
+			)
+		)
+		is ChoiceStarted -> AnthropicStreamEvent.ContentBlockStart(
+			index = choiceIndex,
+			contentBlock = AnthropicOutputContent.Text(text = "")
+		)
+		is TextDeltaEvent -> AnthropicStreamEvent.ContentBlockDelta(
+			index = choiceIndex,
+			delta = AnthropicStreamDelta.TextDelta(text = text)
+		)
+		is ToolCallStartedEvent -> AnthropicStreamEvent.ContentBlockStart(
+			index = toolCallIndex,
+			contentBlock = AnthropicOutputContent.ToolUse(
+				id = toolCallId,
+				name = functionName,
+				input = JsonObject(emptyMap())
+			)
+		)
+		is ToolCallArgumentsDeltaEvent -> AnthropicStreamEvent.ContentBlockDelta(
+			index = toolCallIndex,
+			delta = AnthropicStreamDelta.InputJsonDelta(partialJson = argumentsFragment)
+		)
+		is ChoiceFinished -> AnthropicStreamEvent.MessageDelta(
+			delta = MessageDeltaInfo(stopReason = finishReason.toAnthropicStopReason())
+		)
+		is UsageReported -> AnthropicStreamEvent.MessageDelta(
+			delta = MessageDeltaInfo(),
+			usage = usage.toAnthropicUsage()
+		)
+		is ResponseCompleted -> AnthropicStreamEvent.MessageStop
+		is ResponseErrored -> AnthropicStreamEvent.Error(
+			error = AnthropicError(
+				type = if (retryable) "overloaded_error" else "api_error",
+				message = message
+			)
+		)
+	}
 
 private fun AnthropicContent?.toPlainSystemText(): String? = when (this) {
     null -> null
@@ -196,8 +203,7 @@ private fun AnthropicToolDefinition.toDomainTool(): CommonTool =
 		parametersSchema = (inputSchema.toDomainJsonValue() as? JsonValue.JsonObject)?.properties.orEmpty()
 	)
 
-private fun AnthropicToolChoice.toDomainToolChoice(): ToolChoice? =
-	type.toToolChoice(name)
+private fun AnthropicToolChoice.toDomainToolChoice(): ToolChoice? = type.toToolChoice(name)
 
 private fun String.toToolChoice(name: String?): ToolChoice? =
 	when (lowercase()) {
@@ -241,4 +247,3 @@ private fun FinishReason?.toAnthropicStopReason(): String? =
 		FinishReason.CONTENT_FILTER -> "stop_sequence"
 		FinishReason.OTHER, null -> null
 	}
-

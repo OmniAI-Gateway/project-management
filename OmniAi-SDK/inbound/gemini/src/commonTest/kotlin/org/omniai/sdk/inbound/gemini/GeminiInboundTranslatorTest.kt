@@ -1,5 +1,8 @@
 package org.omniai.sdk.inbound.gemini
 
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.jsonPrimitive
@@ -16,6 +19,7 @@ import org.omniai.sdk.contracts.gemini.input.GeminiGenerationConfig
 import org.omniai.sdk.contracts.gemini.input.GeminiPart
 import org.omniai.sdk.contracts.gemini.input.GeminiTool
 import org.omniai.sdk.contracts.gemini.input.GeminiToolConfig
+import org.omniai.sdk.contracts.gemini.output.GeminiGenerateContentResponse
 import org.omniai.sdk.domain.common.CommonRole
 import org.omniai.sdk.domain.common.Model
 import org.omniai.sdk.domain.common.Provider
@@ -24,6 +28,7 @@ import org.omniai.sdk.domain.common.content.ToolCallPart
 import org.omniai.sdk.domain.common.json.JsonValue
 import org.omniai.sdk.domain.responses.CommonChoice
 import org.omniai.sdk.domain.responses.CommonResponse
+import org.omniai.sdk.domain.responses.CommonResponseEvent
 import org.omniai.sdk.domain.responses.CommonResponseMessage
 import org.omniai.sdk.domain.responses.CommonUsage
 import org.omniai.sdk.domain.responses.FinishReason
@@ -129,8 +134,8 @@ class GeminiInboundTranslatorTest {
     }
 
     @Test
-    fun `maps common stream events to gemini response chunks`() {
-        val started = translator.fromDomainEvent(
+    fun `maps common stream events to gemini response chunks`() = runTest {
+        val started = translateSingleEvent(
             ResponseStarted(
                 provider = Provider.GEMINI,
                 id = "resp_abc",
@@ -141,7 +146,7 @@ class GeminiInboundTranslatorTest {
         assertEquals("resp_abc", started.responseId)
         assertEquals("gemini-2.0-flash", started.modelVersion)
 
-        val toolCallStarted = translator.fromDomainEvent(
+        val toolCallStarted = translateSingleEvent(
             ToolCallStartedEvent(
                 provider = Provider.GEMINI,
                 id = "resp_abc",
@@ -155,7 +160,7 @@ class GeminiInboundTranslatorTest {
         )
         assertEquals("weather", toolCallStarted.candidates.first().content?.parts?.first()?.functionCall?.name)
 
-        val usage = translator.fromDomainEvent(
+        val usage = translateSingleEvent(
             UsageReported(
                 provider = Provider.GEMINI,
                 id = "resp_abc",
@@ -168,5 +173,8 @@ class GeminiInboundTranslatorTest {
         assertEquals(4, usage.usageMetadata?.candidatesTokenCount)
         assertEquals(7, usage.usageMetadata?.totalTokenCount)
     }
+
+    private suspend fun translateSingleEvent(event: CommonResponseEvent): GeminiGenerateContentResponse =
+        translator.fromDomainEvent(flowOf(event)).first()
 }
 

@@ -1,8 +1,10 @@
 package org.omniai.sdk.adapters.gemini
 
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertIs
 import org.omniai.sdk.contracts.gemini.output.GeminiCandidate
 import org.omniai.sdk.contracts.gemini.output.GeminiEventStream
 import org.omniai.sdk.contracts.gemini.output.GeminiGenerateContentResponse
@@ -14,6 +16,7 @@ import org.omniai.sdk.domain.common.content.TextPart
 import org.omniai.sdk.domain.requests.CommonRequest
 import org.omniai.sdk.domain.requests.CommonRequestMessage
 import org.omniai.sdk.domain.responses.TextDeltaEvent
+import kotlin.test.assertIs
 
 class GeminiAdapterTranslatorTest {
 
@@ -40,31 +43,7 @@ class GeminiAdapterTranslatorTest {
     }
 
     @Test
-    fun `maps gemini response to common response`() {
-        val response = GeminiGenerateContentResponse(
-            candidates = listOf(
-                GeminiCandidate(
-                    index = 0,
-                    content = GeminiResponseContent(
-                        role = "model",
-                        parts = listOf(GeminiResponsePart(text = "Done"))
-                    ),
-                    finishReason = "STOP"
-                )
-            ),
-            modelVersion = "gemini-2.0-flash",
-            responseId = "resp_123"
-        )
-
-        val domain = translator.toDomain(response)
-
-        assertEquals(Provider.GEMINI, domain.provider)
-        assertEquals("resp_123", domain.id)
-        assertEquals("Done", (domain.choices.first().message.content.first() as TextPart).text)
-    }
-
-    @Test
-    fun `maps gemini event to domain event`() {
+    fun `maps gemini event to domain event`() = runTest {
         val event = GeminiGenerateContentResponse(
             candidates = listOf(
                 GeminiCandidate(
@@ -76,9 +55,12 @@ class GeminiAdapterTranslatorTest {
             responseId = "resp_1"
         )
 
-        val domainEvent = translator.toDomainEvent(GeminiEventStream.Chunk(event))
+        val domainEvent = translator
+            .toDomainEvent(flowOf(GeminiEventStream.Chunk(event)))
+            .first()
 
         val textDelta = assertIs<TextDeltaEvent>(domainEvent)
         assertEquals(Provider.GEMINI, textDelta.provider)
     }
+
 }

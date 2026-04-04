@@ -1,5 +1,8 @@
 package org.omniai.sdk.inbound.openai
 
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlin.test.Test
@@ -119,20 +122,20 @@ class OpenAiInboundTranslatorTest {
     }
 
     @Test
-    fun `maps common stream events to openai response chunks`() {
+    fun `maps common stream events to openai response chunks`() = runTest {
         val started = translator.fromDomainEvent(
-            ResponseStarted(
+            flowOf(ResponseStarted(
                 provider = Provider.OPENAI,
                 id = "chatcmpl_abc",
                 model = Model("gpt-4o-mini"),
                 sequence = 1
-            )
-        )
+            ))
+        ).first()
         assertEquals("chat.completion.chunk", started.obj)
         assertEquals("chatcmpl_abc", started.id)
 
         val toolCallStarted = translator.fromDomainEvent(
-            ToolCallStartedEvent(
+            flowOf(ToolCallStartedEvent(
                 provider = Provider.OPENAI,
                 id = "chatcmpl_abc",
                 model = Model("gpt-4o-mini"),
@@ -141,13 +144,13 @@ class OpenAiInboundTranslatorTest {
                 toolCallIndex = 0,
                 toolCallId = "call_1",
                 functionName = "weather"
-            )
-        )
+            ))
+        ).first()
         assertEquals("weather", toolCallStarted.choices.first().delta?.toolCalls?.first()?.function?.name)
         assertEquals("", toolCallStarted.choices.first().delta?.toolCalls?.first()?.function?.arguments)
 
         val toolArgsDelta = translator.fromDomainEvent(
-            ToolCallArgumentsDeltaEvent(
+            flowOf(ToolCallArgumentsDeltaEvent(
                 provider = Provider.OPENAI,
                 id = "chatcmpl_abc",
                 model = Model("gpt-4o-mini"),
@@ -155,22 +158,22 @@ class OpenAiInboundTranslatorTest {
                 choiceIndex = 0,
                 toolCallIndex = 0,
                 argumentsFragment = "{\"city\":\"Lis"
-            )
-        )
+            ))
+        ).first()
         assertEquals(
             "{\"city\":\"Lis",
             toolArgsDelta.choices.first().delta?.toolCalls?.first()?.function?.arguments
         )
 
         val usage = translator.fromDomainEvent(
-            UsageReported(
+            flowOf(UsageReported(
                 provider = Provider.OPENAI,
                 id = "chatcmpl_abc",
                 model = Model("gpt-4o-mini"),
                 sequence = 3,
                 usage = CommonUsage(inputTokens = 3, outputTokens = 4, totalTokens = 7)
-            )
-        )
+            ))
+        ).first()
         assertEquals(3, usage.usage?.promptTokens)
         assertEquals(4, usage.usage?.completionTokens)
         assertEquals(7, usage.usage?.totalTokens)

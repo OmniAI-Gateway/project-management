@@ -1,31 +1,35 @@
 package org.omniai.sdk.contracts.anthropic.output
 
+import kotlinx.serialization.ExperimentalSerializationApi
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonClassDiscriminator
 import kotlinx.serialization.json.JsonObject
-import org.omniai.sdk.contracts.anthropic.serialization.AnthropicOutputContentSerializer
 
-@Serializable(with = AnthropicOutputContentSerializer::class)
+@Serializable
+@OptIn(ExperimentalSerializationApi::class)
+@JsonClassDiscriminator("type")
 sealed interface AnthropicOutputContent {
-    val type: String
 
     @Serializable
+    @SerialName("text")
     data class Text(
-        val text: String,
-        override val type: String = "text"
+        val text: String
     ) : AnthropicOutputContent
 
     @Serializable
+    @SerialName("thinking")
     data class Thinking(
         val thinking: String,
-        val signature: String? = null,
-        override val type: String = "thinking"
+        val signature: String? = null
     ) : AnthropicOutputContent
 
     @Serializable
+    @SerialName("tool_use")
     data class ToolUse(
         val id: String,
         val name: String,
-        val input: JsonObject? = null,
-        override val type: String = "tool_use"
+        val input: JsonObject? = null
     ) : AnthropicOutputContent
+
 }

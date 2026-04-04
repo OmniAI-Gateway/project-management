@@ -1,5 +1,8 @@
 package org.omniai.sdk.adapters.gemini
 
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.mapNotNull
+import kotlinx.coroutines.flow.runningFold
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonNull
@@ -57,6 +60,8 @@ import org.omniai.sdk.domain.responses.ToolCallArgumentsDeltaEvent
 import org.omniai.sdk.domain.responses.ToolCallStartedEvent
 import org.omniai.sdk.domain.responses.UsageReported
 import kotlin.random.Random
+import kotlin.uuid.ExperimentalUuidApi
+import kotlin.uuid.Uuid
 
 class GeminiOutboundTranslator : OutboundTranslator<GeminiGenerateContentRequest, GeminiGenerateContentResponse, GeminiEventStream> {
 
@@ -86,47 +91,67 @@ class GeminiOutboundTranslator : OutboundTranslator<GeminiGenerateContentRequest
     override fun toDomain(providerResponse: GeminiGenerateContentResponse): CommonResponse =
         CommonResponse(
             provider = Provider.GEMINI,
-            id = providerResponse.responseId,
+            id = providerResponse.responseId ?: generateGeminiId(),
             model = providerResponse.modelVersion ?: "",
             choices = providerResponse.candidates.map(::toDomainChoice),
             usage = providerResponse.usageMetadata?.toDomainUsage(),
             providerOptions = providerResponse.promptFeedback?.let { mapOf("promptFeedback" to it.blockReason) } ?: emptyMap()
         )
 
-    override fun toDomainEvent(providerEvent: GeminiEventStream): CommonResponseEvent =
-        when (providerEvent) {
-            is GeminiEventStream.Chunk -> providerEvent.data.toDomainChunkEvent()
-            GeminiEventStream.Done -> ResponseCompleted(
-                provider = Provider.GEMINI,
-                id = null,
-                model = Model(""),
-                sequence = 0L,
-                providerEventType = "done"
-            )
-            is GeminiEventStream.Error -> {
-                val error = providerEvent.error.error
-                ResponseErrored(
-                    provider = Provider.GEMINI,
-                    id = null,
-                    model = Model(""),
-                    sequence = 0L,
-                    message = error.message,
-                    retryable = error.status.isRetryableGeminiStatus(),
-                    providerEventType = "error"
-                )
+    override fun toDomainEvent(providerEvent: Flow<GeminiEventStream>): Flow<CommonResponseEvent> =
+        providerEvent
+            .runningFold(GeminiEventContext()) { context, event ->
+                val translatedEvent = event.toDomainStreamEvent(context.id, context.model)
+                context.copy(id = translatedEvent.id, model = translatedEvent.model, event = translatedEvent)
             }
-        }
+            .mapNotNull { it.event }
+
+
 }
 
-private fun GeminiGenerateContentResponse.toDomainChunkEvent(): CommonResponseEvent {
-    val model = Model(modelVersion ?: "")
+@OptIn(ExperimentalUuidApi::class)
+private fun generateGeminiId() = Uuid.random().toHexString()
+
+private data class GeminiEventContext(
+    val id: String = "",
+    val model: Model = Model(""),
+    val event: CommonResponseEvent? = null
+)
+
+private fun GeminiEventStream.toDomainStreamEvent(previousId: String, previousModel: Model): CommonResponseEvent =
+    when (this) {
+        is GeminiEventStream.Chunk -> data.toDomainChunkEvent(previousId, previousModel)
+        GeminiEventStream.Done -> ResponseCompleted(
+            provider = Provider.GEMINI,
+            id = previousId,
+            model = previousModel,
+            sequence = 0L,
+            providerEventType = "done"
+        )
+        is GeminiEventStream.Error -> {
+            val streamError = error.error
+            ResponseErrored(
+                provider = Provider.GEMINI,
+                id = previousId,
+                model = previousModel,
+                sequence = 0L,
+                message = streamError.message,
+                retryable = streamError.status.isRetryableGeminiStatus(),
+                providerEventType = "error"
+            )
+        }
+    }
+
+private fun GeminiGenerateContentResponse.toDomainChunkEvent(previousId: String, previousModel: Model): CommonResponseEvent {
+    val resolvedId = responseId?.takeUnless { it.isBlank() } ?: previousId
+    val model = modelVersion?.takeUnless { it.isBlank() }?.let(::Model) ?: previousModel
     val sequence = 0L
     val firstCandidate = candidates.firstOrNull()
 
     promptFeedback?.blockReason?.let { blockReason ->
         return ResponseErrored(
             provider = Provider.GEMINI,
-            id = responseId,
+                id = resolvedId,
             model = model,
             sequence = sequence,
             message = blockReason,
@@ -139,7 +164,7 @@ private fun GeminiGenerateContentResponse.toDomainChunkEvent(): CommonResponseEv
         usageMetadata?.let {
             return UsageReported(
                 provider = Provider.GEMINI,
-                id = responseId,
+                id = resolvedId,
                 model = model,
                 sequence = sequence,
                 usage = it.toDomainUsage(),
@@ -149,7 +174,7 @@ private fun GeminiGenerateContentResponse.toDomainChunkEvent(): CommonResponseEv
 
         return ResponseStarted(
             provider = Provider.GEMINI,
-            id = responseId,
+            id = resolvedId,
             model = model,
             sequence = sequence,
             providerEventType = "response_start"
@@ -158,7 +183,7 @@ private fun GeminiGenerateContentResponse.toDomainChunkEvent(): CommonResponseEv
 
     val candidate = firstCandidate ?: return ResponseStarted(
         provider = Provider.GEMINI,
-        id = responseId,
+        id = resolvedId,
         model = model,
         sequence = sequence,
         providerEventType = "response_start"
@@ -167,7 +192,7 @@ private fun GeminiGenerateContentResponse.toDomainChunkEvent(): CommonResponseEv
     candidate.finishReason?.let {
         return ChoiceFinished(
             provider = Provider.GEMINI,
-            id = responseId,
+            id = resolvedId,
             model = model,
             sequence = sequence,
             choiceIndex = candidate.index ?: 0,
@@ -182,7 +207,7 @@ private fun GeminiGenerateContentResponse.toDomainChunkEvent(): CommonResponseEv
         if (argumentsFragment != null && functionCall.name.isBlank()) {
             return ToolCallArgumentsDeltaEvent(
                 provider = Provider.GEMINI,
-                id = responseId,
+                id = resolvedId,
                 model = model,
                 sequence = sequence,
                 choiceIndex = candidate.index ?: 0,
@@ -194,7 +219,7 @@ private fun GeminiGenerateContentResponse.toDomainChunkEvent(): CommonResponseEv
 
         return ToolCallStartedEvent(
             provider = Provider.GEMINI,
-            id = responseId,
+            id = resolvedId,
             model = model,
             sequence = sequence,
             choiceIndex = candidate.index ?: 0,
@@ -209,7 +234,7 @@ private fun GeminiGenerateContentResponse.toDomainChunkEvent(): CommonResponseEv
     if (textDelta != null) {
         return TextDeltaEvent(
             provider = Provider.GEMINI,
-            id = responseId,
+            id = resolvedId,
             model = model,
             sequence = sequence,
             choiceIndex = candidate.index ?: 0,
@@ -221,7 +246,7 @@ private fun GeminiGenerateContentResponse.toDomainChunkEvent(): CommonResponseEv
     candidate.content?.role?.let {
         return ChoiceStarted(
             provider = Provider.GEMINI,
-            id = responseId,
+            id = resolvedId,
             model = model,
             sequence = sequence,
             choiceIndex = candidate.index ?: 0,
@@ -232,7 +257,7 @@ private fun GeminiGenerateContentResponse.toDomainChunkEvent(): CommonResponseEv
 
     return ResponseStarted(
         provider = Provider.GEMINI,
-        id = responseId,
+        id = resolvedId,
         model = model,
         sequence = sequence,
         providerEventType = "response_start"
