@@ -7,7 +7,7 @@ export function createCertificateRoutes(
 ): Router {
   const router = Router();
 
-  router.get("/certificates", certificateHandlers.listCertificates);
+  router.get("/jwks", certificateHandlers.listCertificates);
 
   return router;
 }

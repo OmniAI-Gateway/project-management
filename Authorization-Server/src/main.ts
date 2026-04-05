@@ -8,6 +8,9 @@ import { createGoogleAuthRoutes } from './routes/login/google/googleAuthRoutes';
 import { createCertificateService } from './services/certificates/certificateService';
 import { createCertificateHandlers } from './handlers/certificateHandlers';
 import { createCertificateRoutes } from './routes/certificates/certificateRoutes';
+import {createApiKeysRoutes} from "./routes/credentials/apiKeys";
+import {createTokensEndpoints} from "./routes/credentials/clientCredentials";
+import {createClientManagementRoutes} from "./routes/credentials/clientManagementRoutes";
 
 const app = express();
 dotenv.config();
@@ -22,7 +25,10 @@ const certificateHandlers = createCertificateHandlers(certificateService);
 const port = Number(process.env.PORT ?? 3000);
 
 app.use('/auth', createGoogleAuthRoutes(googleHandler));
-app.use('/auth', createCertificateRoutes(certificateHandlers));
+app.use('/', createCertificateRoutes(certificateHandlers));
+app.use("/api",createApiKeysRoutes)
+app.use("/oauth", createTokensEndpoints)
+app.use("/management", createClientManagementRoutes)
 
 app.listen(
     port,
