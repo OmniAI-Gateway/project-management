@@ -29,7 +29,10 @@ class GeminiInboundAdapter(
         request: GeminiGenerateContentRequest,
         map: TypedMap,
     ): Either<DomainError, GeminiGenerateContentResponse> {
-        val domainRequest = translator.toDomain(request).withModelOverride(map)
+        val domainRequest = translator.toDomain(request).withModelOverride(map).also {
+            //preserva contexto/metadata
+            it.providerOptions.putAll(map)
+        }
         return when (val domainResponse = service.generate(domainRequest)) {
             is Success-> success(translator.fromDomain(domainResponse.value))
             is Failure -> failure(domainResponse.value)
@@ -40,7 +43,9 @@ class GeminiInboundAdapter(
         request: GeminiGenerateContentRequest,
         map: TypedMap,
     ): Either<DomainError, Flow<GeminiGenerateContentResponse>> {
-        val domainRequest = translator.toDomain(request).withModelOverride(map)
+        val domainRequest = translator.toDomain(request).withModelOverride(map).also {
+            it.providerOptions.putAll(map)
+        }
         return when (val streamResult = service.generateStream(domainRequest)) {
             is Success -> success(translator.fromDomainEvent(streamResult.value))
             is Failure -> failure(streamResult.value)

@@ -27,7 +27,7 @@ private suspend fun handleGeminiGenerateContent(
 ) {
     val request = call.parseBodyOrNull<GeminiGenerateContentRequest>(json).respondIfNull(call) ?: return
     val model = call.parameters["model"]
-    val map = TypedMap().also {
+    val map = call.buildRequestMetadataMap(TypedMap()).also {
         if (!model.isNullOrBlank()) {
             it.put(GEMINI_MODEL_KEY, model)
         }

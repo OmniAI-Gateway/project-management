@@ -25,11 +25,12 @@ private suspend fun handleAnthropicMessages(
     adapters: GatewayInboundAdapters
 ) {
     val request = call.parseBodyOrNull<AnthropicMessagesRequest>(json).respondIfNull(call) ?: return
+    val metadata = call.buildRequestMetadataMap(TypedMap())
     callHandler(
         call = call,
         json = json,
         isStream = call.isStreamRequested(request.stream),
-        onStream = { adapters.anthropic.generateStream(request, TypedMap()) },
-        onRest = { adapters.anthropic.generate(request, TypedMap()) }
+        onStream = { adapters.anthropic.generateStream(request, metadata) },
+        onRest = { adapters.anthropic.generate(request, metadata) }
     )
 }
