@@ -14,12 +14,15 @@ import org.omniai.sdk.domain.responses.CommonResponseEvent
 
 
 fun routingInferenceServiceFactory(outbounds: List<OutboundPort>): InferenceServicePort {
+    val router = LatencyRouter()
     return serviceAdapter {
         unary { request ->
-            generateWithFallback(request, outbounds)
+            val ordered = router.orderOutbounds(request, outbounds)
+            generateWithFallback(request, ordered)
         }
         stream { request ->
-            generateStreamWithFallback(request, outbounds)
+            val ordered = router.orderOutbounds(request, outbounds)
+            generateStreamWithFallback(request, ordered)
         }
     }
 }
@@ -46,7 +49,12 @@ private suspend fun <T> tryOutbounds(
     var lastError: DomainError? = null
 
     for (outbound in outbounds) {
-        when (val result = action(outbound, request)) {
+        // Para cada outbound, adapta o provider/model do request para o que o outbound suporta
+        val outboundRequest = request.copy(
+            provider = outbound.provider,
+            model = outbound.model.model
+        )
+        when (val result = action(outbound, outboundRequest)) {
             is Either.Right -> return result
             is Either.Left -> lastError = result.value
         }
