@@ -3,6 +3,7 @@ package org.omniai.sdk.inbound.anthropic
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -11,6 +12,9 @@ import org.omniai.sdk.contracts.anthropic.input.AnthropicMessageInput
 import org.omniai.sdk.contracts.anthropic.input.AnthropicMessagesRequest
 import org.omniai.sdk.contracts.anthropic.input.ListContentBlock
 import org.omniai.sdk.contracts.anthropic.output.AnthropicStreamEvent
+import org.omniai.sdk.core.commom.Success
+import org.omniai.sdk.core.commom.TypedMap
+import org.omniai.sdk.core.commom.success
 import org.omniai.sdk.core.ports.InferenceServicePort
 import org.omniai.sdk.domain.common.CommonRole
 import org.omniai.sdk.domain.common.Model
@@ -25,83 +29,94 @@ import org.omniai.sdk.domain.responses.ResponseStarted
 
 class AnthropicInboundAdapterTest {
 
-//    @Test
-//    fun `generate translates anthropic request and maps service response`() = runBlocking {
-//        var receivedRequest: CommonRequest? = null
-//
-//        val service = object : InferenceServicePort {
-//            override suspend fun generate(request: CommonRequest): CommonResponse {
-//                receivedRequest = request
-//                return CommonResponse(
-//                    provider = Provider.ANTHROPIC,
-//                    id = "msg-1",
-//                    model = "claude-3-5-sonnet",
-//                    choices = listOf(
-//                        CommonChoice(
-//                            index = 0,
-//                            message = CommonResponseMessage(
-//                                role = CommonRole.ASSISTANT,
-//                                content = listOf(TextPart("ok"))
-//                            )
-//                        )
-//                    )
-//                )
-//            }
-//
-//            override fun generateStream(request: CommonRequest): Flow<CommonResponseEvent> = flowOf()
-//        }
-//
-//        val adapter = AnthropicInboundAdapter(service)
-//        val request = anthropicRequest()
-//
-//        val response = adapter.generate(request)
-//
-//        assertEquals(Provider.ANTHROPIC, receivedRequest?.provider)
-//        assertEquals("claude-3-5-sonnet", receivedRequest?.model)
-//        assertEquals("msg-1", response.id)
-//        assertEquals("assistant", response.role)
-//        assertEquals("ok", (response.content.first() as org.omniai.sdk.contracts.anthropic.output.AnthropicOutputContent.Text).text)
-//    }
-//
-//    @Test
-//    fun `generateStream delegates to service and maps domain events`() = runBlocking {
-//        val service = object : InferenceServicePort {
-//            override suspend fun generate(request: CommonRequest): CommonResponse {
-//                throw UnsupportedOperationException("not used in this test")
-//            }
-//
-//            override fun generateStream(request: CommonRequest): Flow<CommonResponseEvent> = flowOf(
-//                ResponseStarted(
-//                    provider = Provider.ANTHROPIC,
-//                    id = "msg-stream",
-//                    model = Model("claude-3-5-sonnet"),
-//                    sequence = 1
-//                )
-//            )
-//        }
-//
-//        val adapter = AnthropicInboundAdapter(service)
-//
-//        val firstEvent = adapter.generateStream(anthropicRequest()).first()
-//
-//        assertTrue(firstEvent is AnthropicStreamEvent.MessageStart)
-//        assertEquals("msg-stream", firstEvent.message.id)
-//    }
-//
-//    private fun anthropicRequest(): AnthropicMessagesRequest = AnthropicMessagesRequest(
-//        model = "claude-3-5-sonnet",
-//        maxTokens = 128,
-//        messages = listOf(
-//            AnthropicMessageInput(
-//                role = "user",
-//                content = ListContentBlock(
-//                    blocks = listOf(
-//                        AnthropicInputContentBlock.Text("hello")
-//                    )
-//                )
-//            )
-//        )
-//    )
+	@Test
+	fun `generate translates anthropic request and maps service response`() = runTest {
+		var receivedRequest: CommonRequest? = null
+
+		val service = object : InferenceServicePort {
+			override suspend fun generate(request: CommonRequest): Success<CommonResponse> {
+				receivedRequest = request
+				return success(
+					CommonResponse(
+						provider = Provider.ANTHROPIC,
+						id = "msg-1",
+						model = "claude-3-5-sonnet",
+						choices = listOf(
+							CommonChoice(
+								index = 0,
+								message = CommonResponseMessage(
+									role = CommonRole.ASSISTANT,
+									content = listOf(TextPart("ok"))
+								)
+							)
+						)
+					)
+				)
+			}
+
+			override suspend fun generateStream(request: CommonRequest): Success<Flow<CommonResponseEvent>> = success(flowOf())
+		}
+
+		val adapter = AnthropicInboundAdapter(service)
+		val metadata = TypedMap().also { it.put("traceId", "trace-123") }
+
+		val result = adapter.generate(anthropicRequest(), metadata)
+		assertTrue(result is Success)
+
+		val response = result.value
+		assertEquals(Provider.ANTHROPIC, receivedRequest?.provider)
+		assertEquals("claude-3-5-sonnet", receivedRequest?.model)
+		assertEquals("trace-123", receivedRequest?.providerOptions?.get<String>("traceId"))
+		assertEquals("msg-1", response.id)
+		assertEquals("assistant", response.role)
+		assertEquals(
+			"ok",
+			(response.content.first() as org.omniai.sdk.contracts.anthropic.output.AnthropicOutputContent.Text).text
+		)
+	}
+
+	@Test
+	fun `generateStream delegates to service and maps domain events`() = runTest {
+		val service = object : InferenceServicePort {
+			override suspend fun generate(request: CommonRequest): Success<CommonResponse> {
+				throw UnsupportedOperationException("not used in this test")
+			}
+
+			override suspend fun generateStream(request: CommonRequest): Success<Flow<CommonResponseEvent>> = success(
+				flowOf(
+					ResponseStarted(
+						provider = Provider.ANTHROPIC,
+						id = "msg-stream",
+						model = Model("claude-3-5-sonnet"),
+						sequence = 1
+					)
+				)
+			)
+		}
+
+		val adapter = AnthropicInboundAdapter(service)
+		val result = adapter.generateStream(anthropicRequest(), TypedMap())
+		assertTrue(result is Success)
+
+		val firstEvent = result.value.first()
+		assertTrue(firstEvent is AnthropicStreamEvent.MessageStart)
+		assertEquals("msg-stream", firstEvent.message.id)
+	}
+
+	private fun anthropicRequest(): AnthropicMessagesRequest = AnthropicMessagesRequest(
+		model = "claude-3-5-sonnet",
+		maxTokens = 128,
+		messages = listOf(
+			AnthropicMessageInput(
+				role = "user",
+				content = ListContentBlock(
+					blocks = listOf(
+						AnthropicInputContentBlock.Text("hello")
+					)
+				)
+			)
+		)
+	)
 }
 
 

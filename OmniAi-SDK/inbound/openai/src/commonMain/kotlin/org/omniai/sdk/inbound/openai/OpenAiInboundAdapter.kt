@@ -25,7 +25,9 @@ class OpenAiInboundAdapter(
         request: OpenAiChatCompletionsRequest,
         map: TypedMap,
     ): Either<DomainError, OpenAiChatCompletionsResponse> {
-        val domainRequest = translator.toDomain(request)
+        val domainRequest = translator.toDomain(request).also {
+            it.providerOptions.putAll(map)
+        }
         return when (val domainResponse = service.generate(domainRequest)) {
             is Success -> success(translator.fromDomain(domainResponse.value))
             is Failure -> failure(domainResponse.value)
@@ -36,7 +38,9 @@ class OpenAiInboundAdapter(
         request: OpenAiChatCompletionsRequest,
         map: TypedMap,
     ): Either<DomainError, Flow<OpenAiChatCompletionsResponse>> {
-        val domainRequest = translator.toDomain(request)
+        val domainRequest = translator.toDomain(request).also {
+            it.providerOptions.putAll(map)
+        }
         return when (val streamResult = service.generateStream(domainRequest)) {
             is Success -> success(translator.fromDomainEvent(streamResult.value))
             is Failure -> failure(streamResult.value)

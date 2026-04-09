@@ -64,6 +64,10 @@ class TypedMap(private val data: MutableMap<AttributeKey<*>, Any> = mutableMapOf
         return getOrPut(key, default)
     }
 
+    fun putAll(other: TypedMap) = data.putAll(other.data)
+
+    fun copy(): TypedMap = TypedMap(data.toMutableMap())
+
     fun clear() = data.clear()
 
     fun keys(): Set<AttributeKey<*>> = data.keys

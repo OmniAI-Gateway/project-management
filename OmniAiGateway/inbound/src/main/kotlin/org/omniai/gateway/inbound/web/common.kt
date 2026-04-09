@@ -10,6 +10,8 @@ import io.ktor.server.response.respondTextWriter
 import kotlinx.coroutines.flow.Flow
 import kotlinx.serialization.json.Json
 import org.omniai.sdk.core.commom.Either
+import org.omniai.sdk.core.commom.TypedMap
+import org.omniai.sdk.domain.common.AUTH_BEARER_TOKEN_KEY
 import org.omniai.sdk.domain.errors.ApiDownError
 import org.omniai.sdk.domain.errors.DomainError
 import org.omniai.sdk.domain.errors.InvalidRequest
@@ -24,6 +26,27 @@ data class GatewayInboundAdapters(
     val openAi: OpenAiInboundAdapter,
     val gemini: GeminiInboundAdapter
 )
+/**
+* tira o token do header HTTP e passá-lo para o pipeline interno.
+ */
+fun ApplicationCall.extractBearerTokenOrNull(): String? {
+    val header = request.headers[HttpHeaders.Authorization]?.trim().orEmpty()
+    if (!header.startsWith("Bearer ", ignoreCase = true)) {
+        return null
+    }
+    return header.substringAfter(' ', "").trim().takeIf { it.isNotBlank() }
+}
+
+/**
+ * Cria/usa um TypedMap de metadata da request.
+ * Chama extractBearerTokenOrNull().
+ * Se encontrou token, guarda no mapa com chave AUTH_BEARER_TOKEN_KEY.
+ */
+fun ApplicationCall.buildRequestMetadataMap(base: TypedMap = TypedMap()): TypedMap = base.also {
+    extractBearerTokenOrNull()?.let { bearer ->
+        it.put(AUTH_BEARER_TOKEN_KEY, bearer)
+    }
+}
 
 suspend inline fun <reified T> ApplicationCall.parseBodyOrNull(json: Json): T? {
     val rawBody = runCatching { receiveText() }.getOrNull() ?: return null

@@ -19,17 +19,21 @@ fun Application.installOpenAiRoute(
     }
 }
 
+/**
+ * Então o adapter recebe dados reais da request, não um mapa vazio.
+ */
 private suspend fun handleOpenAiCompletions(
     call: ApplicationCall,
     json: Json,
     adapters: GatewayInboundAdapters
 ) {
     val request = call.parseBodyOrNull<OpenAiChatCompletionsRequest>(json).respondIfNull(call) ?: return
+    val metadata = call.buildRequestMetadataMap(TypedMap())
     callHandler(
         call = call,
         json = json,
         isStream = call.isStreamRequested(request.stream),
-        onStream = { adapters.openAi.generateStream(request, TypedMap()) },
-        onRest = { adapters.openAi.generate(request, TypedMap()) }
+        onStream = { adapters.openAi.generateStream(request, metadata) },
+        onRest = { adapters.openAi.generate(request, metadata) }
     )
 }

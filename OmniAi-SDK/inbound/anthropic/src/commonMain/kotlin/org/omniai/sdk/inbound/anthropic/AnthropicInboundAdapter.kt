@@ -26,7 +26,9 @@ class AnthropicInboundAdapter(
         request: AnthropicMessagesRequest,
         map: TypedMap,
     ): Either<DomainError, AnthropicMessageResponse> {
-        val domainRequest = translator.toDomain(request)
+        val domainRequest = translator.toDomain(request).also {
+            it.providerOptions.putAll(map)
+        }
         return when (val domainResponse = service.generate(domainRequest)) {
             is Success -> success(translator.fromDomain(domainResponse.value))
             is Failure -> failure(domainResponse.value)
@@ -37,7 +39,9 @@ class AnthropicInboundAdapter(
         request: AnthropicMessagesRequest,
         map: TypedMap,
     ): Either<DomainError, Flow<AnthropicStreamEvent>> {
-        val domainRequest = translator.toDomain(request)
+        val domainRequest = translator.toDomain(request).also {
+            it.providerOptions.putAll(map)
+        }
         return when (val streamResult = service.generateStream(domainRequest)) {
             is Success -> success(translator.fromDomainEvent(streamResult.value))
             is Failure -> failure(streamResult.value)
