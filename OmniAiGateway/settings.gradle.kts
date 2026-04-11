@@ -3,18 +3,8 @@ plugins {
 }
 rootProject.name = "OmniAiGateway"
 
-includeBuild("../OmniAi-SDK") {
-    dependencySubstitution {
-        substitute(module("org.omniai.sdk:OmniAi-SDK"))
-            .using(project(":"))
-        substitute(module("org.omniai.sdk.gateway:gateway-services"))
-            .using(project(":gateway:services"))
-        substitute(module("org.omniai.sdk.gateway:gateway-interceptors"))
-            .using(project(":gateway:interceptors"))
-    }
-}
+includeBuild("../OmniAi-SDK")
+
 include(":inbound")
-include(":inbound:web")
 include(":outbound")
-include(":outbound:builder")
 include(":app")

@@ -8,7 +8,6 @@ description = "Executable application module"
 dependencies {
     implementation(project(":inbound"))
     implementation(project(":outbound"))
-    implementation("org.omniai.sdk.gateway:gateway-services:1.0.0-SNAPSHOT")
 
     implementation(platform("io.ktor:ktor-bom:3.2.3"))
 

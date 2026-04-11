@@ -29,6 +29,7 @@ kotlin {
     sourceSets {
         commonMain.dependencies {
             api(project(":core"))
+            api(project(":interceptors"))
             api(project(":inbound:openai"))
             api(project(":inbound:anthropic"))
             api(project(":inbound:gemini"))
@@ -39,6 +40,10 @@ kotlin {
             api(project(":outbound:openai"))
             api(project(":outbound:anthropic"))
             api(project(":outbound:gemini"))
+        }
+
+        jvmMain.dependencies {
+            api(project(":services"))
         }
 
         commonTest.dependencies {

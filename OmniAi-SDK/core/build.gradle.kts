@@ -17,9 +17,6 @@ kotlin {
             implementation(libs.kotlinx.serialization.json)
         }
 
-        jvmMain.dependencies {
-            implementation("com.nimbusds:nimbus-jose-jwt:9.41.2")
-        }
 
         commonTest.dependencies {
             implementation(kotlin("test"))
