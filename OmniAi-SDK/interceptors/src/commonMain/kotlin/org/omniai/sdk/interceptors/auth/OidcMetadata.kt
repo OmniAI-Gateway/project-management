@@ -15,7 +15,11 @@ data class OidcMetadata(
 
 class OidcDiscovery(private val httpClient: HttpTransportClient) {
     suspend fun fetchMetadata(url: String): HttpCallResult<OidcMetadata> {
-        val config = requestConfig<Unit>(url) {
+        val discoveryUrl = when {
+            url.contains("/.well-known/") -> url
+            else -> "${url.removeSuffix("/")}/.well-known/openid-configuration"
+        }
+        val config = requestConfig<Unit>(discoveryUrl) {
             method = HttpMethod.GET
         }
         return httpClient.executeRequest<OidcMetadata, Unit>(config)
