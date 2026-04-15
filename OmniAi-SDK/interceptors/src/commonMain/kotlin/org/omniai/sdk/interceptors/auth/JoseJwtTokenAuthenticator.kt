@@ -2,34 +2,41 @@ package org.omniai.sdk.interceptors.auth
 
 import org.omniai.sdk.core.pipeline.GatewayContext
 
-data class JwtAuthConfig(
-    val issuer: String,
-    val audience: String,
-    val jwksUrl: String,
-    val allowedAlgorithm: String = "RS256",
-    val clockSkewSeconds: Long = 60,
-    val connectTimeoutMillis: Int = 2_000,
-    val readTimeoutMillis: Int = 2_000
-)
-
 fun interface JwtVerificationEngine {
     suspend fun verify(rawToken: String): AuthenticationDecision
 }
 
-expect fun joseJwtVerificationEngine(config: JwtAuthConfig): JwtVerificationEngine
+expect fun joseJwtVerificationEngine(
+    keysProvider: PublicKeysProvider,
+    issuer: String,
+    audience: String
+): JwtVerificationEngine
 
 class JoseJwtTokenAuthenticator(
-    config: JwtAuthConfig
+    private val infra: AuthSecurityInfrastructure,
+    private val expectedIssuer: String,
+    private val expectedAudience: String,
 ) : TokenAuthenticator {
 
-    private val verificationEngine = joseJwtVerificationEngine(config)
-
     override suspend fun authenticate(token: AuthToken, context: GatewayContext): AuthenticationDecision {
-        if (token.kind == TokenKind.OPAQUE) {
-            return AuthenticationDecision.Allow
-        }
+        return try {
+            val jwtToValidate =
+                if (token.kind == TokenKind.OPAQUE) infra.exchangeApiKey(token.rawValue) else token.rawValue
 
-        return verificationEngine.verify(token.rawValue)
+            /* percebe que precisa de uma chave pública para verificar a assinatura do jwtToValidate.
+            Ele então olha para o objeto infra  e chama infra.getPublicKey(issuer, kid)
+             */
+
+            /*
+            deveriamos implementar cache
+            Ele pede a chave à infra uma vez, valida o JWT e guarda a chave num mapa interno
+            (Map<String, PublicKey>) para não ter de pedir mais
+             */
+
+            joseJwtVerificationEngine(infra, expectedIssuer, expectedAudience).verify(jwtToValidate)
+
+        } catch (e: Exception) {
+            AuthenticationDecision.Deny("Falha na autenticação: ${e.message}")
+        }
     }
 }
-
