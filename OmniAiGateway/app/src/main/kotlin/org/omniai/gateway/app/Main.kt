@@ -32,12 +32,13 @@ private data class GatewayConfig(
     val anthropicBaseUrl: String
 )
 
-fun main() {
+suspend fun main() {
     val config = loadGatewayConfig()
     val jsonConfig = buildJsonConfig()
     val outbounds = buildOutbounds(config)
 
-    val service = gatewayServiceAssembler(outbounds = outbounds)
+    //mudar aqui depois tb para receber as coisas bemm
+    val service = gatewayServiceAssembler(outbounds = outbounds, configSource = null, httpClient = null, interceptors = null)
 
     val adapters = GatewayInboundAdapters(
         anthropic = AnthropicInboundAdapter(service),

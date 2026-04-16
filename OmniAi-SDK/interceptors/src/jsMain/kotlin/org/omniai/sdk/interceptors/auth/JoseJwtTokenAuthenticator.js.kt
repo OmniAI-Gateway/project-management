@@ -1,54 +1,54 @@
-@file:Suppress("UnsafeCastFromDynamic")
-
 package org.omniai.sdk.interceptors.auth
 
 import kotlinx.coroutines.await
+import kotlinx.coroutines.DelicateCoroutinesApi
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.promise
 import kotlin.js.Promise
-
-actual fun joseJwtVerificationEngine(config: JwtAuthConfig): JwtVerificationEngine {
-    val jwks = JoseInterop.createRemoteJWKSet(JsUrl(config.jwksUrl))
-
-    return JwtVerificationEngine { rawToken ->
-        try {
-            val options = js("({})")
-            options.issuer = config.issuer
-            options.audience = config.audience
-            options.algorithms = arrayOf(config.allowedAlgorithm)
-            options.clockTolerance = config.clockSkewSeconds
-
-            JoseInterop.jwtVerify(rawToken, jwks, options).await()
-            AuthenticationDecision.Allow
-        } catch (error: dynamic) {
-            val errorDyn = error.asDynamic()
-            val code = errorDyn.code as? String
-            when (code) {
-                "ERR_JWT_EXPIRED" -> AuthenticationDecision.Deny("JWT expired")
-                "ERR_JWT_CLAIM_VALIDATION_FAILED" -> {
-                    val claim = errorDyn.claim as? String
-                    when (claim) {
-                        "iss" -> AuthenticationDecision.Deny("Invalid JWT issuer")
-                        "aud" -> AuthenticationDecision.Deny("Invalid JWT audience")
-                        "nbf" -> AuthenticationDecision.Deny("JWT not active yet")
-                        else -> AuthenticationDecision.Deny("Invalid JWT claims")
-                    }
-                }
-                "ERR_JOSE_ALG_NOT_ALLOWED" -> AuthenticationDecision.Deny("Unsupported JWT algorithm")
-                "ERR_JWS_SIGNATURE_VERIFICATION_FAILED" -> AuthenticationDecision.Deny("Invalid JWT signature")
-                else -> {
-                    val message = (errorDyn.message as? String) ?: "JWT verification failed"
-                    AuthenticationDecision.Deny(message)
-                }
-            }
-        }
-    }
-}
-
-private external class JsUrl(url: String)
 
 @JsModule("jose")
 @JsNonModule
-private external object JoseInterop {
-    fun createRemoteJWKSet(url: dynamic): dynamic
-    fun jwtVerify(token: String, key: dynamic, options: dynamic = definedExternally): Promise<dynamic>
+external object JoseLib {
+    fun jwtVerify(token: String, keyResolver: dynamic, options: dynamic): Promise<dynamic>
 }
 
+
+@OptIn(DelicateCoroutinesApi::class)
+actual fun joseJwtVerificationEngine(
+    keysProvider: PublicKeysProvider,
+    issuer: String,
+    audience: String
+): JwtVerificationEngine = JwtVerificationEngine { rawToken ->
+    try {
+        // 1. O resolver precisa converter a nossa função suspend numa Promise JS
+        val keyResolver: (dynamic, dynamic) -> Promise<dynamic> = { header, _ ->
+            val kid = header.kid as String?
+            GlobalScope.promise {
+                keysProvider.getPublicKey(issuer, kid)
+            }
+        }
+
+        val options = js("{}")
+        options.issuer = issuer
+        options.audience = audience
+
+        // 2. Aguarda a verificação
+        val result = JoseLib.jwtVerify(rawToken, keyResolver, options).await()
+
+        // 3. Extração segura dos claims de um objeto dinâmico JS
+        val payload = result.payload
+        val claims = mutableMapOf<String, Any>()
+
+        // Forma segura de iterar propriedades em JS dinâmico no Kotlin
+        val keys = js("Object.keys")(payload)
+        val length = keys.length as Int
+        for (i in 0 until length) {
+            val key = keys[i] as String
+            claims[key] = payload[key]
+        }
+
+        AuthenticationDecision.Allow(claims = claims)
+    } catch (e: Exception) {
+        AuthenticationDecision.Deny("Erro na validação JS: ${e.message}")
+    }
+}
