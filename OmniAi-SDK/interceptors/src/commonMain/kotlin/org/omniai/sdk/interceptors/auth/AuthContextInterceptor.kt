@@ -34,7 +34,7 @@ class DotSegmentsTokenKindDetector : TokenKindDetector {
 }
 
 sealed interface AuthenticationDecision {
-	data object Allow : AuthenticationDecision
+	data class Allow(val claims: Map<String, Any>) : AuthenticationDecision
 	data class Deny(val reason: String) : AuthenticationDecision
 }
 
@@ -44,7 +44,7 @@ interface TokenAuthenticator {
 
 class PassThroughTokenAuthenticator : TokenAuthenticator {
 	override suspend fun authenticate(token: AuthToken, context: GatewayContext): AuthenticationDecision {
-		return AuthenticationDecision.Allow
+		return AuthenticationDecision.Allow(claims = emptyMap())
 	}
 }
 
@@ -67,7 +67,13 @@ class AuthContextInterceptor(
 		context.attributes.put(AUTH_TOKEN_KIND_KEY, authToken.kind.name)
 
 		return when (val decision = authenticator.authenticate(authToken, context)) {
-			AuthenticationDecision.Allow -> chain.proceed(context)
+			is AuthenticationDecision.Allow -> {
+				decision.claims["sub"]?.let { userId ->
+					context.attributes.put("auth_user_id", userId.toString())
+				}
+				context.attributes.put("auth_claims", decision.claims)
+				chain.proceed(context)
+			}
 			is AuthenticationDecision.Deny -> PipelineResult.Error(
 				InvalidRequest("Authentication failed: ${decision.reason}")
 			)

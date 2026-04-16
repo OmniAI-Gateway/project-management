@@ -7,13 +7,11 @@ import org.omniai.sdk.interceptors.auth.*
 
 suspend fun defaultGatewayInterceptors(
     configSource: ConfigSource,
-    clientProvider: () -> HttpTransportClient,
+    httpClient: HttpTransportClient,
     logger: GatewayLogger = NoOpGatewayLogger
 ): List<Interceptor> {
-
-    val authenticator = loadTokenAuthenticator(configSource, clientProvider)
     return listOf(
-        AuthContextInterceptor(authenticator = authenticator),
+        AuthContextInterceptor(authenticator = loadTokenAuthenticator(configSource, httpClient)),
         RequestLoggingInterceptor(logger),
         MetricsInterceptor()
     )

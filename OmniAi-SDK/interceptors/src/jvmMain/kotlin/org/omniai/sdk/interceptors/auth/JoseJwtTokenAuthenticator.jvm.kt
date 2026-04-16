@@ -1,14 +1,11 @@
 package org.omniai.sdk.interceptors.auth
 
-import com.nimbusds.jose.JWSAlgorithm
-import com.nimbusds.jose.jwk.JWKSet
-import com.nimbusds.jose.jwk.source.ImmutableJWKSet
 import com.nimbusds.jose.proc.JWSKeySelector
-import com.nimbusds.jose.proc.JWSVerificationKeySelector
 import com.nimbusds.jose.proc.SecurityContext
 import com.nimbusds.jwt.JWTClaimsSet
 import com.nimbusds.jwt.proc.DefaultJWTProcessor
-import java.security.PublicKey
+import kotlinx.coroutines.runBlocking
+import java.security.Key
 
 actual fun joseJwtVerificationEngine(
     keysProvider: PublicKeysProvider,
@@ -18,18 +15,16 @@ actual fun joseJwtVerificationEngine(
     try {
         val processor = DefaultJWTProcessor<SecurityContext>()
 
-        // Configuramos o seletor de chaves para usar a nossa infra
         processor.jwsKeySelector = JWSKeySelector { header, _ ->
-            val key = kotlinx.coroutines.runBlocking {
+            val key = runBlocking {
                 keysProvider.getPublicKey(issuer, header.keyID)
             }
-            // O Nimbus espera uma lista de chaves (Key)
-            listOf(key as java.security.Key)
+            listOf(key as Key)
         }
 
         val claims: JWTClaimsSet = processor.process(rawToken, null)
 
-        // Validações Manuais de Claims (Issuer e Audience)
+        // Validações
         if (claims.issuer != issuer) {
             return@JwtVerificationEngine AuthenticationDecision.Deny("Issuer inválido")
         }
@@ -37,7 +32,8 @@ actual fun joseJwtVerificationEngine(
             return@JwtVerificationEngine AuthenticationDecision.Deny("Audience inválida")
         }
 
-        AuthenticationDecision.Allow
+        AuthenticationDecision.Allow(claims = claims.claims)
+
     } catch (e: Exception) {
         AuthenticationDecision.Deny("Erro na validação JVM: ${e.message}")
     }
