@@ -6,7 +6,6 @@ import io.opentelemetry.api.trace.StatusCode
 import io.opentelemetry.extension.kotlin.asContextElement
 import kotlinx.coroutines.withContext
 import org.omniai.gateway.metrics.TelemetryTracer
-import org.omniai.sdk.core.pipeline.TelemetryTracer
 
 class JvmTelemetryTracer(
     private val openTelemetry: OpenTelemetry,
