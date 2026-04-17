@@ -9,14 +9,8 @@ import org.omniai.sdk.interceptors.auth.HttpAuthSecurityClient
 import org.omniai.sdk.interceptors.auth.JoseJwtTokenAuthenticator
 import org.omniai.sdk.interceptors.auth.OidcDiscovery
 import org.omniai.sdk.interceptors.auth.PassThroughTokenAuthenticator
-import org.omniai.sdk.interceptors.auth.TokenAuthenticator
-import org.omniai.sdk.interceptors.auth.cache.CachedAuthInfrastructure
-import org.omniai.sdk.interceptors.auth.cache.CachedPublicKeysProvider
-
-enum class AuthMode {
-    OFF,
-    DISCOVERY
-}
+import org.omniai.sdk.interceptors.auth.domain.AuthMode
+import org.omniai.sdk.interceptors.auth.domain.TokenAuthenticator
 
 internal suspend fun loadTokenAuthenticator(
     configSource: ConfigSource,
@@ -34,6 +28,7 @@ private suspend fun loadDiscoveryAuthenticator(
 ): TokenAuthenticator {
     val discoveryUrl = requireConfig(configSource, "AUTH_DISCOVERY_URL")
     val discovery = OidcDiscovery(httpClient)
+
     val metadata = when (val result = discovery.fetchMetadata(discoveryUrl)) {
         is HttpCallResult.Success -> result.data
         is HttpCallResult.ApiError -> throw RuntimeException("Falha no Discovery: ${result.toDomainError(Provider("auth-server")).message}")
@@ -47,12 +42,10 @@ private suspend fun loadDiscoveryAuthenticator(
         configSource = configSource
     )
 
-    val cache = CachedPublicKeysProvider(delegate = authInfra)
-    val infraCompleted= CachedAuthInfrastructure(authInfra, cache)
-
     val expectedAudience = requireConfig(configSource, "AUTH_JWT_AUDIENCE")
+
     return JoseJwtTokenAuthenticator(
-        infra = infraCompleted,
+        infra = authInfra,
         expectedIssuer = metadata.issuer,
         expectedAudience = expectedAudience
     )

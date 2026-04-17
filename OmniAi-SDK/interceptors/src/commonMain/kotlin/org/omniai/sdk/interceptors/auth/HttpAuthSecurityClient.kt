@@ -1,12 +1,10 @@
 package org.omniai.sdk.interceptors.auth
 
 import org.omniai.sdk.core.http.*
+import org.omniai.sdk.interceptors.auth.cache.PublicKeyCache
+import org.omniai.sdk.interceptors.auth.domain.TokenExchangeResponse
 
-expect fun parsePublicKeyFromJson(jwksJson: String, keyId: String?): Any
-
-private data class TokenExchangeResponse(
-    val accessToken: String
-)
+expect fun parseAllKeysFromJson(jwksJson: String): Map<String, Any>
 
 class HttpAuthSecurityClient(
     private val httpClient: HttpTransportClient,
@@ -15,19 +13,27 @@ class HttpAuthSecurityClient(
     private val configSource: ConfigSource
 ) : AuthSecurityInfrastructure {
 
+    private val publicKeyCache = PublicKeyCache()
 
     override suspend fun getPublicKey(issuer: String, keyId: String?): Any {
-        val config = requestConfig<Unit>(jwksUri) {
-            method = HttpMethod.GET
-        }
+        val cacheKey = keyId ?: issuer
+        publicKeyCache.get(cacheKey)?.let { return it }
+
+        //Se não estiver na cache fazemos o pedido ao AS
+        val config = requestConfig<Unit>(jwksUri) { method = HttpMethod.GET }
 
         return when (val result = httpClient.executeRequest<String, Unit>(config)) {
             is HttpCallResult.Success -> {
-                parsePublicKeyFromJson(result.data, keyId)
+
+                val allKeys = parseAllKeysFromJson(result.data)
+                allKeys.forEach { (id, key) ->
+                    publicKeyCache.put(id, key)
+                }
+
+                allKeys[keyId] ?: allKeys.values.firstOrNull() ?: throw RuntimeException("Chave $keyId não encontrada no AS")
             }
-            is HttpCallResult.ApiError -> throw RuntimeException("Erro ao buscar chaves: Status ${result.code}")
-            is HttpCallResult.NetworkError -> throw RuntimeException("Erro de rede ao buscar chaves", result.exception)
-            else -> throw RuntimeException("Erro desconhecido ao carregar chaves públicas")
+            is HttpCallResult.ApiError -> throw RuntimeException("Erro AS: ${result.code}")
+            else -> throw RuntimeException("Erro de rede ao carregar chaves")
         }
     }
 
