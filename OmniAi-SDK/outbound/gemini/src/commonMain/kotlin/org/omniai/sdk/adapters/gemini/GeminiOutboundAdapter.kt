@@ -35,8 +35,7 @@ class GeminiOutboundAdapter(
     override val model: Model,
     private val apiKey: String,
     private val baseUrl: String = "https://generativelanguage.googleapis.com/v1beta",
-    private val transportClient: HttpTransportClient = defaultHttpTransportClient(),
-    private val responseMetadataBinder: ConfigurableMetadataBinder? = null
+    private val transportClient: HttpTransportClient = defaultHttpTransportClient()
 ) : OutboundPort {
 
     private val translator = GeminiOutboundTranslator()
@@ -46,7 +45,7 @@ class GeminiOutboundAdapter(
     override suspend fun generate(request: CommonRequest): Either<DomainError, CommonResponse> {
         val providerRequest = translator.fromDomain(request)
         val requestConfig = requestConfig(
-            url = "$baseUrl/models/{model}"
+            url = "$baseUrl/models/{model}:generateContent"
         ) {
             pathParam("model", request.model)
             method = HttpMethod.POST

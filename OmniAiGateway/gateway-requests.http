@@ -1,0 +1,143 @@
+@ip = localhost
+@port = 1900
+@baseUrl = http://{{ip}}:{{port}}
+
+@openaiModel = gpt-4o-mini
+@anthropicModel = claude-3-7-sonnet-latest
+@geminiModel = gemini-2.5-flash
+
+###
+# Nota: no estado atual do Main.kt, apenas Gemini esta ativo.
+# Se OpenAI/Anthropic estiverem desativados, os pedidos dessas secoes podem devolver 404.
+
+### OpenAI - 1) Chat completion normal
+POST {{baseUrl}}/v1/chat/completions
+Content-Type: application/json
+
+{
+  "model": "{{openaiModel}}",
+  "messages": [
+    { "role": "system", "content": "Responde em portugues de forma curta." },
+    { "role": "user", "content": "Diz-me uma curiosidade sobre Kotlin." }
+  ],
+  "temperature": 0.3
+}
+
+### OpenAI - 2) Chat completion com JSON output
+POST {{baseUrl}}/v1/chat/completions
+Content-Type: application/json
+
+{
+  "model": "{{openaiModel}}",
+  "messages": [
+    { "role": "user", "content": "Devolve um objeto JSON com campos titulo e prioridade para a tarefa: estudar arquitetura hexagonal." }
+  ],
+  "response_format": { "type": "json_object" }
+}
+
+### OpenAI - 3) Streaming
+POST {{baseUrl}}/v1/chat/completions
+Content-Type: application/json
+Accept: text/event-stream
+
+{
+  "model": "{{openaiModel}}",
+  "messages": [
+    { "role": "user", "content": "Faz um mini resumo sobre APIs REST em 3 pontos." }
+  ],
+  "stream": true
+}
+
+### Anthropic - 1) Messages normal
+POST {{baseUrl}}/v1/messages
+Content-Type: application/json
+
+{
+  "model": "{{anthropicModel}}",
+  "max_tokens": 256,
+  "messages": [
+    { "role": "user", "content": "Quais sao 3 boas praticas para testes de integracao?" }
+  ]
+}
+
+### Anthropic - 2) Messages com system prompt
+POST {{baseUrl}}/v1/messages
+Content-Type: application/json
+
+{
+  "model": "{{anthropicModel}}",
+  "max_tokens": 256,
+  "system": "Responde sempre em bullet points.",
+  "messages": [
+    { "role": "user", "content": "Explica diferenca entre timeout e retry." }
+  ],
+  "temperature": 0.2
+}
+
+### Anthropic - 3) Streaming
+POST {{baseUrl}}/v1/messages
+Content-Type: application/json
+Accept: text/event-stream
+
+{
+  "model": "{{anthropicModel}}",
+  "max_tokens": 256,
+  "messages": [
+    { "role": "user", "content": "Cria um checklist curto para rever um PR Kotlin." }
+  ],
+  "stream": true
+}
+
+### Gemini - 1) GenerateContent normal
+POST {{baseUrl}}/v1beta/models/{{geminiModel}}:generateContent
+Content-Type: application/json
+
+{
+  "model": "{{geminiModel}}",
+  "contents": [
+    {
+      "role": "user",
+      "parts": [
+        { "text": "Diz-me 2 formas de melhorar logs num servico Ktor." }
+      ]
+    }
+  ]
+}
+
+### Gemini - 2) GenerateContent com generationConfig
+POST {{baseUrl}}/v1beta/models/{{geminiModel}}:generateContent
+Content-Type: application/json
+
+{
+  "model": "{{geminiModel}}",
+  "contents": [
+    {
+      "role": "user",
+      "parts": [
+        { "text": "Gera uma resposta curta com titulo e descricao." }
+      ]
+    }
+  ],
+  "generationConfig": {
+    "temperature": 0.2,
+    "topP": 0.9
+  }
+}
+
+### Gemini - 3) Streaming via query param
+POST {{baseUrl}}/v1beta/models/{{geminiModel}}:generateContent?stream=true
+Content-Type: application/json
+Accept: text/event-stream
+
+{
+  "model": "{{geminiModel}}",
+  "contents": [
+    {
+      "role": "user",
+      "parts": [
+        { "text": "Escreve 3 dicas rapidas para reduzir latencia de APIs." }
+      ]
+    }
+  ]
+}
+

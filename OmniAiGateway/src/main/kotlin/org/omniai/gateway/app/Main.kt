@@ -22,15 +22,15 @@ import org.omniai.sdk.gateway.ktor.installAiGateway
 
 private data class GatewayConfig(
     val port: Int,
-    val openAiApiKey: String,
-    val openAiModel: String,
-    val openAiBaseUrl: String,
+//    val openAiApiKey: String,
+//    val openAiModel: String,
+//    val openAiBaseUrl: String,
     val geminiApiKey: String,
     val geminiModel: String,
     val geminiBaseUrl: String,
-    val anthropicApiKey: String?,
-    val anthropicModel: String,
-    val anthropicBaseUrl: String,
+//    val anthropicApiKey: String?,
+//    val anthropicModel: String,
+//    val anthropicBaseUrl: String,
 )
 
 suspend fun main() {
@@ -68,21 +68,21 @@ private fun loadGatewayConfig(): GatewayConfig =
     ConfigFactory.load().let { appConfig ->
         GatewayConfig(
             port = System.getenv("PORT")?.toIntOrNull() ?: appConfig.safeInt("gateway.port", 1900),
-            openAiApiKey = requireEnv("OPENAI_API_KEY"),
-            openAiModel = System.getenv("OPENAI_MODEL")
-                ?: appConfig.safeString("gateway.providers.openai.model", "llama-3.3-70b-versatile"),
-            openAiBaseUrl = System.getenv("OPENAI_BASE_URL")
-                ?: appConfig.safeString("gateway.providers.openai.baseUrl", "https://api.groq.com/openai/v1"),
+//            openAiApiKey = requireEnv("OPENAI_API_KEY"),
+//            openAiModel = System.getenv("OPENAI_MODEL")
+//                ?: appConfig.safeString("gateway.providers.openai.model", "llama-3.3-70b-versatile"),
+//            openAiBaseUrl = System.getenv("OPENAI_BASE_URL")
+//                ?: appConfig.safeString("gateway.providers.openai.baseUrl", "https://api.groq.com/openai/v1"),
             geminiApiKey = requireEnv("GEMINI_API_KEY"),
             geminiModel = System.getenv("GEMINI_MODEL")
                 ?: appConfig.safeString("gateway.providers.gemini.model", "gemini-2.5-flash"),
             geminiBaseUrl = System.getenv("GEMINI_BASE_URL")
                 ?: appConfig.safeString("gateway.providers.gemini.baseUrl", "https://generativelanguage.googleapis.com/v1beta"),
-            anthropicApiKey = System.getenv("ANTHROPIC_API_KEY"),
-            anthropicModel = System.getenv("ANTHROPIC_MODEL")
-                ?: appConfig.safeString("gateway.providers.anthropic.model", "claude-3-7-sonnet-latest"),
-            anthropicBaseUrl = System.getenv("ANTHROPIC_BASE_URL")
-                ?: appConfig.safeString("gateway.providers.anthropic.baseUrl", "https://api.anthropic.com/v1")
+//            anthropicApiKey = System.getenv("ANTHROPIC_API_KEY"),
+//            anthropicModel = System.getenv("ANTHROPIC_MODEL")
+//                ?: appConfig.safeString("gateway.providers.anthropic.model", "claude-3-7-sonnet-latest"),
+//            anthropicBaseUrl = System.getenv("ANTHROPIC_BASE_URL")
+//                ?: appConfig.safeString("gateway.providers.anthropic.baseUrl", "https://api.anthropic.com/v1")
         )
     }
 
@@ -108,14 +108,14 @@ private fun Config.safeInt(path: String, defaultValue: Int): Int =
     runCatching { getInt(path) }.getOrDefault(defaultValue)
 
 private fun gatewayOutbounds(config: GatewayConfig): List<OutboundTarget> = buildList {
-    add(
-        OutboundTarget(
-            outboundClass = OpenAiOutboundAdapter::class,
-            model = config.openAiModel,
-            apiKey = config.openAiApiKey,
-            baseUrl = config.openAiBaseUrl
-        )
-    )
+//    add(
+//        OutboundTarget(
+//            outboundClass = OpenAiOutboundAdapter::class,
+//            model = config.openAiModel,
+//            apiKey = config.openAiApiKey,
+//            baseUrl = config.openAiBaseUrl
+//        )
+//    )
 
     add(
         OutboundTarget(
@@ -126,16 +126,14 @@ private fun gatewayOutbounds(config: GatewayConfig): List<OutboundTarget> = buil
         )
     )
 
-    if (!config.anthropicApiKey.isNullOrBlank()) {
-        add(
-            OutboundTarget(
-                outboundClass = AnthropicOutboundAdapter::class,
-                model = config.anthropicModel,
-                apiKey = config.anthropicApiKey,
-                baseUrl = config.anthropicBaseUrl
-            )
-        )
-    }
+//    add(
+//        OutboundTarget(
+//            outboundClass = AnthropicOutboundAdapter::class,
+//            model = config.anthropicModel,
+//            apiKey = config.anthropicApiKey,
+//            baseUrl = config.anthropicBaseUrl
+//        )
+//    )
 }
 
 
