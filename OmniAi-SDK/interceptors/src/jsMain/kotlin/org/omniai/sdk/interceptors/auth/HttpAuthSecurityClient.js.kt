@@ -1,16 +1,15 @@
 package org.omniai.sdk.interceptors.auth
 
-actual fun parsePublicKeyFromJson(jwksJson: String, keyId: String?): Any {
-    // 1. Converte a String JSON num objeto dinâmico do JS
+actual fun parseAllKeysFromJson(jwksJson: String): Map<String, Any> {
     val json = JSON.parse<dynamic>(jwksJson)
-    val keys = json.keys as Array<dynamic>
-
-    // 2. Procura a chave pelo 'kid'
-    val targetKey = if (keyId != null) {
-        keys.find { it.kid == keyId }
-    } else {
-        keys.firstOrNull()
+    val keysMap = mutableMapOf<String, Any>()
+    if (json.keys != null) {
+        val keysArray = json.keys as Array<dynamic>
+        keysArray.forEach { key ->
+            val kid = key.kid as? String ?: return@forEach
+            // No JS, guardamos o objeto da chave para ser usado pelo motor de verificação
+            keysMap[kid] = key
+        }
     }
-
-    return targetKey ?: throw RuntimeException("Chave pública não encontrada no JWKS (JS)")
+    return keysMap
 }
