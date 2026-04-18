@@ -403,7 +403,8 @@ private fun JsonObject.cleanGeminiParameters(): JsonObject {
         "propertyNames",
         "title",
         "default",
-        "\$id"
+        "\$id",
+        "exclusiveMinimum"
     )
 
     val cleaned = mutableMapOf<String, JsonElement>()
