@@ -2,8 +2,12 @@ package org.omniai.sdk.core.http
 
 import kotlinx.coroutines.flow.Flow
 import kotlinx.serialization.KSerializer
+import org.omniai.sdk.binders.IncomingContext
+import org.omniai.sdk.core.commom.TypedMap
 
 interface HttpTransportClient {
+
+    fun bindResponseMetadata(context: IncomingContext, headerNames: Set<String>): TypedMap
 
     suspend fun <T, V> execute(
         config: RequestConfig<V>,

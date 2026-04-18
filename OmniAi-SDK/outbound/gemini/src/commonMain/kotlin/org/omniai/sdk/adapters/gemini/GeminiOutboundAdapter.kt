@@ -3,12 +3,15 @@ package org.omniai.sdk.adapters.gemini
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onCompletion
+import org.omniai.sdk.binders.ConfigurableMetadataBinder
 import org.omniai.sdk.contracts.gemini.output.GeminiError
 import org.omniai.sdk.contracts.gemini.output.GeminiErrorResponse
 import org.omniai.sdk.contracts.gemini.input.GeminiGenerateContentRequest
 import org.omniai.sdk.contracts.gemini.output.GeminiEventStream
 import org.omniai.sdk.contracts.gemini.output.GeminiGenerateContentResponse
+import org.omniai.sdk.core.commom.AttributeKey
 import org.omniai.sdk.core.commom.Either
+import org.omniai.sdk.core.commom.TypedMap
 import org.omniai.sdk.core.commom.failure
 import org.omniai.sdk.core.commom.success
 import org.omniai.sdk.core.http.HttpCallResult
@@ -32,7 +35,8 @@ class GeminiOutboundAdapter(
     override val model: Model,
     private val apiKey: String,
     private val baseUrl: String = "https://generativelanguage.googleapis.com/v1beta",
-    private val transportClient: HttpTransportClient = defaultHttpTransportClient()
+    private val transportClient: HttpTransportClient = defaultHttpTransportClient(),
+    private val responseMetadataBinder: ConfigurableMetadataBinder? = null
 ) : OutboundPort {
 
     private val translator = GeminiOutboundTranslator()
@@ -55,7 +59,10 @@ class GeminiOutboundAdapter(
         val callResult = transportClient.executeRequest<GeminiGenerateContentResponse, GeminiGenerateContentRequest>(requestConfig)
 
         return when (callResult) {
-            is HttpCallResult.Success -> success(translator.toDomain(callResult.data))
+            is HttpCallResult.Success -> {
+                val translated = translator.toDomain(callResult.data)
+                success(translated.withHttpMetadata(callResult.metadata))
+            }
             else -> failure(callResult.toDomainError(provider))
         }
     }
@@ -136,3 +143,17 @@ class GeminiOutboundAdapter(
             body = this@toStreamPost
         }
 }
+
+private fun CommonResponse.withHttpMetadata(metadata: TypedMap): CommonResponse {
+    val metadataMap = metadata.toUntypedMap()
+    if (metadataMap.isEmpty()) return this
+    return copy(providerOptions = providerOptions + metadataMap)
+}
+
+private fun TypedMap.toUntypedMap(): Map<String, Any?> =
+    keys().associate { key -> key.name to getUnsafe(key) }
+
+@Suppress("UNCHECKED_CAST")
+private fun TypedMap.getUnsafe(key: AttributeKey<*>): Any? =
+    this[key as AttributeKey<Any>]
+

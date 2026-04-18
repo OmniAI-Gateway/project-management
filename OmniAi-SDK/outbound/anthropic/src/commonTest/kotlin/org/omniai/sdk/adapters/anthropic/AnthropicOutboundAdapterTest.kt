@@ -8,11 +8,13 @@ import kotlinx.serialization.KSerializer
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
+import org.omniai.sdk.binders.IncomingContext
 import org.omniai.sdk.contracts.anthropic.output.AnthropicError
 import org.omniai.sdk.contracts.anthropic.output.AnthropicMessageResponse
 import org.omniai.sdk.contracts.anthropic.output.AnthropicOutputContent
 import org.omniai.sdk.contracts.anthropic.output.AnthropicStreamEvent
 import org.omniai.sdk.core.commom.Either
+import org.omniai.sdk.core.commom.TypedMap
 import org.omniai.sdk.core.http.HttpCallResult
 import org.omniai.sdk.core.http.HttpMethod
 import org.omniai.sdk.core.http.HttpTransportClient
@@ -165,6 +167,8 @@ private class FakeHttpTransportClient : HttpTransportClient {
     var lastExecuteConfig: RequestConfig<*>? = null
     var lastListenConfig: RequestConfig<*>? = null
     var lastListenManyConfig: RequestConfig<*>? = null
+
+    override fun bindResponseMetadata(context: IncomingContext, headerNames: Set<String>): TypedMap = TypedMap()
 
     @Suppress("UNCHECKED_CAST")
     override suspend fun <T, V> execute(config: RequestConfig<V>, responseSerializer: KSerializer<T>): HttpCallResult<T> {

@@ -3,6 +3,7 @@ plugins {
 }
 rootProject.name = "OmniAi-SDK"
 
+include(":client")
 include(":core")
 include(":contracts")
 include(":contracts:anthropic")

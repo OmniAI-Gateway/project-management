@@ -8,11 +8,15 @@ import kotlinx.serialization.KSerializer
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
+import org.omniai.sdk.binders.IncomingContext
+import org.omniai.sdk.binders.buildMetadataBinder
 import org.omniai.sdk.contracts.openai.output.OpenAiChatCompletionsResponse
 import org.omniai.sdk.contracts.openai.output.OpenAiChoice
 import org.omniai.sdk.contracts.openai.output.OpenAiDelta
 import org.omniai.sdk.contracts.openai.output.OpenAiMessageOutput
 import org.omniai.sdk.core.commom.Either
+import org.omniai.sdk.core.commom.TypedMap
+import org.omniai.sdk.core.commom.key
 import org.omniai.sdk.core.http.HttpCallResult
 import org.omniai.sdk.core.http.HttpMethod
 import org.omniai.sdk.core.http.HttpTransportClient
@@ -124,6 +128,46 @@ class OpenAiOutboundAdapterTest {
         assertEquals(true, body?.stream)
     }
 
+    @Test
+    fun `generate merges response metadata into provider options`() = runTest {
+        val requestIdKey = key<String>("http.requestId")
+        val metadata = TypedMap().apply { put(requestIdKey, "req-123") }
+
+        val fakeClient = FakeHttpTransportClient().apply {
+            executeResult = HttpCallResult.Success(
+                OpenAiChatCompletionsResponse(
+                    id = "chatcmpl_meta",
+                    obj = "chat.completion",
+                    created = 1,
+                    model = "gpt-4o-mini",
+                    choices = listOf(
+                        OpenAiChoice(
+                            index = 0,
+                            message = OpenAiMessageOutput(role = "assistant", content = "Done")
+                        )
+                    )
+                ),
+                metadata = metadata
+            )
+        }
+
+        val binder = buildMetadataBinder {
+            header("x-request-id") bindTo requestIdKey
+        }
+
+        val adapter = OpenAiOutboundAdapter(
+            model = Model("gpt-4o-mini"),
+            apiKey = "sk-test",
+            baseUrl = "https://openai.local/v1",
+            transportClient = fakeClient,
+        )
+
+        val result = adapter.generate(commonRequest())
+
+        assertTrue(result is Either.Right)
+        assertEquals("req-123", result.value.providerOptions["http.requestId"])
+    }
+
     private fun commonRequest(): CommonRequest = CommonRequest(
         provider = Provider.OPENAI,
         model = "gpt-4o-mini",
@@ -143,6 +187,8 @@ private class FakeHttpTransportClient : HttpTransportClient {
     var lastExecuteConfig: RequestConfig<*>? = null
     var lastListenConfig: RequestConfig<*>? = null
     var lastListenManyConfig: RequestConfig<*>? = null
+
+    override fun bindResponseMetadata(context: IncomingContext, headerNames: Set<String>): TypedMap = TypedMap()
 
     @Suppress("UNCHECKED_CAST")
     override suspend fun <T, V> execute(config: RequestConfig<V>, responseSerializer: KSerializer<T>): HttpCallResult<T> {
