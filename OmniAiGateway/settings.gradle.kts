@@ -5,6 +5,3 @@ rootProject.name = "OmniAiGateway"
 
 includeBuild("../OmniAi-SDK")
 
-include(":inbound")
-include(":outbound")
-include(":app")
