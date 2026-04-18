@@ -5,6 +5,7 @@ import com.nimbusds.jose.proc.SecurityContext
 import com.nimbusds.jwt.JWTClaimsSet
 import com.nimbusds.jwt.proc.DefaultJWTProcessor
 import kotlinx.coroutines.runBlocking
+import org.omniai.sdk.interceptors.auth.domain.AuthenticationDecision
 import java.security.Key
 
 actual fun joseJwtVerificationEngine(

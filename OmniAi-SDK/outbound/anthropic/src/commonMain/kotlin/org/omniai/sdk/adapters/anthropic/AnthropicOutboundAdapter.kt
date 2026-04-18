@@ -3,11 +3,14 @@ package org.omniai.sdk.adapters.anthropic
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onCompletion
+import org.omniai.sdk.binders.ConfigurableMetadataBinder
 import org.omniai.sdk.contracts.anthropic.output.AnthropicError
 import org.omniai.sdk.contracts.anthropic.input.AnthropicMessagesRequest
 import org.omniai.sdk.contracts.anthropic.output.AnthropicMessageResponse
 import org.omniai.sdk.contracts.anthropic.output.AnthropicStreamEvent
+import org.omniai.sdk.core.commom.AttributeKey
 import org.omniai.sdk.core.commom.Either
+import org.omniai.sdk.core.commom.TypedMap
 import org.omniai.sdk.core.commom.failure
 import org.omniai.sdk.core.commom.success
 import org.omniai.sdk.core.http.HttpCallResult
@@ -32,7 +35,8 @@ class AnthropicOutboundAdapter(
     private val apiKey: String,
     private val baseUrl: String = "https://api.anthropic.com/v1",
     private val transportClient: HttpTransportClient = defaultHttpTransportClient(),
-    private val anthropicVersion: String = "2023-06-01"
+    private val anthropicVersion: String = "2023-06-01",
+    private val responseMetadataBinder: ConfigurableMetadataBinder? = null
 ) : OutboundPort {
 
     private val translator = AnthropicOutboundTranslator()
@@ -45,7 +49,10 @@ class AnthropicOutboundAdapter(
         val callResult = transportClient.executeRequest<AnthropicMessageResponse, AnthropicMessagesRequest>(requestConfig)
 
         return when (callResult) {
-            is HttpCallResult.Success -> success(translator.toDomain(callResult.data))
+            is HttpCallResult.Success -> {
+                val translated = translator.toDomain(callResult.data)
+                success(translated.withHttpMetadata(callResult.metadata))
+            }
             else -> failure(callResult.toDomainError(provider))
         }
     }
@@ -114,3 +121,16 @@ class AnthropicOutboundAdapter(
         }
 
 }
+
+private fun CommonResponse.withHttpMetadata(metadata: TypedMap): CommonResponse {
+    val metadataMap = metadata.toUntypedMap()
+    if (metadataMap.isEmpty()) return this
+    return copy(providerOptions = providerOptions + metadataMap)
+}
+
+private fun TypedMap.toUntypedMap(): Map<String, Any?> =
+    keys().associate { key -> key.name to getUnsafe(key) }
+
+@Suppress("UNCHECKED_CAST")
+private fun TypedMap.getUnsafe(key: AttributeKey<*>): Any? =
+    this[key as AttributeKey<Any>]

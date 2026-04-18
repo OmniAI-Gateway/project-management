@@ -1,47 +1,39 @@
-
 plugins {
-    kotlin("jvm") version "2.2.0" apply false
-    base
+    kotlin("jvm") version "2.2.0"
+    application
 }
 
 group = "org.omniai.gateway"
 version = "1.0.0-SNAPSHOT"
 
-subprojects {
-    apply(plugin = "org.jetbrains.kotlin.jvm")
-
-    repositories {
-        mavenCentral()
-    }
-
-    dependencies {
-        "testImplementation"(kotlin("test"))
-        "implementation"("org.omniai.sdk:OmniAi-SDK:1.0.0-SNAPSHOT")
-        "implementation"("org.slf4j:slf4j-api:2.0.12")
-        "implementation"("ch.qos.logback:logback-classic:1.5.3")
-    }
-
-    extensions.configure<org.jetbrains.kotlin.gradle.dsl.KotlinJvmProjectExtension> {
-        jvmToolchain(22)
-    }
-
-    tasks.withType<Test>().configureEach {
-        useJUnitPlatform()
-    }
+repositories {
+    mavenCentral()
 }
 
+dependencies {
+    implementation(kotlin("stdlib"))
+    implementation("org.omniai.sdk:OmniAi-SDK:1.0.0-SNAPSHOT")
+    implementation("org.omniai.sdk.gateway.client:gateway-client")
+    implementation("org.omniai.sdk.gateway.ktor:gateway-ktor-server")
 
-val lifecycleTasks = listOf(
-    "clean",
-    "assemble",
-    "check",
-    "build"
-)
+    implementation(platform("io.ktor:ktor-bom:3.2.3"))
+    implementation("io.ktor:ktor-server-core")
+    implementation("io.ktor:ktor-server-netty")
+    implementation("io.ktor:ktor-server-content-negotiation")
+    implementation("io.ktor:ktor-serialization-kotlinx-json")
 
-lifecycleTasks.forEach { taskName ->
-    tasks.named(taskName) {
-        subprojects.forEach { sub ->
-            dependsOn(sub.tasks.matching { it.name == taskName })
-        }
-    }
+    implementation("ch.qos.logback:logback-classic:1.5.3")
+    testImplementation(kotlin("test"))
+}
+
+kotlin {
+    jvmToolchain(22)
+}
+
+application {
+    mainClass = "org.omniai.gateway.app.MainKt"
+}
+
+tasks.withType<Test>().configureEach {
+    useJUnitPlatform()
 }

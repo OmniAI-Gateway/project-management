@@ -1,15 +1,15 @@
 # OmniAiGateway
 
-HTTP gateway for OpenAI, Gemini, and Anthropic formats, with interceptor pipeline and dynamic outbound wiring.
+Simple Ktor application that consumes `OmniAi-SDK` using the new Gateway DSL (`gateway-client`) and HTTP adapter (`gateway-ktor-server`).
 
 ## Structure
 
-- `app`: composition root (env/config + server bootstrap)
-- `inbound:web`: Ktor routes and request parsing
-- `services`: business service assembly and pipeline-backed service
-- `interceptors`: gateway interceptors (logging + metrics)
-- `outbound:builder`: dynamic outbound build from `KClass`
-- `outbound:ollama`: gateway-specific outbound placeholder
+- `src/main/kotlin`: single bootstrap app (`Main.kt`)
+- `src/main/resources/application.conf`: default gateway config
+- SDK DSL config (`gatewayConfig { ... }`) for outbounds/services/auth
+- Ktor route installation via `installAiGateway(runtime)`
+
+Environment variables override values from `application.conf`.
 
 ## Environment variables
 
@@ -34,7 +34,7 @@ HTTP gateway for OpenAI, Gemini, and Anthropic formats, with interceptor pipelin
 
 ```powershell
 cd C:\ISEL\TerceiroAno\ProjetoFinal\projectManagement\project-management\OmniAiGateway
-.\gradlew :app:run
+.\gradlew run
 ```
 
 

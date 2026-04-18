@@ -3,6 +3,7 @@ plugins {
 }
 rootProject.name = "OmniAi-SDK"
 
+
 include(":core")
 include(":contracts")
 include(":contracts:anthropic")
@@ -19,3 +20,5 @@ include(":outbound:anthropic")
 include(":outbound:gemini")
 include(":interceptors")
 include(":services")
+include(":gateway-client")
+include(":gateway-ktor-server")

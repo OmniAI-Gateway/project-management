@@ -4,6 +4,7 @@ import kotlinx.coroutines.await
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.promise
+import org.omniai.sdk.interceptors.auth.domain.AuthenticationDecision
 import kotlin.js.Promise
 
 @JsModule("jose")

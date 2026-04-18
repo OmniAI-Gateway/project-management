@@ -5,6 +5,7 @@ import io.ktor.client.plugins.sse.sse
 import io.ktor.client.request.HttpRequestBuilder
 import io.ktor.client.request.request
 import io.ktor.client.request.setBody
+import io.ktor.client.statement.HttpResponse
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
 import io.ktor.http.HttpMethod as KtorHttpMethod
@@ -24,6 +25,9 @@ import kotlinx.serialization.SerializationException
 import kotlinx.serialization.builtins.serializer
 import kotlinx.serialization.json.Json
 import kotlinx.io.IOException
+import org.omniai.sdk.binders.IncomingContext
+import org.omniai.sdk.binders.client.bindClientResponseMetadata
+import org.omniai.sdk.core.commom.TypedMap
 
 class KtorHttpTransportClient(
     private val client: HttpClient,
@@ -31,36 +35,35 @@ class KtorHttpTransportClient(
     private val retryDelay: Duration = 1.seconds
 ) : HttpTransportClient {
 
+    override fun bindResponseMetadata(
+        context: IncomingContext,
+        headerNames: Set<String>
+    ): TypedMap {
+        return bindClientResponseMetadata(context, headerNames)
+    }
+
     override suspend fun <T, V> execute(
         config: RequestConfig<V>,
         responseSerializer: KSerializer<T>
     ): HttpCallResult<T> {
-        if(config.body != null){
-            println("REQUEST:" + config.body.toString())
-            println("END REQUEST")
-        }
         val maxTries = config.numberOfTries.coerceAtLeast(1)
         repeat(maxTries) { attempt ->
             try {
                 val response = client.request(config.url) { applyConfig(config) }
+                val metadata = this.bindResponseMetadata(response)
 
                 if (!response.status.isSuccess()) {
                     val responseBody = response.bodyAsText()
-                    println("RESPONSE" + responseBody)
-                    println("END RESPONSE")
-                    return HttpCallResult.ApiError(response.status.value, response.bodyAsText())
+                    return HttpCallResult.ApiError(response.status.value, responseBody, metadata)
                 }
-
                 val responseBody = response.bodyAsText()
-                println("RESPONSE" + responseBody)
-                println("END RESPONSE")
                 if (responseBody.isBlank() && responseSerializer.isUnitSerializer()) {
                     @Suppress("UNCHECKED_CAST")
-                    return HttpCallResult.Success(Unit as T)
+                    return HttpCallResult.Success(Unit as T, metadata)
                 }
 
                 val parsed = json.decodeFromString(responseSerializer, responseBody)
-                return HttpCallResult.Success(parsed)
+                return HttpCallResult.Success(parsed, metadata)
             } catch (exception: Exception) {
                 if (exception is CancellationException) throw exception
 
@@ -71,7 +74,6 @@ class KtorHttpTransportClient(
                 }
             }
         }
-
         return HttpCallResult.UnknownError(IllegalStateException("Retry limit reached"))
     }
 
@@ -84,8 +86,9 @@ class KtorHttpTransportClient(
             urlString = config.url,
             request = { applyConfig(config) }
         ) {
+            val metadata = this@KtorHttpTransportClient.bindResponseMetadata(call.response)
             incoming.collect { event ->
-                processSingleEvent(event, eventName, responseSerializer, json)?.let { emit(it) }
+                processSingleEvent(event, eventName, responseSerializer, json, metadata)?.let { emit(it) }
             }
         }
     }.retry(retries = config.numberOfTries.toLong().coerceAtLeast(1L) - 1L) { cause ->
@@ -108,16 +111,17 @@ class KtorHttpTransportClient(
             urlString = config.url,
             request = { applyConfig(config) }
         ) {
+            val metadata = this@KtorHttpTransportClient.bindResponseMetadata(call.response)
             incoming.collect { event ->
                 val serializer = serializersByEvent[event.event ?: return@collect] ?: return@collect
                 val data = event.data ?: return@collect
 
                 try {
                     val parsed = json.decodeFromString(serializer, data)
-                    emit(HttpCallResult.Success(parsed))
+                    emit(HttpCallResult.Success(parsed, metadata))
                 } catch (exception: Exception) {
                     if (exception is CancellationException) throw exception
-                    emit(exception.toCallResult())
+                    emit(exception.toCallResult(metadata))
                 }
             }
         }
@@ -169,27 +173,50 @@ private fun KSerializer<*>.isUnitSerializer(): Boolean = descriptor == Unit.seri
 private fun shouldRetry(exception: Exception, attempt: Int, maxTries: Int): Boolean =
     exception is IOException && attempt < maxTries - 1
 
-private fun Throwable.toCallResult(): HttpCallResult<Nothing> =
+private fun Throwable.toCallResult(metadata: TypedMap = TypedMap()): HttpCallResult<Nothing> =
     when (this) {
-        is SerializationException -> HttpCallResult.SerializationError(this)
-        is IOException -> HttpCallResult.NetworkError(this)
-        else -> HttpCallResult.UnknownError(Exception(this))
+        is SerializationException -> HttpCallResult.SerializationError(this, metadata)
+        is IOException -> HttpCallResult.NetworkError(this, metadata)
+        else -> HttpCallResult.UnknownError(Exception(this), metadata)
     }
 
 private fun <T> processSingleEvent(
     event: ServerSentEvent,
     targetEventName: String?,
     serializer: KSerializer<T>,
-    json: Json
+    json: Json,
+    metadata: TypedMap
 ): HttpCallResult<T>? {
     val data = event.data ?: return null
     if (targetEventName != null && targetEventName != event.event) return null
 
     return try {
-        HttpCallResult.Success(json.decodeFromString(serializer, data))
+        HttpCallResult.Success(json.decodeFromString(serializer, data), metadata)
     } catch (exception: Exception) {
         if (exception is CancellationException) throw exception
-        exception.toCallResult()
+        exception.toCallResult(metadata)
+    }
+}
+
+private fun HttpTransportClient.bindResponseMetadata(response: HttpResponse): TypedMap {
+    val context = KtorResponseIncomingContext(response)
+    return bindResponseMetadata(context, response.headers.names())
+}
+
+
+private class KtorResponseIncomingContext(
+    private val response: HttpResponse
+) : IncomingContext {
+    override fun getHeader(key: String): String? = response.headers[key]
+
+    override fun getQueryParam(key: String): String? = null
+
+    override fun getPathParam(key: String): String? = null
+
+    override fun getProperty(key: String): String? = when (key) {
+        "statusCode" -> response.status.value.toString()
+        "url" -> response.call.request.url.toString()
+        else -> null
     }
 }
 
