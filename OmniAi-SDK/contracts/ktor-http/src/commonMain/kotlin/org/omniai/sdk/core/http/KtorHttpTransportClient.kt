@@ -193,6 +193,7 @@ private fun <T> processSingleEvent(
     return try {
         HttpCallResult.Success(json.decodeFromString(serializer, data), metadata)
     } catch (exception: Exception) {
+        println("EX" + exception.message)
         if (exception is CancellationException) throw exception
         exception.toCallResult(metadata)
     }

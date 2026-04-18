@@ -170,11 +170,11 @@ private suspend fun <T> T?.respondIfNull(call: ApplicationCall): T? {
     return this
 }
 
-private suspend inline fun <reified T : Any> ApplicationCall.handleGatewayResponse(
+private suspend inline fun <reified UnaryT : Any, reified StreamT : Any> ApplicationCall.handleGatewayResponse(
     json: Json,
     stream: Boolean,
-    crossinline onStream: suspend () -> Either<DomainError, Flow<T>>,
-    crossinline onUnary: suspend () -> Either<DomainError, T>
+    crossinline onStream: suspend () -> Either<DomainError, Flow<StreamT>>,
+    crossinline onUnary: suspend () -> Either<DomainError, UnaryT>
 ) {
     runCatching {
         if (stream) {
@@ -189,9 +189,13 @@ private suspend inline fun <reified T : Any> ApplicationCall.handleGatewayRespon
             }
         }
     }.onFailure { throwable ->
-        respond(HttpStatusCode.InternalServerError, mapOf("error" to (throwable.message ?: "Internal server error")))
+        respond(
+            HttpStatusCode.InternalServerError,
+            mapOf("error" to (throwable.message ?: "Internal server error"))
+        )
     }
 }
+
 
 private suspend inline fun <reified T : Any> ApplicationCall.respondAsSse(eventFlow: Flow<T>, json: Json) {
     response.headers.append(HttpHeaders.CacheControl, "no-cache")

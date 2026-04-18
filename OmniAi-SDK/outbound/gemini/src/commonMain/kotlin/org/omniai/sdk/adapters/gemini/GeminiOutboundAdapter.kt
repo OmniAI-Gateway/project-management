@@ -3,7 +3,6 @@ package org.omniai.sdk.adapters.gemini
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onCompletion
-import org.omniai.sdk.binders.ConfigurableMetadataBinder
 import org.omniai.sdk.contracts.gemini.output.GeminiError
 import org.omniai.sdk.contracts.gemini.output.GeminiErrorResponse
 import org.omniai.sdk.contracts.gemini.input.GeminiGenerateContentRequest
