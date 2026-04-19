@@ -20,6 +20,8 @@ class MetricsInterceptor(
         val startedAt = markNow()
         var thrown: Throwable? = null
 
+        println("[MetricsInterceptor] handle() called for provider=${context.request.provider.value}, model=${context.request.model}")
+
         val result = try {
             chain.proceed(context)
         } catch (t: Throwable) {
@@ -31,6 +33,7 @@ class MetricsInterceptor(
             val attrs = buildAttrs(context).toMutableMap().apply {
                 this["error.type"] = thrown?.let { it::class.simpleName ?: "UnknownException" } ?: "UnknownException"
             }
+            println("[MetricsInterceptor] Recording latency (error): attrs=$attrs")
             meter.recordLatency(
                 METRICS_NAME,
                 startedAt.elapsedNow().toDouble(DurationUnit.MILLISECONDS),
@@ -60,6 +63,7 @@ class MetricsInterceptor(
                         if (cause != null) {
                             attrs["error.type"] = cause::class.simpleName ?: "UnknownException"
                         }
+                        println("[MetricsInterceptor] Recording latency (stream): attrs=$attrs")
                         meter.recordLatency(
                             METRICS_NAME,
                             startedAt.elapsedNow().toDouble(DurationUnit.MILLISECONDS),
@@ -73,6 +77,7 @@ class MetricsInterceptor(
                 val attrs = buildAttrs(context, result).toMutableMap().apply {
                     this["error.type"] = result.error::class.simpleName ?: "DomainError"
                 }
+                println("[MetricsInterceptor] Recording latency (error result): attrs=$attrs")
                 meter.recordLatency(
                     METRICS_NAME,
                     startedAt.elapsedNow().inWholeMilliseconds.toDouble(),
@@ -82,10 +87,12 @@ class MetricsInterceptor(
             }
             is PipelineResult.Unary,
             is PipelineResult.NoResult -> {
+                val attrs = buildAttrs(context, result)
+                println("[MetricsInterceptor] Recording latency (unary/noresult): attrs=$attrs")
                 meter.recordLatency(
                     METRICS_NAME,
                     startedAt.elapsedNow().toDouble(DurationUnit.MILLISECONDS),
-                    buildAttrs(context, result)
+                    attrs
                 )
                 result
             }
@@ -123,7 +130,7 @@ class MetricsInterceptor(
             attrs["providerResponse"] = streamResponseProvider
         }
         if (streamResponseModel != null) {
-            attrs["modelResponse"] = streamResponseModel
+                attrs["modelResponse"] = streamResponseModel
         }
 
         return attrs
