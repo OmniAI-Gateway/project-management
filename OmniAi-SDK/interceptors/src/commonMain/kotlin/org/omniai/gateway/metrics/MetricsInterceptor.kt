@@ -92,7 +92,7 @@ class MetricsInterceptor(
                 meter.recordLatency(
                     METRICS_NAME,
                     startedAt.elapsedNow().toDouble(DurationUnit.MILLISECONDS),
-                    attrs
+                    buildAttrs(context, result)
                 )
                 result
             }
@@ -130,7 +130,7 @@ class MetricsInterceptor(
             attrs["providerResponse"] = streamResponseProvider
         }
         if (streamResponseModel != null) {
-                attrs["modelResponse"] = streamResponseModel
+            attrs["modelResponse"] = streamResponseModel
         }
 
         return attrs
