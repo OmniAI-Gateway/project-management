@@ -17,7 +17,7 @@ class JvmTelemetryMeter(
     private val histograms = ConcurrentHashMap<String, DoubleHistogram>()
 
     override fun recordLatency(metricName: String, durationMs: Double, attributes: Map<String, String>) {
-
+        println("DEBUG OTel: A registar métrica $metricName com valor $durationMs")
         val histogram = histograms.getOrPut(metricName) {
             meter.histogramBuilder(metricName)
                 .setUnit("ms")

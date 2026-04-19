@@ -4,12 +4,8 @@ import org.omniai.gateway.services.gatewayServiceAssembler
 import org.omniai.sdk.core.commom.TypedMap
 import org.omniai.sdk.core.http.HttpCallResult
 import org.omniai.sdk.core.http.HttpTransportClient
-import org.omniai.sdk.core.pipeline.GatewayContext
 import org.omniai.sdk.core.pipeline.Interceptor
-import org.omniai.sdk.core.pipeline.InterceptorChain
 import org.omniai.sdk.core.pipeline.MetricsInterceptor
-import org.omniai.sdk.core.pipeline.MetricsSnapshotKey
-import org.omniai.sdk.core.pipeline.PipelineResult
 import org.omniai.sdk.core.ports.InferenceServicePort
 import org.omniai.sdk.domain.common.Provider
 import org.omniai.sdk.gateway.client.auth.AuthorizationServerConfig
@@ -74,9 +70,7 @@ private suspend fun GatewayDefinition.buildInterceptors(httpClient: HttpTranspor
 
     if (metrics.enabled) {
         resolved += MetricsInterceptor()
-        if (metrics.exporters.isNotEmpty()) {
-            resolved += MetricsExportInterceptor(metrics)
-        }
+        resolved += metrics.interceptors
     }
 
     resolved += interceptors.global
@@ -140,25 +134,4 @@ private fun providerScoped(provider: Provider, delegate: Interceptor): Intercept
             chain.proceed(context)
         }
     }
-
-private class MetricsExportInterceptor(
-    private val config: MetricsConfig
-) : Interceptor {
-    override suspend fun handle(context: GatewayContext, chain: InterceptorChain): PipelineResult {
-        val result = chain.proceed(context)
-        val snapshot = context.attributes[MetricsSnapshotKey] ?: return result
-
-        val exportMap = TypedMap().also { typedMap ->
-            typedMap.put(MetricsSnapshotKey, snapshot)
-        }
-
-        config.enabledMetrics.forEach { metric ->
-            config.exporters.forEach { exporter ->
-                exporter.export(metric, exportMap)
-            }
-        }
-
-        return result
-    }
-}
 

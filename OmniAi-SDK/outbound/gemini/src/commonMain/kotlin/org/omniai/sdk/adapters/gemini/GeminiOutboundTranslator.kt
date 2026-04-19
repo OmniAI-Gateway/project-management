@@ -287,10 +287,12 @@ private fun RequestContentPart.toGeminiPart(): GeminiPart? =
     when (this) {
         is TextPart -> GeminiPart(text = text)
         is ToolCallPart -> GeminiPart(
+            thoughtSignature =  "skip_thought_signature_validator",
             functionCall = GeminiInputFunctionCall(
                 id = toolCallId,
                 name = functionName,
-                args = JsonValue.JsonObject(argumentsJson).toKotlinxJsonObject()
+                args = JsonValue.JsonObject(argumentsJson).toKotlinxJsonObject(),
+                thoughtSignature = "skip_thought_signature_validator"
             )
         )
         is ToolResultPart -> GeminiPart(

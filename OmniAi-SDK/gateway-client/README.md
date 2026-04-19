@@ -26,14 +26,21 @@ val definition = gatewayConfig {
     interceptors {
         global(MyGlobalInterceptor())
         local(org.omniai.sdk.domain.common.Provider.OPENAI, MyOpenAiOnlyInterceptor())
+        telemetryMetrics {
+            meter = myTelemetryMeter
+            tracer = myTelemetryTracer // optional
+            tags(myTenantKey, myRequestIdKey)
+        }
     }
 
     metrics {
         enable(GatewayMetric.REQUEST_COUNT)
         enable(GatewayMetric.LATENCY)
-        exportTo(MetricsExporter { metric, snapshot ->
-            println("metric=$metric snapshot=$snapshot")
-        })
+        telemetry {
+            meter = myTelemetryMeter
+            tracer = myTelemetryTracer // optional
+            tags(myTenantKey, myRequestIdKey)
+        }
     }
 
     services {
@@ -75,6 +82,18 @@ import org.omniai.sdk.gateway.client.start
 suspend fun startGateway() {
     val runtime = definition.start(httpClient = KtorHttpTransportClient.default())
     println("Gateway started with inbounds=${runtime.inbounds}")
+}
+```
+
+## Telemetry helper (global interceptors)
+
+```kotlin
+import org.omniai.sdk.gateway.client.telemetryMetricsInterceptorBuild
+
+val telemetryInterceptors = telemetryMetricsInterceptorBuild {
+    meter = myTelemetryMeter
+    tracer = myTelemetryTracer // optional
+    tags(myTenantKey)
 }
 ```
 

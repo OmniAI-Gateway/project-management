@@ -945,4 +945,5 @@ Embora ambas utilizem esquemas JSON, servem propósitos distintos:
 
 **Documentação Oficial**: [Google AI Gemini API Docs](https://ai.google.dev/gemini-api/docs?hl=pt-br)
 
+referir throungSiganture e SKIP na api do google -> https://ai.google.dev/gemini-api/docs/thought-signatures?hl=pt-br
 ---

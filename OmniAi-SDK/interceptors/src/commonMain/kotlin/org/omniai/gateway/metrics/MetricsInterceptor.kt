@@ -1,6 +1,7 @@
 package org.omniai.gateway.metrics
 
 import kotlinx.coroutines.flow.onCompletion
+import kotlinx.coroutines.flow.onEach
 import org.omniai.sdk.core.commom.AttributeKey
 import org.omniai.sdk.core.pipeline.GatewayContext
 import org.omniai.sdk.core.pipeline.Interceptor
@@ -40,22 +41,36 @@ class MetricsInterceptor(
 
         return when (result) {
             is PipelineResult.Stream -> {
-                val wrapped = result.eventFlow.onCompletion { cause ->
-                    val attrs = buildAttrs(context).toMutableMap()
-                    if (cause != null) {
-                        attrs["error.type"] = cause::class.simpleName ?: "UnknownException"
+                var responseProvider: String? = null
+                var responseModel: String? = null
+
+                val wrapped = result.eventFlow
+                    .onEach { event ->
+                        if (responseProvider == null && responseModel == null) {
+                            responseProvider = event.provider.value
+                            responseModel = event.model.model
+                        }
                     }
-                    meter.recordLatency(
-                        METRICS_NAME,
-                        startedAt.elapsedNow().toDouble(DurationUnit.MILLISECONDS),
-                        attrs
-                    )
-                }
+                    .onCompletion { cause ->
+                        val attrs = buildAttrs(
+                            context = context,
+                            streamResponseProvider = responseProvider,
+                            streamResponseModel = responseModel
+                        ).toMutableMap()
+                        if (cause != null) {
+                            attrs["error.type"] = cause::class.simpleName ?: "UnknownException"
+                        }
+                        meter.recordLatency(
+                            METRICS_NAME,
+                            startedAt.elapsedNow().toDouble(DurationUnit.MILLISECONDS),
+                            attrs
+                        )
+                    }
                 PipelineResult.Stream(wrapped)
             }
 
             is PipelineResult.Error -> {
-                val attrs = buildAttrs(context).toMutableMap().apply {
+                val attrs = buildAttrs(context, result).toMutableMap().apply {
                     this["error.type"] = result.error::class.simpleName ?: "DomainError"
                 }
                 meter.recordLatency(
@@ -70,22 +85,47 @@ class MetricsInterceptor(
                 meter.recordLatency(
                     METRICS_NAME,
                     startedAt.elapsedNow().toDouble(DurationUnit.MILLISECONDS),
-                    buildAttrs(context)
+                    buildAttrs(context, result)
                 )
                 result
             }
         }
     }
 
-    private fun buildAttrs(context: GatewayContext): Map<String, String> {
+    private fun buildAttrs(
+        context: GatewayContext,
+        result: PipelineResult? = null,
+        streamResponseProvider: String? = null,
+        streamResponseModel: String? = null
+    ): Map<String, String> {
         val attrs = mutableMapOf(
-            "provider" to context.request.provider.value,
-            "model" to context.request.model,
+            "providerRequest" to context.request.provider.value,
+            "modelRequest" to context.request.model,
             "mode" to context.mode.name
         )
+
         contextTagKeys.forEach { key ->
             context.attributes[key]?.let { attrs[key.name] = it }
         }
+
+        when (result) {
+            is PipelineResult.Unary -> {
+                val response = result.response
+                val providerResp = response.provider.value
+                val modelResp = response.model
+                attrs["providerResponse"] = providerResp
+                attrs["modelResponse"] = modelResp
+            }
+            else -> Unit
+        }
+
+        if (streamResponseProvider != null) {
+            attrs["providerResponse"] = streamResponseProvider
+        }
+        if (streamResponseModel != null) {
+            attrs["modelResponse"] = streamResponseModel
+        }
+
         return attrs
     }
 

@@ -23,8 +23,8 @@ kotlin {
             implementation("com.nimbusds:nimbus-jose-jwt:9.41.2")
             implementation("org.slf4j:slf4j-api:2.0.12")
 
-            implementation(project.dependencies.platform("io.opentelemetry:opentelemetry-bom:1.38.0"))
-            implementation("io.opentelemetry:opentelemetry-api")
+            api(project.dependencies.platform("io.opentelemetry:opentelemetry-bom:1.38.0"))
+            api("io.opentelemetry:opentelemetry-api")
             implementation("io.opentelemetry:opentelemetry-extension-kotlin")
 
         }

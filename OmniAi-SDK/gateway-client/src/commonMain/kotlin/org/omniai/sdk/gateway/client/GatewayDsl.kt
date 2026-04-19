@@ -1,5 +1,10 @@
 package org.omniai.sdk.gateway.client
 
+import org.omniai.gateway.metrics.MetricsInterceptor
+import org.omniai.gateway.metrics.TelemetryMeter
+import org.omniai.gateway.metrics.TelemetryTracer
+import org.omniai.gateway.metrics.TracingInterceptor
+import org.omniai.sdk.core.commom.AttributeKey
 import org.omniai.sdk.core.commom.TypedMap
 import org.omniai.sdk.core.pipeline.Interceptor
 import org.omniai.sdk.core.ports.InferenceServicePort
@@ -66,14 +71,10 @@ enum class GatewayMetric {
     TOKEN_USAGE
 }
 
-fun interface MetricsExporter {
-    suspend fun export(metric: GatewayMetric, snapshot: TypedMap)
-}
-
 data class MetricsConfig(
     val enabled: Boolean,
     val enabledMetrics: Set<GatewayMetric>,
-    val exporters: List<MetricsExporter>
+    val interceptors: List<Interceptor>
 )
 
 sealed interface AiServiceSelection {
@@ -183,6 +184,14 @@ class InterceptorsDsl {
         localInterceptors.getOrPut(provider) { mutableListOf() }.add(interceptor)
     }
 
+    /**
+     * Installs telemetry interceptors in global scope.
+     * If [TelemetryMetricsInterceptorBuilder.tracer] is set, tracing runs before metrics.
+     */
+    fun telemetryMetrics(block: TelemetryMetricsInterceptorBuilder.() -> Unit) {
+        telemetryMetricsInterceptorBuild(block).forEach(::global)
+    }
+
     internal fun build(): InterceptorRegistration = InterceptorRegistration(
         global = globalInterceptors.toList(),
         localByProvider = localInterceptors.mapValues { (_, list) -> list.toList() }
@@ -197,7 +206,7 @@ class MetricsDsl {
         GatewayMetric.LATENCY,
         GatewayMetric.TOKEN_USAGE
     )
-    private val sinks = mutableListOf<MetricsExporter>()
+    private val installedInterceptors = mutableListOf<Interceptor>()
 
     fun enable(metric: GatewayMetric) {
         metrics += metric
@@ -207,14 +216,18 @@ class MetricsDsl {
         metrics -= metric
     }
 
-    fun exportTo(exporter: MetricsExporter) {
-        sinks += exporter
+    fun use(interceptor: Interceptor) {
+        installedInterceptors += interceptor
+    }
+
+    fun telemetry(block: TelemetryMetricsInterceptorBuilder.() -> Unit) {
+        telemetryMetricsInterceptorBuild(block).forEach(::use)
     }
 
     internal fun build(): MetricsConfig = MetricsConfig(
         enabled = enabled,
         enabledMetrics = metrics.toSet(),
-        exporters = sinks.toList()
+        interceptors = installedInterceptors.toList()
     )
 }
 
@@ -231,4 +244,29 @@ class AiServicesDsl {
 
     internal fun build(): AiServiceSelection = mode
 }
+
+class TelemetryMetricsInterceptorBuilder {
+    var meter: TelemetryMeter? = null
+    var tracer: TelemetryTracer? = null
+    var contextTagKeys: List<AttributeKey<String>> = emptyList()
+
+    fun tags(vararg keys: AttributeKey<String>) {
+        contextTagKeys = keys.toList()
+    }
+
+    internal fun build(): List<Interceptor> {
+        val resolvedMeter = requireNotNull(meter) {
+            "Telemetry meter is required to build telemetry metrics interceptors"
+        }
+
+        val interceptors = mutableListOf<Interceptor>()
+        tracer?.let { interceptors += TracingInterceptor(it) }
+        interceptors += MetricsInterceptor(resolvedMeter, contextTagKeys)
+        return interceptors
+    }
+}
+
+fun telemetryMetricsInterceptorBuild(
+    block: TelemetryMetricsInterceptorBuilder.() -> Unit
+): List<Interceptor> = TelemetryMetricsInterceptorBuilder().apply(block).build()
 
