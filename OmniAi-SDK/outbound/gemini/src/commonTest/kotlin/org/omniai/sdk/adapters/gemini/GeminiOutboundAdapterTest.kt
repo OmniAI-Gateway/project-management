@@ -61,7 +61,7 @@ class GeminiOutboundAdapterTest {
         assertEquals("resp_1", result.value.id)
 
         val config = fakeClient.lastExecuteConfig
-        assertEquals("https://gemini.local/v1beta/models/gemini-2.0-flash", config?.url)
+        assertEquals("https://gemini.local/v1beta/models/gemini-2.0-flash:generateContent", config?.url)
         assertEquals(HttpMethod.POST, config?.method)
         assertEquals("gemini-key", config?.headers?.get("x-goog-api-key")?.first())
         assertEquals("application/json", config?.headers?.get("content-type")?.first())
