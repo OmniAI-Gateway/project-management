@@ -12,6 +12,7 @@ import org.omniai.sdk.contracts.anthropic.input.AnthropicMessageInput
 import org.omniai.sdk.contracts.anthropic.input.AnthropicMessagesRequest
 import org.omniai.sdk.contracts.anthropic.input.ListContentBlock
 import org.omniai.sdk.contracts.anthropic.output.AnthropicStreamEvent
+import org.omniai.sdk.core.commom.Either
 import org.omniai.sdk.core.commom.Success
 import org.omniai.sdk.core.commom.TypedMap
 import org.omniai.sdk.core.commom.success
@@ -20,6 +21,7 @@ import org.omniai.sdk.domain.common.CommonRole
 import org.omniai.sdk.domain.common.Model
 import org.omniai.sdk.domain.common.Provider
 import org.omniai.sdk.domain.common.content.TextPart
+import org.omniai.sdk.domain.errors.DomainError
 import org.omniai.sdk.domain.requests.CommonRequest
 import org.omniai.sdk.domain.responses.CommonChoice
 import org.omniai.sdk.domain.responses.CommonResponse
@@ -34,7 +36,10 @@ class AnthropicInboundAdapterTest {
 		var receivedRequest: CommonRequest? = null
 
 		val service = object : InferenceServicePort {
-			override suspend fun generate(request: CommonRequest): Success<CommonResponse> {
+			override suspend fun generate(
+                request: CommonRequest,
+                attributes: TypedMap
+            ): Either<DomainError, CommonResponse> {
 				receivedRequest = request
 				return success(
 					CommonResponse(
@@ -54,7 +59,10 @@ class AnthropicInboundAdapterTest {
 				)
 			}
 
-			override suspend fun generateStream(request: CommonRequest): Success<Flow<CommonResponseEvent>> = success(flowOf())
+			override suspend fun generateStream(
+                request: CommonRequest,
+                attributes: TypedMap
+            ): Either<DomainError, Flow<CommonResponseEvent>> = success(flowOf())
 		}
 
 		val adapter = AnthropicInboundAdapter(service)
@@ -78,11 +86,17 @@ class AnthropicInboundAdapterTest {
 	@Test
 	fun `generateStream delegates to service and maps domain events`() = runTest {
 		val service = object : InferenceServicePort {
-			override suspend fun generate(request: CommonRequest): Success<CommonResponse> {
+			override suspend fun generate(
+                request: CommonRequest,
+                attributes: TypedMap
+            ): Either<DomainError, CommonResponse> {
 				throw UnsupportedOperationException("not used in this test")
 			}
 
-			override suspend fun generateStream(request: CommonRequest): Success<Flow<CommonResponseEvent>> = success(
+			override suspend fun generateStream(
+                request: CommonRequest,
+                attributes: TypedMap
+            ): Either<DomainError, Flow<CommonResponseEvent>> = success(
 				flowOf(
 					ResponseStarted(
 						provider = Provider.ANTHROPIC,

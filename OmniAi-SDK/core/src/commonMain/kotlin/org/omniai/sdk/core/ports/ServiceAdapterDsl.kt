@@ -14,14 +14,22 @@ import org.omniai.sdk.domain.responses.CommonResponseEvent
 interface ServiceAdapter : InferenceServicePort
 
 class ServiceAdapterBuilder {
-    private var unaryHandler: (suspend (CommonRequest) -> Either<DomainError, CommonResponse>)? = null
-    private var streamHandler: (suspend (CommonRequest) -> Either<DomainError, Flow<CommonResponseEvent>>)? = null
+    private var unaryHandler: (suspend (CommonRequest, TypedMap) -> Either<DomainError, CommonResponse>)? = null
+    private var streamHandler: (suspend (CommonRequest, TypedMap) -> Either<DomainError, Flow<CommonResponseEvent>>)? = null
 
     fun unary(handler: suspend (CommonRequest) -> Either<DomainError, CommonResponse>) {
+        unaryHandler = { request, _ -> handler(request) }
+    }
+
+    fun unary(handler: suspend (CommonRequest, TypedMap) -> Either<DomainError, CommonResponse>) {
         unaryHandler = handler
     }
 
     fun stream(handler: suspend (CommonRequest) -> Either<DomainError, Flow<CommonResponseEvent>>) {
+        streamHandler = { request, _ -> handler(request) }
+    }
+
+    fun stream(handler: suspend (CommonRequest, TypedMap) -> Either<DomainError, Flow<CommonResponseEvent>>) {
         streamHandler = handler
     }
 
@@ -34,9 +42,11 @@ class ServiceAdapterBuilder {
         }
 
         return object : ServiceAdapter {
-            override suspend fun generate(request: CommonRequest, attributes: TypedMap): Either<DomainError, CommonResponse> = unary(request)
+            override suspend fun generate(request: CommonRequest, attributes: TypedMap): Either<DomainError, CommonResponse> =
+                unary(request, attributes)
 
-            override suspend fun generateStream(request: CommonRequest, attributes: TypedMap): Either<DomainError, Flow<CommonResponseEvent>> = stream(request)
+            override suspend fun generateStream(request: CommonRequest, attributes: TypedMap): Either<DomainError, Flow<CommonResponseEvent>> =
+                stream(request, attributes)
         }
     }
 }
