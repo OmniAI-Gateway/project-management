@@ -2,6 +2,7 @@ package org.omniai.sdk.core.ports
 
 import kotlinx.coroutines.flow.Flow
 import org.omniai.sdk.core.commom.Either
+import org.omniai.sdk.core.commom.TypedMap
 import org.omniai.sdk.domain.errors.DomainError
 import org.omniai.sdk.domain.requests.CommonRequest
 import org.omniai.sdk.domain.responses.CommonResponse
@@ -33,9 +34,9 @@ class ServiceAdapterBuilder {
         }
 
         return object : ServiceAdapter {
-            override suspend fun generate(request: CommonRequest): Either<DomainError, CommonResponse> = unary(request)
+            override suspend fun generate(request: CommonRequest, attributes: TypedMap): Either<DomainError, CommonResponse> = unary(request)
 
-            override suspend fun generateStream(request: CommonRequest): Either<DomainError, Flow<CommonResponseEvent>> = stream(request)
+            override suspend fun generateStream(request: CommonRequest, attributes: TypedMap): Either<DomainError, Flow<CommonResponseEvent>> = stream(request)
         }
     }
 }

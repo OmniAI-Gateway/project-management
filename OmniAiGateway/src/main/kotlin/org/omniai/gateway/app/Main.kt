@@ -7,6 +7,7 @@ import org.omniai.sdk.core.http.KtorHttpTransportClient
 import org.omniai.sdk.gateway.client.assemble
 import org.omniai.sdk.gateway.client.gatewayConfig
 import org.omniai.sdk.gateway.client.outbound.buildOutbounds
+import org.omniai.sdk.gateway.ktor.ClientIpMetadataKey
 import org.omniai.sdk.gateway.ktor.installAiGateway
 
 suspend fun main() {
@@ -24,6 +25,7 @@ suspend fun main() {
             enabled = config.telemetryEnabled
             if (enabled) {
                 telemetry {
+                    tags(ClientIpMetadataKey)
                     meter = telemetryRuntime.meter
                     telemetryRuntime.tracer?.let { tracer = it }
                 }
