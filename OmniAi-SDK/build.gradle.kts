@@ -18,6 +18,7 @@ subprojects {
     }
 }
 
+
 kotlin {
     jvm()
     jvmToolchain(22)

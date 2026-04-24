@@ -24,6 +24,7 @@ kotlin {
             implementation("org.slf4j:slf4j-api:2.0.12")
 
             api(project.dependencies.platform("io.opentelemetry:opentelemetry-bom:1.38.0"))
+            api(project.dependencies.platform("io.opentelemetry.instrumentation:opentelemetry-instrumentation-bom-alpha:2.4.0-alpha"))
             api("io.opentelemetry:opentelemetry-api")
             implementation("io.opentelemetry:opentelemetry-extension-kotlin")
 

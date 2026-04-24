@@ -25,8 +25,11 @@ dependencies {
     implementation("io.ktor:ktor-server-content-negotiation")
     implementation("io.ktor:ktor-serialization-kotlinx-json")
 
+    implementation(platform("io.opentelemetry:opentelemetry-bom:1.38.0"))
+    implementation(platform("io.opentelemetry.instrumentation:opentelemetry-instrumentation-bom-alpha:2.4.0-alpha"))
     implementation("io.opentelemetry:opentelemetry-sdk")
     implementation("io.opentelemetry:opentelemetry-exporter-otlp")
+    implementation("io.opentelemetry.instrumentation:opentelemetry-runtime-telemetry-java8")
 
     implementation("ch.qos.logback:logback-classic:1.5.3")
     testImplementation(kotlin("test"))

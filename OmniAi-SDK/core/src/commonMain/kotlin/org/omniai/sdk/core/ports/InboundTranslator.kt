@@ -1,7 +1,7 @@
 package org.omniai.sdk.core.ports
 
 import kotlinx.coroutines.flow.Flow
-import org.omniai.sdk.domain.common.Provider // Consider using ProviderId as discussed earlier!
+import org.omniai.sdk.domain.common.Provider
 import org.omniai.sdk.domain.requests.CommonRequest
 import org.omniai.sdk.domain.responses.CommonResponse
 import org.omniai.sdk.domain.responses.CommonResponseEvent
@@ -15,7 +15,6 @@ import org.omniai.sdk.domain.responses.CommonResponseEvent
  * @param ClientEvent The outbound streaming event payload returned to the client.
  */
 interface InboundTranslator<in ClientReq, out ClientRes, out ClientEvent> {
-
     /**
      * Identifies the provider format this translator handles (e.g., OpenAI format).
      */

@@ -11,6 +11,11 @@ import io.opentelemetry.exporter.otlp.metrics.OtlpGrpcMetricExporter
 import io.opentelemetry.sdk.trace.SdkTracerProvider
 import io.opentelemetry.sdk.trace.export.BatchSpanProcessor
 import io.opentelemetry.exporter.otlp.trace.OtlpGrpcSpanExporter
+import io.opentelemetry.instrumentation.runtimemetrics.java8.Classes
+import io.opentelemetry.instrumentation.runtimemetrics.java8.Cpu
+import io.opentelemetry.instrumentation.runtimemetrics.java8.GarbageCollector
+import io.opentelemetry.instrumentation.runtimemetrics.java8.MemoryPools
+import io.opentelemetry.instrumentation.runtimemetrics.java8.Threads
 import org.omniai.gateway.metrics.NoOpTelemetryMeter
 import org.omniai.gateway.metrics.NoOpTelemetryTracer
 import org.omniai.sk.gateway.telemetry.JvmTelemetryMeter
@@ -28,6 +33,11 @@ fun buildTelemetryRuntime(config: GatewayConfig): TelemetryRuntime {
     if (config.otelEnabled && !collectorEndpoint.isNullOrBlank()) {
         return try {
             val openTelemetry = initOpenTelemetrySdk(collectorEndpoint)
+            Cpu.registerObservers(openTelemetry)
+            MemoryPools.registerObservers(openTelemetry)
+            Threads.registerObservers(openTelemetry)
+            Classes.registerObservers(openTelemetry)
+            GarbageCollector.registerObservers(openTelemetry)
 
             val meter = JvmTelemetryMeter(openTelemetry, OTEL_SCOPE)
             val tracer = JvmTelemetryTracer(openTelemetry, OTEL_SCOPE)
@@ -62,6 +72,7 @@ private fun initOpenTelemetrySdk(endpoint: String): OpenTelemetry {
     val tracerProvider = SdkTracerProvider.builder()
         .addSpanProcessor(BatchSpanProcessor.builder(spanExporter).build())
         .build()
+
 
     return OpenTelemetrySdk.builder()
         .setMeterProvider(meterProvider)
