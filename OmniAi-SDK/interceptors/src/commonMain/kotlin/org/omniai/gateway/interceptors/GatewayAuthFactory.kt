@@ -38,7 +38,7 @@ private suspend fun loadDiscoveryAuthenticator(
     val authInfra = HttpAuthSecurityClient(
         httpClient = httpClient,
         jwksUri = metadata.jwksUri,
-        tokenEndpoint = metadata.tokenEndpoint,
+        introspectionEndpoint = metadata.introspectionEndpoint,
         configSource = configSource
     )
 

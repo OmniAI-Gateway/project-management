@@ -16,36 +16,27 @@ external object JoseLib {
 
 @OptIn(DelicateCoroutinesApi::class)
 actual fun joseJwtVerificationEngine(
-    keysProvider: PublicKeysProvider,
+    key: Any,
     issuer: String,
     audience: String
 ): JwtVerificationEngine = JwtVerificationEngine { rawToken ->
     try {
-        // 1. O resolver precisa converter a nossa função suspend numa Promise JS
-        val keyResolver: (dynamic, dynamic) -> Promise<dynamic> = { header, _ ->
-            val kid = header.kid as String?
-            GlobalScope.promise {
-                keysProvider.getPublicKey(issuer, kid)
-            }
-        }
-
         val options = js("{}")
         options.issuer = issuer
         options.audience = audience
 
-        // 2. Aguarda a verificação
-        val result = JoseLib.jwtVerify(rawToken, keyResolver, options).await()
+        // A biblioteca 'jose' permite passar a chave diretamente em vez do resolver
+        val result = JoseLib.jwtVerify(rawToken, key, options).await()
 
-        // 3. Extração segura dos claims de um objeto dinâmico JS
         val payload = result.payload
         val claims = mutableMapOf<String, Any>()
 
-        // Forma segura de iterar propriedades em JS dinâmico no Kotlin
+        // Extração das claims do payload JS
         val keys = js("Object.keys")(payload)
         val length = keys.length as Int
         for (i in 0 until length) {
-            val key = keys[i] as String
-            claims[key] = payload[key]
+            val propertyName = keys[i] as String
+            claims[propertyName] = payload[propertyName]
         }
 
         AuthenticationDecision.Allow(claims = claims)

@@ -11,18 +11,17 @@ class JoseJwtTokenAuthenticator(
     private val expectedIssuer: String,
     private val expectedAudience: String,
 ) : TokenAuthenticator {
-
     override suspend fun authenticate(token: AuthToken, context: GatewayContext): AuthenticationDecision {
         return try {
-
-            val jwtToValidate = if (token.kind == TokenKind.OPAQUE) {
-                infra.exchangeApiKey(token.rawValue)
+            if (token.kind == TokenKind.OPAQUE) {
+                val claims = infra.introspectToken(token.rawValue)
+                AuthenticationDecision.Allow(claims)
             } else {
-                token.rawValue
+                // Se já for JWT, mantém a verificação local original
+                // 1. Obtemos a chave pública (pode ser pelo issuer ou por um kid específico se tiver)
+                val publicKey = infra.getPublicKey(expectedIssuer, null)
+                joseJwtVerificationEngine(publicKey, expectedIssuer, expectedAudience).verify(token.rawValue)
             }
-
-            joseJwtVerificationEngine(infra, expectedIssuer, expectedAudience).verify(jwtToValidate)
-
         } catch (e: Exception) {
             AuthenticationDecision.Deny("Falha na autenticação: ${e.message}")
         }

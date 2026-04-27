@@ -9,7 +9,7 @@ import org.omniai.sdk.core.http.requestConfig
 data class OidcMetadata(
     val issuer: String,
     val jwksUri: String,
-    val tokenEndpoint: String? = null 
+    val introspectionEndpoint: String? = null
 )
 
 class OidcDiscovery(private val httpClient: HttpTransportClient) {
