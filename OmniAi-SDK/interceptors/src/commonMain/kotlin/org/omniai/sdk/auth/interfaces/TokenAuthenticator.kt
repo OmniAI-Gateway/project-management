@@ -6,5 +6,5 @@ import org.omniai.sdk.auth.domain.TokenValidationParams
 import org.omniai.sdk.core.pipeline.GatewayContext
 
 interface TokenAuthenticator {
-    suspend fun authenticate(token: AuthToken, params: TokenValidationParams): AuthenticationDecision
+    suspend fun authenticate(token: AuthToken, params: TokenValidationParams?): AuthenticationDecision
 }

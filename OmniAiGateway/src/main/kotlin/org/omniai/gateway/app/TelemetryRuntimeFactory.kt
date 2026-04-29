@@ -18,8 +18,8 @@ import io.opentelemetry.instrumentation.runtimemetrics.java8.MemoryPools
 import io.opentelemetry.instrumentation.runtimemetrics.java8.Threads
 import org.omniai.sdk.metrics.NoOpTelemetryMeter
 import org.omniai.sdk.metrics.NoOpTelemetryTracer
-import org.omniai.sk.gateway.telemetry.JvmTelemetryMeter
-import org.omniai.sk.gateway.telemetry.JvmTelemetryTracer
+import org.omniai.sdk.telemetry.JvmTelemetryMeter
+import org.omniai.sdk.telemetry.JvmTelemetryTracer
 import java.time.Duration
 
 private const val OTEL_SCOPE = "omniai-gateway-sdk"

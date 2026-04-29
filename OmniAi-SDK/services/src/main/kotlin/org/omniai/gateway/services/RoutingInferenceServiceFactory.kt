@@ -14,7 +14,8 @@ import org.omniai.sdk.domain.responses.CommonResponse
 import org.omniai.sdk.domain.responses.CommonResponseEvent
 
 fun routingInferenceServiceFactory(outbounds: List<OutboundPort>): InferenceServicePort {
-    val router = LatencyRouter()
+    val router = FallbackRouter()
+
     return serviceAdapter {
         unary { request: CommonRequest, attributes: TypedMap ->
             val ordered = router.orderOutbounds(request, outbounds)
@@ -63,7 +64,9 @@ private suspend fun <T> tryOutbounds(
         )
         when (val result = action(outbound, outboundRequest)) {
             is Either.Right -> return result
-            is Either.Left -> lastError = result.value
+            is Either.Left -> {
+                lastError = result.value
+            }
         }
     }
 
@@ -73,4 +76,3 @@ private suspend fun <T> tryOutbounds(
         )
     )
 }
-

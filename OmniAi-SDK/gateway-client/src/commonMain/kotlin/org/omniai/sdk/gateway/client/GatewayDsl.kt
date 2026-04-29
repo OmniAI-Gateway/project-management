@@ -1,90 +1,8 @@
 package org.omniai.sdk.gateway.client
-
-import org.omniai.sdk.metrics.MetricsInterceptor
-import org.omniai.sdk.metrics.TelemetryMeter
-import org.omniai.sdk.metrics.TelemetryTracer
-import org.omniai.sdk.metrics.TracingInterceptor
-import org.omniai.sdk.core.commom.AttributeKey
-import org.omniai.sdk.core.commom.TypedMap
-import org.omniai.sdk.core.pipeline.Interceptor
-import org.omniai.sdk.core.ports.InferenceServicePort
-import org.omniai.sdk.core.ports.OutboundPort
-import org.omniai.sdk.domain.common.Provider
 import org.omniai.sdk.gateway.client.auth.AuthorizationServerConfig
 import org.omniai.sdk.gateway.client.auth.AuthorizationServerDsl
-import org.omniai.sdk.inbound.anthropic.AnthropicInboundAdapter
-import org.omniai.sdk.inbound.gemini.GeminiInboundAdapter
-import org.omniai.sdk.inbound.openai.OpenAiInboundAdapter
-
-/**
- * Final immutable configuration produced by the Gateway DSL.
- */
-data class GatewayDefinition(
-    val networkAdapters: List<GatewayNetworkAdapter>,
-    val outboundPorts: List<OutboundPort>,
-    val inbounds: InboundRegistration,
-    val interceptors: InterceptorRegistration,
-    val metrics: MetricsConfig,
-    val aiServices: AiServiceSelection,
-    val authorizationServer: AuthorizationServerConfig
-)
-
-/**
- * Runtime graph returned after assembly on the host platform.
- */
-data class GatewayRuntime(
-    val service: InferenceServicePort,
-    val inbounds: GatewayInboundAdapters,
-    val metadata: TypedMap = TypedMap()
-)
-
-/**
- * Connection point for transport adapters (Ktor, custom HTTP server, etc).
- */
-fun interface GatewayNetworkAdapter {
-    suspend fun connect(runtime: GatewayRuntime)
-}
-
-data class GatewayInboundAdapters(
-    val openAi: OpenAiInboundAdapter?,
-    val anthropic: AnthropicInboundAdapter?,
-    val gemini: GeminiInboundAdapter?,
-    val custom: Map<String, Any> = emptyMap()
-)
-
-data class InboundRegistration(
-    val installOpenAi: Boolean,
-    val installAnthropic: Boolean,
-    val installGemini: Boolean,
-    val customFactories: Map<String, (InferenceServicePort) -> Any>
-)
-
-data class InterceptorRegistration(
-    val global: List<Interceptor>,
-    val localByProvider: Map<Provider, List<Interceptor>>
-)
-
-enum class GatewayMetric {
-    REQUEST_COUNT,
-    ERROR_COUNT,
-    LATENCY,
-    TOKEN_USAGE
-}
-
-data class MetricsConfig(
-    val enabled: Boolean,
-    val enabledMetrics: Set<GatewayMetric>,
-    val interceptors: List<Interceptor>
-)
-
-sealed interface AiServiceSelection {
-    data object BuiltIn : AiServiceSelection
-    data class Custom(val service: InferenceServicePort) : AiServiceSelection
-}
-
 fun gatewayConfig(block: GatewayConfigDsl.() -> Unit): GatewayDefinition =
     GatewayConfigDsl().apply(block).build()
-
 class GatewayConfigDsl {
     private val network = NetworkDsl()
     private val outbounds = OutboundsDsl()
@@ -93,35 +11,27 @@ class GatewayConfigDsl {
     private val metrics = MetricsDsl()
     private val services = AiServicesDsl()
     private var authorizationServer: AuthorizationServerConfig = AuthorizationServerConfig.None
-
     fun network(block: NetworkDsl.() -> Unit) {
         network.apply(block)
     }
-
     fun outbounds(block: OutboundsDsl.() -> Unit) {
         outbounds.apply(block)
     }
-
     fun inbounds(block: InboundsDsl.() -> Unit) {
         inbounds.apply(block)
     }
-
     fun interceptors(block: InterceptorsDsl.() -> Unit) {
         interceptors.apply(block)
     }
-
     fun metrics(block: MetricsDsl.() -> Unit) {
         metrics.apply(block)
     }
-
     fun services(block: AiServicesDsl.() -> Unit) {
         services.apply(block)
     }
-
     fun authorizationServer(block: AuthorizationServerDsl.() -> Unit) {
         authorizationServer = AuthorizationServerDsl().apply(block).build()
     }
-
     internal fun build(): GatewayDefinition = GatewayDefinition(
         networkAdapters = network.adapters.toList(),
         outboundPorts = outbounds.values.toList(),
@@ -132,141 +42,4 @@ class GatewayConfigDsl {
         authorizationServer = authorizationServer
     )
 }
-
-class NetworkDsl {
-    internal val adapters = mutableListOf<GatewayNetworkAdapter>()
-
-    fun use(adapter: GatewayNetworkAdapter) {
-        adapters += adapter
-    }
-}
-
-class OutboundsDsl {
-    internal val values = mutableListOf<OutboundPort>()
-
-    fun use(port: OutboundPort) {
-        values += port
-    }
-
-    operator fun OutboundPort.unaryPlus() {
-        use(this)
-    }
-}
-
-class InboundsDsl {
-    var openAi: Boolean = true
-    var anthropic: Boolean = true
-    var gemini: Boolean = true
-
-    private val factories = mutableMapOf<String, (InferenceServicePort) -> Any>()
-
-    fun custom(name: String, factory: (InferenceServicePort) -> Any) {
-        factories[name] = factory
-    }
-
-    internal fun build(): InboundRegistration = InboundRegistration(
-        installOpenAi = openAi,
-        installAnthropic = anthropic,
-        installGemini = gemini,
-        customFactories = factories.toMap()
-    )
-}
-
-class InterceptorsDsl {
-    private val globalInterceptors = mutableListOf<Interceptor>()
-    private val localInterceptors = mutableMapOf<Provider, MutableList<Interceptor>>()
-
-    fun global(interceptor: Interceptor) {
-        globalInterceptors += interceptor
-    }
-
-    fun local(provider: Provider, interceptor: Interceptor) {
-        localInterceptors.getOrPut(provider) { mutableListOf() }.add(interceptor)
-    }
-
-    /**
-     * Installs telemetry interceptors in global scope.
-     * If [TelemetryMetricsInterceptorBuilder.tracer] is set, tracing runs before metrics.
-     */
-    fun telemetryMetrics(block: TelemetryMetricsInterceptorBuilder.() -> Unit) {
-        telemetryMetricsInterceptorBuild(block).forEach(::global)
-    }
-
-    internal fun build(): InterceptorRegistration = InterceptorRegistration(
-        global = globalInterceptors.toList(),
-        localByProvider = localInterceptors.mapValues { (_, list) -> list.toList() }
-    )
-}
-
-class MetricsDsl {
-    var enabled: Boolean = true
-    private val metrics = mutableSetOf(
-        GatewayMetric.REQUEST_COUNT,
-        GatewayMetric.ERROR_COUNT,
-        GatewayMetric.LATENCY,
-        GatewayMetric.TOKEN_USAGE
-    )
-    private val installedInterceptors = mutableListOf<Interceptor>()
-
-    fun enable(metric: GatewayMetric) {
-        metrics += metric
-    }
-
-    fun disable(metric: GatewayMetric) {
-        metrics -= metric
-    }
-
-    fun use(interceptor: Interceptor) {
-        installedInterceptors += interceptor
-    }
-
-    fun telemetry(block: TelemetryMetricsInterceptorBuilder.() -> Unit) {
-        telemetryMetricsInterceptorBuild(block).forEach(::use)
-    }
-
-    internal fun build(): MetricsConfig = MetricsConfig(
-        enabled = enabled,
-        enabledMetrics = metrics.toSet(),
-        interceptors = installedInterceptors.toList()
-    )
-}
-
-class AiServicesDsl {
-    private var mode: AiServiceSelection = AiServiceSelection.BuiltIn
-
-    fun builtIn() {
-        mode = AiServiceSelection.BuiltIn
-    }
-
-    fun custom(service: InferenceServicePort) {
-        mode = AiServiceSelection.Custom(service)
-    }
-
-    internal fun build(): AiServiceSelection = mode
-}
-
-class TelemetryMetricsInterceptorBuilder {
-    var meter: TelemetryMeter? = null
-    var tracer: TelemetryTracer? = null
-    var contextTagKeys: List<AttributeKey<String>> = emptyList()
-
-    fun tags(vararg keys: AttributeKey<String>) {
-        contextTagKeys = keys.toList()
-    }
-
-    internal fun build(): List<Interceptor> {
-        val resolvedMeter = requireNotNull(meter) {
-            "Telemetry meter is required to build telemetry metrics interceptors"
-        }
-
-        val interceptors = mutableListOf<Interceptor>()
-        tracer?.let { interceptors += TracingInterceptor(it) }
-        interceptors += MetricsInterceptor(resolvedMeter, contextTagKeys)
-        return interceptors
-    }
-}
-
-fun telemetryMetricsInterceptorBuild(
-    block: TelemetryMetricsInterceptorBuilder.() -> Unit
-): List<Interceptor> = TelemetryMetricsInterceptorBuilder().apply(block).build()
 

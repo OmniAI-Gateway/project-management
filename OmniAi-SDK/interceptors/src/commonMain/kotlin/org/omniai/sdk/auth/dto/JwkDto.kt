@@ -1,9 +1,10 @@
 package org.omniai.sdk.auth.dto
 
 import kotlinx.serialization.Serializable
+import org.omniai.sdk.auth.utils.generateRsaPublicKeyBase64
 import org.omniai.sdk.auth.domain.Kid
 import org.omniai.sdk.auth.domain.PublicKey
-import org.omniai.sdk.auth.generateRsaPublicKeyBase64
+
 
 @Serializable
 data class JwkDto(
