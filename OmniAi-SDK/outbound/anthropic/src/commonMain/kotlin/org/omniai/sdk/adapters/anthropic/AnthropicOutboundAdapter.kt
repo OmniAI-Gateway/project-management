@@ -36,7 +36,6 @@ class AnthropicOutboundAdapter(
     private val baseUrl: String = "https://api.anthropic.com/v1",
     private val transportClient: HttpTransportClient = defaultHttpTransportClient(),
     private val anthropicVersion: String = "2023-06-01",
-    private val responseMetadataBinder: ConfigurableMetadataBinder? = null
 ) : OutboundPort {
 
     private val translator = AnthropicOutboundTranslator()

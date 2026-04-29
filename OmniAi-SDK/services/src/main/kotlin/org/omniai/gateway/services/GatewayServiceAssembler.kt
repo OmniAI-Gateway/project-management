@@ -1,12 +1,11 @@
 package org.omniai.gateway.services
 
-import org.omniai.gateway.interceptors.defaultGatewayInterceptors
+import org.omniai.sdk.interceptors.defaultGatewayInterceptors
 import org.omniai.sdk.core.http.HttpTransportClient
 import org.omniai.sdk.core.pipeline.Interceptor
 import org.omniai.sdk.core.pipeline.gatewayPipeline
 import org.omniai.sdk.core.ports.InferenceServicePort
 import org.omniai.sdk.core.ports.OutboundPort
-import org.omniai.sdk.interceptors.auth.ConfigSource
 
 suspend fun gatewayServiceAssembler(
     outbounds: List<OutboundPort>,

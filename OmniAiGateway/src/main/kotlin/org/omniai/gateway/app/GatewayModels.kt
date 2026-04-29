@@ -1,7 +1,7 @@
 package org.omniai.gateway.app
 
-import org.omniai.gateway.metrics.TelemetryMeter
-import org.omniai.gateway.metrics.TelemetryTracer
+import org.omniai.sdk.metrics.TelemetryMeter
+import org.omniai.sdk.metrics.TelemetryTracer
 import org.omniai.sdk.adapters.anthropic.AnthropicOutboundAdapter
 import org.omniai.sdk.adapters.gemini.GeminiOutboundAdapter
 import org.omniai.sdk.adapters.openai.OpenAiOutboundAdapter

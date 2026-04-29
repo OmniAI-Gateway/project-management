@@ -1,6 +1,6 @@
 package org.omniai.sdk.gateway.client.auth
 
-import org.omniai.sdk.interceptors.auth.domain.TokenAuthenticator
+import org.omniai.sdk.auth.interfaces.TokenAuthenticator
 
 sealed interface AuthorizationServerConfig {
     data object None : AuthorizationServerConfig

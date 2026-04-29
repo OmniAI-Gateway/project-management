@@ -1,7 +1,5 @@
 package org.omniai.gateway.interceptors
 
-import org.omniai.sdk.interceptors.auth.ConfigSource
-
 object JsEnvConfigSource : ConfigSource {
     @Suppress("UnsafeCastFromDynamic")
     override fun get(name: String): String? {

@@ -1,6 +1,6 @@
 package org.omniai.gateway.app
 
-import org.omniai.gateway.metrics.TelemetryMeter
+import org.omniai.sdk.metrics.TelemetryMeter
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicLong
 import io.opentelemetry.api.OpenTelemetry
@@ -16,8 +16,8 @@ import io.opentelemetry.instrumentation.runtimemetrics.java8.Cpu
 import io.opentelemetry.instrumentation.runtimemetrics.java8.GarbageCollector
 import io.opentelemetry.instrumentation.runtimemetrics.java8.MemoryPools
 import io.opentelemetry.instrumentation.runtimemetrics.java8.Threads
-import org.omniai.gateway.metrics.NoOpTelemetryMeter
-import org.omniai.gateway.metrics.NoOpTelemetryTracer
+import org.omniai.sdk.metrics.NoOpTelemetryMeter
+import org.omniai.sdk.metrics.NoOpTelemetryTracer
 import org.omniai.sk.gateway.telemetry.JvmTelemetryMeter
 import org.omniai.sk.gateway.telemetry.JvmTelemetryTracer
 import java.time.Duration

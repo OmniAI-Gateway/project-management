@@ -1,5 +1,6 @@
 plugins {
     kotlin("multiplatform")
+    kotlin("plugin.serialization")
 }
 
 description = "SDK interceptors"
@@ -17,6 +18,8 @@ kotlin {
         commonMain.dependencies {
             implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.6.0")
             api(project(":core"))
+            implementation(libs.kotlinx.serialization.json)
+
         }
 
         jvmMain.dependencies {

@@ -1,9 +1,9 @@
 package org.omniai.sdk.gateway.client
 
-import org.omniai.gateway.metrics.MetricsInterceptor
-import org.omniai.gateway.metrics.TelemetryMeter
-import org.omniai.gateway.metrics.TelemetryTracer
-import org.omniai.gateway.metrics.TracingInterceptor
+import org.omniai.sdk.metrics.MetricsInterceptor
+import org.omniai.sdk.metrics.TelemetryMeter
+import org.omniai.sdk.metrics.TelemetryTracer
+import org.omniai.sdk.metrics.TracingInterceptor
 import org.omniai.sdk.core.commom.AttributeKey
 import org.omniai.sdk.core.commom.TypedMap
 import org.omniai.sdk.core.pipeline.Interceptor

@@ -1,5 +1,6 @@
 package org.omniai.gateway.interceptors
 
+import org.omniai.sdk.logger.GatewayLogger
 import kotlin.js.console
 
 class JsConsoleGatewayLogger(

@@ -12,13 +12,11 @@ import org.omniai.sdk.gateway.client.auth.AuthorizationServerConfig
 import org.omniai.sdk.inbound.anthropic.AnthropicInboundAdapter
 import org.omniai.sdk.inbound.gemini.GeminiInboundAdapter
 import org.omniai.sdk.inbound.openai.OpenAiInboundAdapter
-import org.omniai.sdk.interceptors.auth.AuthContextInterceptor
-import org.omniai.sdk.interceptors.auth.ConfigSource
-import org.omniai.sdk.interceptors.auth.HttpAuthSecurityClient
-import org.omniai.sdk.interceptors.auth.JoseJwtTokenAuthenticator
-import org.omniai.sdk.interceptors.auth.MapConfigSource
-import org.omniai.sdk.interceptors.auth.OidcDiscovery
-import org.omniai.sdk.interceptors.auth.PassThroughTokenAuthenticator
+import org.omniai.sdk.auth.AuthContextInterceptor
+import org.omniai.sdk.auth.HttpAuthSecurityClient
+import org.omniai.sdk.auth.JoseJwtTokenAuthenticator
+import org.omniai.sdk.auth.oidc.OidcDiscovery
+import org.omniai.sdk.auth.PassThroughTokenAuthenticator
 
 suspend fun GatewayDefinition.assemble(
     httpClient: HttpTransportClient
