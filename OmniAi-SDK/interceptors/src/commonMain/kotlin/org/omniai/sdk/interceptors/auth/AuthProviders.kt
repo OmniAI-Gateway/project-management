@@ -1,12 +1,11 @@
 package org.omniai.sdk.interceptors.auth
 
-interface AuthSecurityInfrastructure : PublicKeysProvider, TokenExchanger
+interface AuthSecurityInfrastructure : PublicKeysProvider, TokenIntrospector
 
 interface PublicKeysProvider {
     suspend fun getPublicKey(issuer: String, keyId: String?): Any
 }
 
-interface TokenExchanger {
-    suspend fun exchangeApiKey(apiKey: String): String
+interface TokenIntrospector {
+    suspend fun introspectToken(token: String): Map<String, Any>
 }
-

@@ -7,7 +7,7 @@ fun interface JwtVerificationEngine {
 }
 
 expect fun joseJwtVerificationEngine(
-    keysProvider: PublicKeysProvider,
+    key: Any,
     issuer: String,
     audience: String
 ): JwtVerificationEngine

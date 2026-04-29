@@ -9,23 +9,21 @@ import org.omniai.sdk.interceptors.auth.domain.AuthenticationDecision
 import java.security.Key
 
 actual fun joseJwtVerificationEngine(
-    keysProvider: PublicKeysProvider,
+    key: Any,
     issuer: String,
     audience: String
 ): JwtVerificationEngine = JwtVerificationEngine { rawToken ->
     try {
         val processor = DefaultJWTProcessor<SecurityContext>()
 
-        processor.jwsKeySelector = JWSKeySelector { header, _ ->
-            val key = runBlocking {
-                keysProvider.getPublicKey(issuer, header.keyID)
-            }
+        // O KeySelector agora ignora o header e retorna sempre a chave fornecida
+        processor.jwsKeySelector = JWSKeySelector { _, _ ->
             listOf(key as Key)
         }
 
         val claims: JWTClaimsSet = processor.process(rawToken, null)
 
-        // Validações
+        // Validações de Issuer e Audience
         if (claims.issuer != issuer) {
             return@JwtVerificationEngine AuthenticationDecision.Deny("Issuer inválido")
         }

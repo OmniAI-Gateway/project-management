@@ -104,7 +104,7 @@ private suspend fun buildAuthorizationInterceptor(
             val infra = HttpAuthSecurityClient(
                 httpClient = httpClient,
                 jwksUri = metadata.jwksUri,
-                tokenEndpoint = metadata.tokenEndpoint,
+                introspectionEndpoint = metadata.introspectionEndpoint,
                 configSource = configSource
             )
 
