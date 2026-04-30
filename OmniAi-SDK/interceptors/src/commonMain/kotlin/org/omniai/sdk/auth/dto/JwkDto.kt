@@ -1,6 +1,7 @@
 package org.omniai.sdk.auth.dto
 
 import kotlinx.serialization.Serializable
+import org.omniai.sdk.auth.domain.Base64
 import org.omniai.sdk.auth.utils.generateRsaPublicKeyBase64
 import org.omniai.sdk.auth.domain.Kid
 import org.omniai.sdk.auth.domain.PublicKey
@@ -42,7 +43,7 @@ data class JwkDto(
                 val base64Key = generateRsaPublicKeyBase64(n, e) ?: return null
 
                 Kid(kid) to PublicKey(
-                    key = base64Key,
+                    key = Base64(base64Key),
                     algorithm = "RSA"
                 )
             }
