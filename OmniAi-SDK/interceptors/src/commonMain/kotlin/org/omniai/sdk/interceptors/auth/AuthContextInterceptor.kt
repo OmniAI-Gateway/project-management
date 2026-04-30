@@ -10,6 +10,7 @@ import org.omniai.sdk.domain.common.AUTH_BEARER_TOKEN_KEY
 import org.omniai.sdk.domain.common.AUTH_TOKEN_KIND_KEY
 import org.omniai.sdk.domain.errors.InvalidRequest
 import org.omniai.sdk.auth.domain.AuthenticationDecision
+import org.omniai.sdk.auth.domain.AuthValidationResult
 import org.omniai.sdk.auth.domain.TokenValidationParams
 import org.omniai.sdk.auth.interfaces.TokenAuthenticator
 import org.omniai.sdk.auth.interfaces.PublicKeyCache
@@ -18,6 +19,7 @@ import org.omniai.sdk.auth.domain.DecodedJwt
 import org.omniai.sdk.auth.domain.JWT
 import org.omniai.sdk.auth.domain.OPAQUE
 import org.omniai.sdk.auth.domain.OpaqueToken
+import org.omniai.sdk.core.commom.key
 
 
 class AuthContextInterceptor(
@@ -39,10 +41,7 @@ class AuthContextInterceptor(
 
         return when (val decision = authenticator.authenticate(token, validationParams)) {
             is AuthenticationDecision.Allow -> {
-                decision.claims["sub"]?.let { userId ->
-                    context.attributes.put("auth_user_id", userId.toString())
-                }
-                context.attributes.put("auth_claims", decision.claims)
+                context.attributes.put(AUTH_RESULT_KEY, decision.data)
                 chain.proceed(context)
             }
             is AuthenticationDecision.Deny -> PipelineResult.Error(
@@ -50,7 +49,10 @@ class AuthContextInterceptor(
             )
         }
     }
+
     companion object {
+        val AUTH_RESULT_KEY = key<AuthValidationResult>("auth_result_key")
+
         suspend fun build(
             setup: AuthSetupConfig,
             cache: PublicKeyCache = InMemoryKeyCache()
@@ -70,4 +72,3 @@ class AuthContextInterceptor(
         return segments.size == 3 && segments.none { it.isBlank() }
     }
 }
-

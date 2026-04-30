@@ -8,6 +8,7 @@ data class DecodedJwt(
     val header: JwtHeader,
     val payload: JwtPayload,
     val signature: String,
+    val rawToken: String
 ) {
     companion object {
         private val json = Json { ignoreUnknownKeys = true }
@@ -22,7 +23,7 @@ data class DecodedJwt(
             val payloadJson = parts[1].base64UrlDecode()
             val payload = json.decodeFromString<JwtPayload>(payloadJson)
 
-            return DecodedJwt(header, payload, parts[2])
+            return DecodedJwt(header, payload, parts[2], token)
         }
 
         @OptIn(ExperimentalEncodingApi::class)

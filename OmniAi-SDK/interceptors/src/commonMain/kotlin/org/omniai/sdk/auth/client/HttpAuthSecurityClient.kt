@@ -3,6 +3,7 @@ package org.omniai.sdk.auth.client
 import org.omniai.sdk.auth.domain.HttpAuthSecurityClientConfig
 import org.omniai.sdk.auth.domain.IntrospectionResult
 import org.omniai.sdk.auth.domain.Kid
+import org.omniai.sdk.auth.domain.OpaqueToken
 import org.omniai.sdk.auth.domain.PublicKey
 import org.omniai.sdk.auth.dto.IntrospectionDto
 import org.omniai.sdk.auth.dto.JwksDto
@@ -37,7 +38,9 @@ class HttpAuthSecurityClient(
         }
     }
 
-    override suspend fun introspectToken(token: String): IntrospectionResult? {
+    override suspend fun introspectToken(token: OpaqueToken): IntrospectionResult? {
+        val formParameters = "token=${urlEncode(token.token)}"
+
         val url = introspectionEndpoint ?: throw IllegalStateException("Introspection endpoint não configurado")
 
         val config = requestConfig(url) {
@@ -47,7 +50,7 @@ class HttpAuthSecurityClient(
             val encodedCredentials = Base64.encode(credentials.encodeToByteArray())
             header("Authorization", "Basic $encodedCredentials")
             
-            body = "token=${urlEncode(token)}"
+            body = formParameters
         }
         return when (val result = httpClient.executeRequest<IntrospectionDto, String>(config)) {
             is HttpCallResult.Success -> {
@@ -62,4 +65,3 @@ class HttpAuthSecurityClient(
         }
     }
 }
-

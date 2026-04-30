@@ -1,12 +1,13 @@
 package org.omniai.sdk.auth.engines
 
-import com.nimbusds.jose.proc.JWSKeySelector
-import com.nimbusds.jose.proc.SecurityContext
-import com.nimbusds.jwt.JWTClaimsSet
-import com.nimbusds.jwt.proc.DefaultJWTProcessor
+import com.nimbusds.jose.crypto.factories.DefaultJWSVerifierFactory
+
+import com.nimbusds.jwt.SignedJWT
 import org.omniai.sdk.auth.domain.AuthenticationDecision
+import org.omniai.sdk.auth.domain.DecodedJwt
 import org.omniai.sdk.auth.domain.PublicKey
 import org.omniai.sdk.auth.domain.TokenValidationParams
+import org.omniai.sdk.auth.domain.AuthValidationResult
 import org.omniai.sdk.auth.interfaces.JwtVerificationEngine
 import java.security.KeyFactory
 import java.security.spec.X509EncodedKeySpec
@@ -17,35 +18,39 @@ actual class PlatformJwtVerificationEngine actual constructor() : JwtVerificatio
 
     @OptIn(ExperimentalEncodingApi::class)
     actual override suspend fun verify(
-        token: String,
+        token: DecodedJwt,
         publicKey: PublicKey,
         params: TokenValidationParams?
     ): AuthenticationDecision {
         return try {
-            val keyBytes = Base64.decode(publicKey.key)
+            // 1. Gerar a chave pública Java
+            val keyBytes = Base64.decode(publicKey.key.value)
             val spec = X509EncodedKeySpec(keyBytes)
             val keyFactory = KeyFactory.getInstance(publicKey.algorithm)
             val javaPublicKey = keyFactory.generatePublic(spec)
 
-            val processor = DefaultJWTProcessor<SecurityContext>()
+            val signedJWT = SignedJWT.parse(token.rawToken)
 
-            processor.jwsKeySelector = JWSKeySelector { _, _ ->
-                listOf(javaPublicKey)
+            val verifierFactory = DefaultJWSVerifierFactory()
+            val verifier = verifierFactory.createJWSVerifier(signedJWT.header, javaPublicKey)
+
+            if (!signedJWT.verify(verifier)) {
+                return AuthenticationDecision.Deny("Assinatura do token inválida.")
             }
 
-            val claims: JWTClaimsSet = processor.process(token, null)
-
-            if (claims.issuer != params?.expectedIssuer) {
-                return AuthenticationDecision.Deny("Issuer inválido. Esperado: ${params?.expectedIssuer}, Atual: ${claims.issuer}")
-            }
-            if (claims.audience == null || !claims.audience.contains(params.expectedAudience)) {
-                return AuthenticationDecision.Deny("Audience inválida. Esperado: ${params?.expectedAudience}")
+            if (token.payload.issuer != params?.expectedIssuer) {
+                return AuthenticationDecision.Deny("Issuer inválido. Esperado: ${params?.expectedIssuer}, Atual: ${token.payload.issuer}")
             }
 
-            AuthenticationDecision.Allow(claims = claims.claims)
+            val expectedAud = params?.expectedAudience ?: ""
+            if (token.payload.audience == null || !token.payload.audience.contains(expectedAud)) {
+                return AuthenticationDecision.Deny("Audience inválida. Esperado: $expectedAud")
+            }
+
+            AuthenticationDecision.Allow(AuthValidationResult.Jwt(token))
 
         } catch (e: Exception) {
-            AuthenticationDecision.Deny("Erro na validação JVM (Nimbus JOSE): ${e.message}")
+            AuthenticationDecision.Deny("Erro na validação: ${e.message}")
         }
     }
 }

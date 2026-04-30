@@ -2,9 +2,12 @@ package org.omniai.sdk.auth.engines
 
 import kotlinx.coroutines.await
 import org.omniai.sdk.auth.domain.AuthenticationDecision
+import org.omniai.sdk.auth.domain.AuthValidationResult
+import org.omniai.sdk.auth.domain.DecodedJwt
 import org.omniai.sdk.auth.domain.PublicKey
 import org.omniai.sdk.auth.domain.TokenValidationParams
 import org.omniai.sdk.auth.interfaces.JwtVerificationEngine
+import kotlin.js.Json
 import kotlin.js.Promise
 
 @JsModule("jose")
@@ -18,43 +21,34 @@ external object JoseLib {
 actual class PlatformJwtVerificationEngine actual constructor() : JwtVerificationEngine {
 
     actual override suspend fun verify(
-        token: String,
+        token: DecodedJwt,
         publicKey: PublicKey,
         params: TokenValidationParams?
     ): AuthenticationDecision {
         return try {
-            // 2. Reconstruir a chave no JS
-            // A biblioteca 'jose' aceita chaves públicas em formato PEM.
-            // Como guardamos a chave em Base64 no commonMain, basta embrulhá-la:
             val pemKey = """
-                -----BEGIN PUBLIC KEY-----
-                ${publicKey.key}
-                -----END PUBLIC KEY-----
-            """.trimIndent()
+            -----BEGIN PUBLIC KEY-----
+            ${publicKey.key.value} 
+            -----END PUBLIC KEY-----
+        """.trimIndent()
 
             val alg = if (publicKey.algorithm == "RSA") "RS256" else publicKey.algorithm
 
             val importedKey = JoseLib.importSPKI(pemKey, alg).await()
 
-            val options = js("{}")
-            options.issuer = params?.expectedIssuer
-            options.audience = params?.expectedAudience
-
-            val result = JoseLib.jwtVerify(token, importedKey, options).await()
-
-            val payload = result.payload
-            val claims = mutableMapOf<String, Any>()
-
-            val keys = js("Object.keys")(payload)
-            val length = keys.length as Int
-            for (i in 0 until length) {
-                val propertyName = keys[i] as String
-                claims[propertyName] = payload[propertyName]
+            JoseLib.jwtVerify(token.rawToken, importedKey, js("{}")).await()
+            if (token.payload.issuer != params?.expectedIssuer) {
+                return AuthenticationDecision.Deny("Issuer inválido. Esperado: ${params?.expectedIssuer}, Atual: ${token.payload.issuer}")
             }
 
-            AuthenticationDecision.Allow(claims = claims)
+            val expectedAud = params?.expectedAudience ?: ""
+            if (token.payload.audience == null || !token.payload.audience.contains(expectedAud)) {
+                return AuthenticationDecision.Deny("Audience inválida. Esperado: $expectedAud")
+            }
+            AuthenticationDecision.Allow(AuthValidationResult.Jwt(token))
         } catch (e: Exception) {
             AuthenticationDecision.Deny("Erro na validação JS (jose): ${e.message}")
         }
     }
+
 }

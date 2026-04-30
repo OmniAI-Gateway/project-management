@@ -1,6 +1,7 @@
 package org.omniai.sdk.auth.authenticators
 
 import org.omniai.sdk.auth.domain.AuthenticationDecision
+import org.omniai.sdk.auth.domain.AuthValidationResult
 import org.omniai.sdk.auth.domain.AuthToken
 import org.omniai.sdk.auth.domain.JWT
 import org.omniai.sdk.auth.domain.TokenValidationParams
@@ -24,12 +25,7 @@ class DefaultTokenAuthenticator(
                 is OPAQUE -> {
                     val result = infra.introspectToken(token.token)
                     if (result != null && result.active) {
-                        val claimsMap = mapOf(
-                            "sub" to (result.sub ?: ""),
-                            "aud" to result.aud,
-                            "iss" to (result.iss ?: "")
-                        )
-                        AuthenticationDecision.Allow(claimsMap)
+                        AuthenticationDecision.Allow(AuthValidationResult.Opaque(result))
                     } else {
                         AuthenticationDecision.Deny("Token inativo ou inválido.")
                     }

@@ -1,7 +1,12 @@
 package org.omniai.sdk.auth.domain
 
-sealed interface AuthenticationDecision {
-    data class Allow(val claims: Map<String, Any>) : AuthenticationDecision
-    data class Deny(val reason: String) : AuthenticationDecision
+sealed interface AuthValidationResult {
+    data class Jwt(val decoded: DecodedJwt) : AuthValidationResult
+    data class Opaque(val introspectionResult: IntrospectionResult) : AuthValidationResult
+    data class PassThrough(val token: AuthToken) : AuthValidationResult
 }
 
+sealed interface AuthenticationDecision {
+    data class Allow(val data: AuthValidationResult) : AuthenticationDecision
+    data class Deny(val reason: String) : AuthenticationDecision
+}
