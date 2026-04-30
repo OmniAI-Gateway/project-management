@@ -1,6 +1,7 @@
 package org.omniai.sdk.auth.domain
 
-data class AuthToken(
-    val rawValue: String,
-    val kind: TokenKind
-)
+sealed interface AuthToken
+
+data class JWT(val token: DecodedJwt) : AuthToken
+
+data class OPAQUE(val token: OpaqueToken): AuthToken

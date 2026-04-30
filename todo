@@ -2,3 +2,4 @@ Buffer de gemini
 fecho de ligacoes SSE quando o cliente vai embora
 TIME TO LEAVE das chaves publicas
 cache de introspecao
+melhorar DSL para client da biblioteca

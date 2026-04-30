@@ -9,13 +9,15 @@ import org.omniai.sdk.core.pipeline.PipelineResult
 import org.omniai.sdk.domain.common.AUTH_BEARER_TOKEN_KEY
 import org.omniai.sdk.domain.common.AUTH_TOKEN_KIND_KEY
 import org.omniai.sdk.domain.errors.InvalidRequest
-import org.omniai.sdk.auth.domain.AuthToken
 import org.omniai.sdk.auth.domain.AuthenticationDecision
 import org.omniai.sdk.auth.domain.TokenValidationParams
 import org.omniai.sdk.auth.interfaces.TokenAuthenticator
-import org.omniai.sdk.auth.domain.detectTokenKind
 import org.omniai.sdk.auth.interfaces.PublicKeyCache
 import org.omniai.sdk.auth.config.loadTokenAuthenticator
+import org.omniai.sdk.auth.domain.DecodedJwt
+import org.omniai.sdk.auth.domain.JWT
+import org.omniai.sdk.auth.domain.OPAQUE
+import org.omniai.sdk.auth.domain.OpaqueToken
 
 
 class AuthContextInterceptor(
@@ -30,14 +32,12 @@ class AuthContextInterceptor(
             return chain.proceed(context)
         }
 
-        val authToken = AuthToken(
-            rawValue = bearerToken,
-            kind = detectTokenKind(bearerToken)
-        )
+        val token = if (isJwt(bearerToken)) JWT(DecodedJwt.decode(bearerToken))
+        else OPAQUE(OpaqueToken(bearerToken))
 
-        context.attributes.put(AUTH_TOKEN_KIND_KEY, authToken.kind.name)
+        context.attributes.put(AUTH_TOKEN_KIND_KEY, token::class.simpleName ?: "no Name")
 
-        return when (val decision = authenticator.authenticate(authToken, validationParams)) {
+        return when (val decision = authenticator.authenticate(token, validationParams)) {
             is AuthenticationDecision.Allow -> {
                 decision.claims["sub"]?.let { userId ->
                     context.attributes.put("auth_user_id", userId.toString())
@@ -63,6 +63,11 @@ class AuthContextInterceptor(
                 validationParams = configuredAuth.validationParams
             )
         }
+    }
+
+    private fun isJwt(token: String): Boolean {
+        val segments = token.split('.')
+        return segments.size == 3 && segments.none { it.isBlank() }
     }
 }
 
