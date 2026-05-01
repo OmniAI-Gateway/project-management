@@ -1,4 +1,4 @@
-package org.omniai.sdk.gateway.client
+package org.omniai.sdk.gateway.client.dsl.interceptors
 
 import org.omniai.sdk.core.commom.AttributeKey
 import org.omniai.sdk.core.pipeline.Interceptor
@@ -7,13 +7,23 @@ import org.omniai.sdk.metrics.TelemetryMeter
 import org.omniai.sdk.metrics.TelemetryTracer
 import org.omniai.sdk.metrics.TracingInterceptor
 
+class TelemetryAttributesBuilder {
+    private val keys = mutableListOf<AttributeKey<String>>()
+
+    fun include(key: AttributeKey<String>) {
+        keys += key
+    }
+
+    internal fun build(): List<AttributeKey<String>> = keys.toList()
+}
+
 class TelemetryMetricsInterceptorBuilder {
     var meter: TelemetryMeter? = null
     var tracer: TelemetryTracer? = null
-    var contextTagKeys: List<AttributeKey<String>> = emptyList()
+    private var contextTagKeys: List<AttributeKey<String>> = emptyList()
 
-    fun tags(vararg keys: AttributeKey<String>) {
-        contextTagKeys = keys.toList()
+    fun attributes(block: TelemetryAttributesBuilder.() -> Unit) {
+        contextTagKeys = TelemetryAttributesBuilder().apply(block).build()
     }
 
     internal fun build(): List<Interceptor> {
@@ -31,4 +41,3 @@ class TelemetryMetricsInterceptorBuilder {
 fun telemetryMetricsInterceptorBuild(
     block: TelemetryMetricsInterceptorBuilder.() -> Unit
 ): List<Interceptor> = TelemetryMetricsInterceptorBuilder().apply(block).build()
-

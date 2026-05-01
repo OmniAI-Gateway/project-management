@@ -4,30 +4,93 @@ import io.ktor.server.engine.embeddedServer
 import io.ktor.server.netty.Netty
 import io.ktor.server.routing.routing
 import org.omniai.sdk.core.http.KtorHttpTransportClient
-import org.omniai.sdk.gateway.client.assemble
-import org.omniai.sdk.gateway.client.gatewayConfig
-import org.omniai.sdk.gateway.client.outbound.buildOutbounds
+import org.omniai.sdk.gateway.client.dsl.omniAiGateway
+import org.omniai.sdk.gateway.client.startServer
 import org.omniai.sdk.gateway.ktor.ClientIpMetadataKey
-import org.omniai.sdk.gateway.ktor.installAiGateway
+import org.omniai.sdk.gateway.ktor.openAiConnector
+import org.omniai.sdk.gateway.ktor.anthropicConnector
+import org.omniai.sdk.gateway.ktor.geminiConnector
+import org.omniai.sdk.core.ports.InboundConnector
+import org.omniai.sdk.gateway.client.extensions.openAI
+import org.omniai.sdk.gateway.client.extensions.gemini
+import org.omniai.sdk.gateway.client.extensions.anthropic
+import org.omniai.sdk.contracts.openai.input.OpenAiChatCompletionsRequest
+import org.omniai.sdk.contracts.openai.output.OpenAiChatCompletionsResponse
+import org.omniai.sdk.contracts.anthropic.input.AnthropicMessagesRequest
+import org.omniai.sdk.contracts.anthropic.output.AnthropicMessageResponse
+import org.omniai.sdk.contracts.anthropic.output.AnthropicStreamEvent
+import org.omniai.sdk.contracts.gemini.input.GeminiGenerateContentRequest
+import org.omniai.sdk.contracts.gemini.output.GeminiGenerateContentResponse
 
 suspend fun main() {
     val config = loadGatewayConfig()
     val jsonConfig = buildJsonConfig()
-    val outbounds = buildOutbounds(gatewayOutbounds(config))
     val telemetryRuntime = buildTelemetryRuntime(config)
+    val httpClient = KtorHttpTransportClient.default()
 
-    val definition = gatewayConfig {
-        outbounds {
-            outbounds.forEach { outbound -> +outbound }
+    var openAiConn: InboundConnector<OpenAiChatCompletionsRequest, OpenAiChatCompletionsResponse, OpenAiChatCompletionsResponse>? = null
+    var anthropicConn: InboundConnector<AnthropicMessagesRequest, AnthropicMessageResponse, AnthropicStreamEvent>? = null
+    var geminiConn: InboundConnector<GeminiGenerateContentRequest, GeminiGenerateContentResponse, GeminiGenerateContentResponse>? = null
+
+    val server = embeddedServer(Netty, port = config.port) {
+        configureHttp(jsonConfig)
+        routing {
+            if (config.providers.any { it.provider == ProviderKind.OPENAI }) {
+                openAiConn = openAiConnector(json = jsonConfig)
+            }
+            if (config.providers.any { it.provider == ProviderKind.ANTHROPIC }) {
+                anthropicConn = anthropicConnector(json = jsonConfig)
+            }
+            if (config.providers.any { it.provider == ProviderKind.GEMINI }) {
+                geminiConn = geminiConnector(json = jsonConfig)
+            }
+        }
+    }
+
+    val gateway = omniAiGateway {
+        inbounds {
+            openAiConn?.let { openAi(it) }
+            anthropicConn?.let { anthropic(it) }
+            geminiConn?.let { gemini(it) }
         }
 
-        metrics {
-            enabled = config.telemetryEnabled
-            if (enabled) {
-                telemetry {
-                    tags(ClientIpMetadataKey)
-                    meter = telemetryRuntime.meter
-                    telemetryRuntime.tracer?.let { tracer = it }
+        execution {
+            useNativePipeline {
+                outbounds {
+                    config.providers.forEach { providerConfig ->
+                        when (providerConfig.provider) {
+                            ProviderKind.OPENAI -> openAI(httpClient) {
+                                baseUrl(providerConfig.baseUrl)
+                                apiKey(providerConfig.apiKey) {
+                                    models(*providerConfig.models.toTypedArray())
+                                }
+                            }
+                            ProviderKind.GEMINI -> gemini(httpClient) {
+                                baseUrl(providerConfig.baseUrl)
+                                apiKey(providerConfig.apiKey) {
+                                    models(*providerConfig.models.toTypedArray())
+                                }
+                            }
+                            ProviderKind.ANTHROPIC -> anthropic(httpClient) {
+                                baseUrl(providerConfig.baseUrl)
+                                apiKey(providerConfig.apiKey) {
+                                    models(*providerConfig.models.toTypedArray())
+                                }
+                            }
+                        }
+                    }
+                }
+
+                interceptors {
+                    if (config.telemetryEnabled) {
+                        telemetryMetrics {
+                            meter = telemetryRuntime.meter
+                            tracer = telemetryRuntime.tracer
+                            attributes {
+                                include(ClientIpMetadataKey)
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -35,23 +98,9 @@ suspend fun main() {
         authorizationServer {
             none()
         }
-
-        services {
-            builtIn()
-        }
     }
 
-    val runtime = definition.assemble(httpClient = KtorHttpTransportClient.default())
-
-    embeddedServer(Netty, port = config.port) {
-        configureHttp(jsonConfig)
-        routing {
-            installAiGateway(runtime) {
-                json = jsonConfig
-            }
-        }
-    }.start(wait = true)
+    gateway.startServer(httpClient) {
+        server.start(wait = true)
+    }
 }
-
-
-

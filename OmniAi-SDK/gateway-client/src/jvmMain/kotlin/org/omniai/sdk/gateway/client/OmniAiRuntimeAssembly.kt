@@ -1,4 +1,5 @@
 package org.omniai.sdk.gateway.client
+
 import org.omniai.gateway.services.PipelineBackedInferenceService
 import org.omniai.gateway.services.routingInferenceServiceFactory
 import org.omniai.sdk.core.commom.TypedMap
@@ -6,47 +7,63 @@ import org.omniai.sdk.core.http.HttpTransportClient
 import org.omniai.sdk.core.pipeline.GatewayPipelineBuilder
 import org.omniai.sdk.core.pipeline.Interceptor
 import org.omniai.sdk.core.ports.InferenceServicePort
-import org.omniai.sdk.domain.common.Provider
 import org.omniai.sdk.gateway.client.auth.AuthorizationServerConfig
 import org.omniai.sdk.inbound.anthropic.AnthropicInboundAdapter
 import org.omniai.sdk.inbound.gemini.GeminiInboundAdapter
 import org.omniai.sdk.inbound.openai.OpenAiInboundAdapter
 import org.omniai.sdk.interceptors.auth.AuthContextInterceptor
 import org.omniai.sdk.auth.domain.AuthSetupConfig
+import org.omniai.sdk.gateway.client.core.OmniAiConfig
+import org.omniai.sdk.gateway.client.core.OmniAiRuntime
+import org.omniai.sdk.gateway.client.core.ExecutionMode
 
-
-suspend fun GatewayDefinition.assemble(
+suspend fun OmniAiConfig.assemble(
     httpClient: HttpTransportClient
-): GatewayRuntime {
+): OmniAiRuntime {
     val service = resolveService(httpClient)
-    val openAiInbound = if (inbounds.installOpenAi) OpenAiInboundAdapter(service) else null
-    val anthropicInbound = if (inbounds.installAnthropic) AnthropicInboundAdapter(service) else null
-    val geminiInbound = if (inbounds.installGemini) GeminiInboundAdapter(service) else null
-    val customInbounds = inbounds.customFactories.mapValues { (_, factory) -> factory(service) }
-    return GatewayRuntime(
+    return OmniAiRuntime(
         service = service,
-        inbounds = GatewayInboundAdapters(
-            openAi = openAiInbound,
-            anthropic = anthropicInbound,
-            gemini = geminiInbound,
-            custom = customInbounds
-        ),
         metadata = TypedMap()
     )
 }
-suspend fun GatewayDefinition.start(httpClient: HttpTransportClient): GatewayRuntime {
+
+suspend fun OmniAiConfig.startServer(
+    httpClient: HttpTransportClient,
+    serverLogic: () -> Unit
+) {
     val runtime = assemble(httpClient)
-    networkAdapters.forEach { adapter ->
-        adapter.connect(runtime)
+    
+    // Initialize Inbounds and pass them to their registered connectors
+    inbounds.openAiConnector?.let { connector ->
+        val adapter = OpenAiInboundAdapter(runtime.service)
+        connector.connect(adapter)
     }
-    return runtime
+    
+    inbounds.anthropicConnector?.let { connector ->
+        val adapter = AnthropicInboundAdapter(runtime.service)
+        connector.connect(adapter)
+    }
+    
+    inbounds.geminiConnector?.let { connector ->
+        val adapter = GeminiInboundAdapter(runtime.service)
+        connector.connect(adapter)
+    }
+    
+    inbounds.customFactories.forEach { (_, setup) ->
+        val adapter = setup.factory(runtime.service)
+        setup.connect(adapter)
+    }
+    
+    // Once everything is connected and assembled, start the user's server
+    serverLogic()
 }
-private suspend fun GatewayDefinition.resolveService(httpClient: HttpTransportClient): InferenceServicePort {
-    return when (val selected = aiServices) {
-        is AiServiceSelection.Custom -> selected.service
-        AiServiceSelection.BuiltIn -> {
-            val terminal = routingInferenceServiceFactory(outboundPorts)
-            val interceptorsList = buildInterceptors(httpClient)
+
+private suspend fun OmniAiConfig.resolveService(httpClient: HttpTransportClient): InferenceServicePort {
+    return when (val selected = execution) {
+        is ExecutionMode.CustomService -> selected.service
+        is ExecutionMode.NativePipeline -> {
+            val terminal = routingInferenceServiceFactory(selected.outbounds)
+            val interceptorsList = buildInterceptors(selected.interceptors, httpClient)
             val pipeline = GatewayPipelineBuilder().apply {
                 interceptorsList.forEach { install(it) }
                 installService(terminal)
@@ -55,20 +72,21 @@ private suspend fun GatewayDefinition.resolveService(httpClient: HttpTransportCl
         }
     }
 }
-private suspend fun GatewayDefinition.buildInterceptors(httpClient: HttpTransportClient): List<Interceptor> {
+
+private suspend fun OmniAiConfig.buildInterceptors(
+    configuredInterceptors: List<Interceptor>,
+    httpClient: HttpTransportClient
+): List<Interceptor> {
     val resolved = mutableListOf<Interceptor>()
     resolved += buildAuthorizationInterceptor(authorizationServer, httpClient)
-    if (metrics.enabled) {
-        resolved += metrics.interceptors
-    }
-    resolved += interceptors.global
-    interceptors.localByProvider.forEach { (provider, list) ->
-        list.forEach { interceptor ->
-            resolved += providerScoped(provider, interceptor)
-        }
-    }
+    resolved += configuredInterceptors
+
+    // Sort interceptors by priority (highest first)
+    resolved.sortByDescending { org.omniai.sdk.core.pipeline.getInterceptorPriority(it) }
+
     return resolved
 }
+
 private suspend fun buildAuthorizationInterceptor(
     config: AuthorizationServerConfig,
     httpClient: HttpTransportClient
@@ -89,12 +107,3 @@ private suspend fun buildAuthorizationInterceptor(
         }
     }
 }
-
-private fun providerScoped(provider: Provider, delegate: Interceptor): Interceptor =
-    Interceptor { context, chain ->
-        if (context.request.provider.value == provider.value) {
-            delegate.handle(context, chain)
-        } else {
-            chain.proceed(context)
-        }
-    }

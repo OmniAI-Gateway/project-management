@@ -1,4 +1,4 @@
-package org.omniai.sdk.gateway.client
+package org.omniai.sdk.gateway.client.dsl.outbounds
 
 import org.omniai.sdk.core.ports.OutboundPort
 
@@ -12,5 +12,7 @@ class OutboundsDsl {
     operator fun OutboundPort.unaryPlus() {
         use(this)
     }
+
+    internal fun build(): List<OutboundPort> = values.toList()
 }
 

@@ -33,32 +33,28 @@ enum class ProviderKind(
     val apiKeyEnv: String,
     val modelEnv: String,
     val modelsEnv: String,
-    val baseUrlEnv: String,
-    val outboundFactory: () -> KClass<out OutboundPort>
+    val baseUrlEnv: String
 ) {
     OPENAI(
         configKey = "openai",
         apiKeyEnv = "OPENAI_API_KEY",
         modelEnv = "OPENAI_MODEL",
         modelsEnv = "OPENAI_MODELS",
-        baseUrlEnv = "OPENAI_BASE_URL",
-        outboundFactory = { OpenAiOutboundAdapter::class }
+        baseUrlEnv = "OPENAI_BASE_URL"
     ),
     GEMINI(
         configKey = "gemini",
         apiKeyEnv = "GEMINI_API_KEY",
         modelEnv = "GEMINI_MODEL",
         modelsEnv = "GEMINI_MODELS",
-        baseUrlEnv = "GEMINI_BASE_URL",
-        outboundFactory = { GeminiOutboundAdapter::class }
+        baseUrlEnv = "GEMINI_BASE_URL"
     ),
     ANTHROPIC(
         configKey = "anthropic",
         apiKeyEnv = "ANTHROPIC_API_KEY",
         modelEnv = "ANTHROPIC_MODEL",
         modelsEnv = "ANTHROPIC_MODELS",
-        baseUrlEnv = "ANTHROPIC_BASE_URL",
-        outboundFactory = { AnthropicOutboundAdapter::class }
+        baseUrlEnv = "ANTHROPIC_BASE_URL"
     )
 }
 
