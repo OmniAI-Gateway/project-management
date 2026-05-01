@@ -59,7 +59,7 @@ class OpenAiOfficialSdkContractTest {
 
             assertEquals("POST", captured.method)
             assertTrue(captured.path.endsWith("/chat/completions"))
-            assertTrue(captured.headers.getFirst("content-type")?.contains("application/json") == true)
+            assertEquals(captured.headers.getFirst("content-type")?.contains("application/json"), true)
 
             assertEquals("gpt-5.2", requestDto.model)
             assertEquals("user", firstMessage.role)
