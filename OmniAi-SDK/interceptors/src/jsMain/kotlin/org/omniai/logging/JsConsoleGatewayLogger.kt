@@ -1,6 +1,6 @@
 package org.omniai.logging
 
-import org.omniai.sdk.logger.GatewayLogger
+import org.omniai.sdk.interceptors.logger.GatewayLogger
 
 class JsConsoleGatewayLogger(
     private val name: String = "gateway"

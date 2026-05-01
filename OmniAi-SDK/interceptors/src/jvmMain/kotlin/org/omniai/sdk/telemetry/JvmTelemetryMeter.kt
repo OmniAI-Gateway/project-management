@@ -4,7 +4,7 @@ import io.opentelemetry.api.OpenTelemetry
 import io.opentelemetry.api.common.AttributeKey
 import io.opentelemetry.api.common.Attributes
 import io.opentelemetry.api.metrics.DoubleHistogram
-import org.omniai.sdk.metrics.TelemetryMeter
+import org.omniai.sdk.interceptors.metrics.TelemetryMeter
 import java.util.concurrent.ConcurrentHashMap
 
 class JvmTelemetryMeter(

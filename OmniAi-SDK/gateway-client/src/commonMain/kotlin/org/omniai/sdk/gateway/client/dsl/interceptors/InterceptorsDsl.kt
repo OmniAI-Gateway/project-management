@@ -16,5 +16,12 @@ class InterceptorsDsl {
         telemetryMetricsInterceptorBuild(block).forEach(::use)
     }
 
+    /**
+     * Configures and installs a RateLimitInterceptor.
+     */
+    fun rateLimiting(block: RateLimitingInterceptorBuilder.() -> Unit) {
+        use(RateLimitingInterceptorBuilder().apply(block).build())
+    }
+
     internal fun build(): List<Interceptor> = interceptors.toList()
 }

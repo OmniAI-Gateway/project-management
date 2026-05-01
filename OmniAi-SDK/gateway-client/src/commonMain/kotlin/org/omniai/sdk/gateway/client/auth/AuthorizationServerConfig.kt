@@ -1,19 +1,26 @@
 package org.omniai.sdk.gateway.client.auth
 
-import org.omniai.sdk.auth.interfaces.TokenAuthenticator
+import org.omniai.sdk.interceptors.auth.interfaces.TokenAuthenticator
+import org.omniai.sdk.interceptors.auth.TokenPolicy
 
 sealed interface AuthorizationServerConfig {
-    data object None : AuthorizationServerConfig
+    val policies: List<TokenPolicy>
+
+    object None : AuthorizationServerConfig {
+        override val policies: List<TokenPolicy> = emptyList()
+    }
+
+    data class Custom(
+        val authenticator: TokenAuthenticator,
+        override val policies: List<TokenPolicy> = emptyList()
+    ) : AuthorizationServerConfig
 
     data class Discovery(
         val discoveryUrl: String,
         val expectedAudience: String,
         val clientId: String? = null,
-        val clientSecret: String? = null
-    ) : AuthorizationServerConfig
-
-    data class Custom(
-        val authenticator: TokenAuthenticator
+        val clientSecret: String? = null,
+        override val policies: List<TokenPolicy> = emptyList()
     ) : AuthorizationServerConfig
 }
 

@@ -2,10 +2,10 @@ package org.omniai.sdk.gateway.client.dsl.interceptors
 
 import org.omniai.sdk.core.commom.AttributeKey
 import org.omniai.sdk.core.pipeline.Interceptor
-import org.omniai.sdk.metrics.MetricsInterceptor
-import org.omniai.sdk.metrics.TelemetryMeter
-import org.omniai.sdk.metrics.TelemetryTracer
-import org.omniai.sdk.metrics.TracingInterceptor
+import org.omniai.sdk.interceptors.metrics.MetricsInterceptor
+import org.omniai.sdk.interceptors.metrics.TelemetryMeter
+import org.omniai.sdk.interceptors.metrics.TelemetryTracer
+import org.omniai.sdk.interceptors.metrics.TracingInterceptor
 
 class TelemetryAttributesBuilder {
     private val keys = mutableListOf<AttributeKey<String>>()
