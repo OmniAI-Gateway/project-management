@@ -1,12 +1,8 @@
 package org.omniai.gateway.app
 
-import org.omniai.sdk.metrics.TelemetryMeter
-import org.omniai.sdk.metrics.TelemetryTracer
-import org.omniai.sdk.adapters.anthropic.AnthropicOutboundAdapter
-import org.omniai.sdk.adapters.gemini.GeminiOutboundAdapter
-import org.omniai.sdk.adapters.openai.OpenAiOutboundAdapter
-import org.omniai.sdk.core.ports.OutboundPort
-import kotlin.reflect.KClass
+
+import org.omniai.sdk.interceptors.metrics.TelemetryMeter
+import org.omniai.sdk.interceptors.metrics.TelemetryTracer
 
 data class GatewayConfig(
     val port: Int,

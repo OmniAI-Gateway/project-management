@@ -12,7 +12,8 @@ import org.omniai.sdk.inbound.anthropic.AnthropicInboundAdapter
 import org.omniai.sdk.inbound.gemini.GeminiInboundAdapter
 import org.omniai.sdk.inbound.openai.OpenAiInboundAdapter
 import org.omniai.sdk.interceptors.auth.AuthContextInterceptor
-import org.omniai.sdk.auth.domain.AuthSetupConfig
+import org.omniai.sdk.interceptors.auth.domain.AuthSetupConfig
+import org.omniai.sdk.core.pipeline.getInterceptorPriority
 import org.omniai.sdk.gateway.client.core.OmniAiConfig
 import org.omniai.sdk.gateway.client.core.OmniAiRuntime
 import org.omniai.sdk.gateway.client.core.ExecutionMode
@@ -81,8 +82,7 @@ private suspend fun OmniAiConfig.buildInterceptors(
     resolved += buildAuthorizationInterceptor(authorizationServer, httpClient)
     resolved += configuredInterceptors
 
-    // Sort interceptors by priority (highest first)
-    resolved.sortByDescending { org.omniai.sdk.core.pipeline.getInterceptorPriority(it) }
+    resolved.sortByDescending { getInterceptorPriority(it) }
 
     return resolved
 }
@@ -92,17 +92,29 @@ private suspend fun buildAuthorizationInterceptor(
     httpClient: HttpTransportClient
 ): Interceptor {
     return when (config) {
-        AuthorizationServerConfig.None -> AuthContextInterceptor.build(AuthSetupConfig.Off)
-        is AuthorizationServerConfig.Custom -> AuthContextInterceptor(config.authenticator, null)
+        is AuthorizationServerConfig.None -> {
+            AuthContextInterceptor.build(
+                setup = AuthSetupConfig.Off,
+                policies = config.policies
+            )
+        }
+        is AuthorizationServerConfig.Custom -> {
+            AuthContextInterceptor(
+                policies = config.policies,
+                authenticator = config.authenticator,
+                validationParams = null
+            )
+        }
         is AuthorizationServerConfig.Discovery -> {
             AuthContextInterceptor.build(
-                AuthSetupConfig.Discovery(
+                setup = AuthSetupConfig.Discovery(
                     discoveryUrl = config.discoveryUrl,
                     httpClient = httpClient,
                     expectedAudience = config.expectedAudience,
                     authClientId = config.clientId ?: "",
                     authClientSecret = config.clientSecret ?: ""
-                )
+                ),
+                policies = config.policies
             )
         }
     }
