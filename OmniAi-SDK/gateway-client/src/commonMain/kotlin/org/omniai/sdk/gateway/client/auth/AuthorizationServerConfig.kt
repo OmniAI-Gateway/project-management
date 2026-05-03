@@ -2,6 +2,8 @@ package org.omniai.sdk.gateway.client.auth
 
 import org.omniai.sdk.interceptors.auth.interfaces.TokenAuthenticator
 import org.omniai.sdk.interceptors.auth.TokenPolicy
+import org.omniai.sdk.interceptors.auth.interfaces.IntrospectionCache
+import kotlin.time.Duration
 
 sealed interface AuthorizationServerConfig {
     val policies: List<TokenPolicy>
@@ -20,6 +22,9 @@ sealed interface AuthorizationServerConfig {
         val expectedAudience: String,
         val clientId: String? = null,
         val clientSecret: String? = null,
+        val introspectionCache: IntrospectionCache? = null,
+        val positiveCacheTtl: Duration? = null,
+        val negativeCacheTtl: Duration? = null,
         override val policies: List<TokenPolicy> = emptyList()
     ) : AuthorizationServerConfig
 }
@@ -47,6 +52,9 @@ class DiscoveryAuthorizationServerDsl {
     var expectedAudience: String = ""
     var clientId: String? = null
     var clientSecret: String? = null
+    var introspectionCache: IntrospectionCache? = null
+    var positiveCacheTtl: Duration? = null
+    var negativeCacheTtl: Duration? = null
 
     internal fun build(): AuthorizationServerConfig.Discovery {
         require(discoveryUrl.isNotBlank()) { "Authorization discoveryUrl cannot be blank." }
@@ -56,8 +64,10 @@ class DiscoveryAuthorizationServerDsl {
             discoveryUrl = discoveryUrl,
             expectedAudience = expectedAudience,
             clientId = clientId,
-            clientSecret = clientSecret
+            clientSecret = clientSecret,
+            introspectionCache = introspectionCache,
+            positiveCacheTtl = positiveCacheTtl,
+            negativeCacheTtl = negativeCacheTtl,
         )
     }
 }
-
