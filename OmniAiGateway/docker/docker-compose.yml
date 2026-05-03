@@ -35,6 +35,20 @@ services:
       - prometheus
     restart: unless-stopped
 
+  # ── Authorization Server (Keycloak) ─────────────────────────────────────────
+  # OIDC Discovery: http://localhost:8080/realms/<realm>/.well-known/openid-configuration
+  # Admin UI:       http://localhost:8080  (admin / admin)
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:latest
+    container_name: keycloak
+    command: start-dev
+    environment:
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+    ports:
+      - "9080:8080"
+    restart: unless-stopped
+
 volumes:
   grafana-storage:
-

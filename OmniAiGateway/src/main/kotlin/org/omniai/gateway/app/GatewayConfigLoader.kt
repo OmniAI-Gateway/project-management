@@ -27,9 +27,36 @@ fun loadGatewayConfig(): GatewayConfig =
             otelCollectorEndpoint = appConfig.firstString(
                 paths = listOf("gateway.otelCollectorEndpoint", "gateway.metrics.otel.collectorEndpoint"),
                 defaultValue = ""
-            ).ifBlank { null }
+            ).ifBlank { null },
+            authConfig = appConfig.loadAuthConfig()
         )
     }
+
+private fun Config.loadAuthConfig(): AuthorizationServerGatewayConfig {
+    val discoveryUrl = System.getenv("AUTH_DISCOVERY_URL")
+        ?: firstString(listOf("gateway.auth.discoveryUrl"), "")
+
+    if (discoveryUrl.isBlank()) return AuthorizationServerGatewayConfig.None
+
+    val audience = System.getenv("AUTH_AUDIENCE")
+        ?: firstString(listOf("gateway.auth.audience"), "")
+    require(audience.isNotBlank()) {
+        "AUTH_AUDIENCE (or gateway.auth.audience) is required when AUTH_DISCOVERY_URL is set."
+    }
+
+    val clientId = System.getenv("AUTH_CLIENT_ID")
+        ?: firstString(listOf("gateway.auth.clientId"), "").ifBlank { null }
+
+    val clientSecret = System.getenv("AUTH_CLIENT_SECRET")
+        ?: firstString(listOf("gateway.auth.clientSecret"), "").ifBlank { null }
+
+    return AuthorizationServerGatewayConfig.Oidc(
+        discoveryUrl = discoveryUrl,
+        audience = audience,
+        clientId = clientId,
+        clientSecret = clientSecret
+    )
+}
 
 private fun requireEnv(name: String): String =
     System.getenv(name) ?: throw IllegalStateException("Environment variable '$name' is required")

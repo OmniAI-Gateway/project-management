@@ -114,7 +114,10 @@ private suspend fun buildAuthorizationInterceptor(
                     authClientId = config.clientId ?: "",
                     authClientSecret = config.clientSecret ?: ""
                 ),
-                policies = config.policies
+                policies = config.policies,
+                introspectionCache = config.introspectionCache,
+                positiveCacheTtl = config.positiveCacheTtl,
+                negativeCacheTtl = config.negativeCacheTtl,
             )
         }
     }
