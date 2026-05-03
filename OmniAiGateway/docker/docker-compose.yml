@@ -35,19 +35,43 @@ services:
       - prometheus
     restart: unless-stopped
 
-  # ── Authorization Server (Keycloak) ─────────────────────────────────────────
-  # OIDC Discovery: http://localhost:8080/realms/<realm>/.well-known/openid-configuration
-  # Admin UI:       http://localhost:8080  (admin / admin)
+  # ── Authorization Server (Logto) ──────────────────────────────────────────────
+  # OIDC Discovery: http://localhost:3001/oidc/.well-known/openid-configuration
+  # Admin Console:  http://localhost:3002  (criar conta na primeira visita)
+  #
+  # Após arrancar:
+  #  1. Cria um API Resource em "API resources" (e.g. https://api.omniai.com)
+  #  2. Cria uma M2M Application em "Applications" e copia clientId + clientSecret
+  #  3. Atualiza application.conf com esses valores
 
-  keycloak:
-    image: quay.io/keycloak/keycloak:latest
-    container_name: keycloak
-    command: start-dev
+  postgres:
+    image: postgres:16-alpine
+    container_name: logto-postgres
     environment:
-      KEYCLOAK_ADMIN: admin
-      KEYCLOAK_ADMIN_PASSWORD: admin
+      POSTGRES_DB: logto
+      POSTGRES_USER: logto
+      POSTGRES_PASSWORD: logto_dev_pass
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U logto -d logto"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  logto:
+    image: ghcr.io/logto-io/logto:latest
+    container_name: logto
+    depends_on:
+      postgres:
+        condition: service_healthy
+    entrypoint: ["sh", "-c", "npm run cli db seed -- --swe && npm run cli db alteration deploy && npm start"]
+    environment:
+      DB_URL: postgres://logto:logto_dev_pass@postgres:5432/logto
+      ENDPOINT: http://localhost:3001
+      ADMIN_ENDPOINT: http://localhost:3002
     ports:
-      - "9080:8080"
+      - "3001:3001"
+      - "3002:3002"
     restart: unless-stopped
 
 volumes:

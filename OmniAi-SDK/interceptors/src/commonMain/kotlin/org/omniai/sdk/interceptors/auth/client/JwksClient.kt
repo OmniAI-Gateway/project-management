@@ -22,7 +22,7 @@ class JwksClient(
 ) {
 
     @Volatile
-    private var lastFetchEpochNanos: Long = Long.MIN_VALUE
+    private var lastFetchEpochNanos: Long = -config.minimumTimeToFetchKeys.inWholeNanoseconds
 
     private val startMark = TimeSource.Monotonic.markNow()
 
