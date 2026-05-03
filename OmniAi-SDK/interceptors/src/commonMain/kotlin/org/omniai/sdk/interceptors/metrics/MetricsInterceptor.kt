@@ -2,6 +2,8 @@ package org.omniai.sdk.interceptors.metrics
 
 import kotlinx.coroutines.flow.onCompletion
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import org.omniai.sdk.core.commom.AttributeKey
 import org.omniai.sdk.core.pipeline.GatewayContext
 import org.omniai.sdk.core.pipeline.Interceptor
@@ -10,17 +12,23 @@ import org.omniai.sdk.core.pipeline.PipelineResult
 import kotlin.time.DurationUnit
 import kotlin.time.TimeSource.Monotonic.markNow
 
-
 class MetricsInterceptor(
-    private val meter: TelemetryMeter,
-    private val contextTagKeys: List<AttributeKey<String>> = emptyList()
+    private val meter: Meter,
+    private val metricsPort: MetricsPort? = null,
+    private val config: MetricsInterceptorConfig = MetricsInterceptorConfig()
 ) : Interceptor {
+
+    private data class InstrumentKey(
+        val type: InstrumentType,
+        val name: String
+    )
+
+    private val customInstruments = mutableMapOf<InstrumentKey, Any>()
+    private val customInstrumentsMutex = Mutex()
 
     override suspend fun handle(context: GatewayContext, chain: InterceptorChain): PipelineResult {
         val startedAt = markNow()
         var thrown: Throwable? = null
-
-        println("[MetricsInterceptor] handle() called for provider=${context.request.provider.value}, model=${context.request.model}")
 
         val result = try {
             chain.proceed(context)
@@ -30,14 +38,13 @@ class MetricsInterceptor(
         }
 
         if (result == null) {
-            val attrs = buildAttrs(context).toMutableMap().apply {
-                this["error.type"] = thrown?.let { it::class.simpleName ?: "UnknownException" } ?: "UnknownException"
-            }
-            println("[MetricsInterceptor] Recording latency (error): attrs=$attrs")
-            meter.recordLatency(
-                METRICS_NAME,
-                startedAt.elapsedNow().toDouble(DurationUnit.MILLISECONDS),
-                attrs
+            val durationMs = startedAt.elapsedNow().toDouble(DurationUnit.MILLISECONDS)
+            emitMetrics(
+                context = context,
+                result = null,
+                durationMs = durationMs,
+                status = STATUS_ERROR,
+                errorType = thrown?.let { it::class.simpleName ?: UNKNOWN_EXCEPTION }
             )
             throw thrown ?: IllegalStateException()
         }
@@ -55,73 +62,120 @@ class MetricsInterceptor(
                         }
                     }
                     .onCompletion { cause ->
-                        val attrs = buildAttrs(
+                        val durationMs = startedAt.elapsedNow().toDouble(DurationUnit.MILLISECONDS)
+                        emitMetrics(
                             context = context,
+                            result = result,
+                            durationMs = durationMs,
+                            status = if (cause == null) STATUS_OK else STATUS_ERROR,
+                            errorType = cause?.let { it::class.simpleName ?: UNKNOWN_EXCEPTION },
                             streamResponseProvider = responseProvider,
                             streamResponseModel = responseModel
-                        ).toMutableMap()
-                        if (cause != null) {
-                            attrs["error.type"] = cause::class.simpleName ?: "UnknownException"
-                        }
-                        println("[MetricsInterceptor] Recording latency (stream): attrs=$attrs")
-                        meter.recordLatency(
-                            METRICS_NAME,
-                            startedAt.elapsedNow().toDouble(DurationUnit.MILLISECONDS),
-                            attrs
                         )
                     }
                 PipelineResult.Stream(wrapped)
             }
 
             is PipelineResult.Error -> {
-                val attrs = buildAttrs(context, result).toMutableMap().apply {
-                    this["error.type"] = result.error::class.simpleName ?: "DomainError"
-                }
-                println("[MetricsInterceptor] Recording latency (error result): attrs=$attrs")
-                meter.recordLatency(
-                    METRICS_NAME,
-                    startedAt.elapsedNow().inWholeMilliseconds.toDouble(),
-                    attrs
+                val durationMs = startedAt.elapsedNow().toDouble(DurationUnit.MILLISECONDS)
+                emitMetrics(
+                    context = context,
+                    result = result,
+                    durationMs = durationMs,
+                    status = STATUS_ERROR,
+                    errorType = result.error::class.simpleName ?: DOMAIN_ERROR
                 )
                 result
             }
             is PipelineResult.Unary,
             is PipelineResult.NoResult -> {
-                val attrs = buildAttrs(context, result)
-                println("[MetricsInterceptor] Recording latency (unary/noresult): attrs=$attrs")
-                meter.recordLatency(
-                    METRICS_NAME,
-                    startedAt.elapsedNow().toDouble(DurationUnit.MILLISECONDS),
-                    buildAttrs(context, result)
+                val durationMs = startedAt.elapsedNow().toDouble(DurationUnit.MILLISECONDS)
+                emitMetrics(
+                    context = context,
+                    result = result,
+                    durationMs = durationMs,
+                    status = STATUS_OK
                 )
                 result
             }
         }
     }
 
-    private fun buildAttrs(
+    private suspend fun emitMetrics(
         context: GatewayContext,
         result: PipelineResult? = null,
+        durationMs: Double,
+        status: String,
+        errorType: String? = null,
         streamResponseProvider: String? = null,
         streamResponseModel: String? = null
+    ) {
+        val baseAttributes = buildMetricAttributes(
+            context = context,
+            result = result,
+            status = status,
+            errorType = errorType,
+            streamResponseProvider = streamResponseProvider,
+            streamResponseModel = streamResponseModel
+        )
+
+        if (config.defaultLatency.enabled) {
+            meter.recordLatency(
+                config.defaultLatency.name,
+                durationMs,
+                baseAttributes
+            )
+        }
+
+        val port = metricsPort ?: return
+        if (config.customMetrics.isEmpty()) return
+
+        for (metric in config.customMetrics) {
+            val value = metric.extractor(context, result) ?: continue
+            val metricAttributes = mergeWithoutOverride(
+                base = baseAttributes,
+                extras = metric.attributes(context, result)
+            )
+            when (metric.type) {
+                InstrumentType.COUNTER -> {
+                    val instrument = resolveCounter(port, metric)
+                    instrument.add(value, metricAttributes)
+                }
+                InstrumentType.HISTOGRAM -> {
+                    val instrument = resolveHistogram(port, metric)
+                    instrument.record(value, metricAttributes)
+                }
+                InstrumentType.UP_DOWN_COUNTER -> {
+                    val instrument = resolveUpDownCounter(port, metric)
+                    instrument.add(value, metricAttributes)
+                }
+            }
+        }
+    }
+
+    private fun buildMetricAttributes(
+        context: GatewayContext,
+        result: PipelineResult?,
+        status: String,
+        errorType: String?,
+        streamResponseProvider: String?,
+        streamResponseModel: String?
     ): Map<String, String> {
         val attrs = mutableMapOf(
             "providerRequest" to context.request.provider.value,
             "modelRequest" to context.request.model,
-            "mode" to context.mode.name
+            "mode" to context.mode.name,
+            "status" to status
         )
 
-        contextTagKeys.forEach { key ->
-            context.attributes[key]?.let { attrs[key.name] = it }
+        if (errorType != null) {
+            attrs["error.type"] = errorType
         }
 
         when (result) {
             is PipelineResult.Unary -> {
-                val response = result.response
-                val providerResp = response.provider.value
-                val modelResp = response.model
-                attrs["providerResponse"] = providerResp
-                attrs["modelResponse"] = modelResp
+                attrs["providerResponse"] = result.response.provider.value
+                attrs["modelResponse"] = result.response.model
             }
             else -> Unit
         }
@@ -133,10 +187,62 @@ class MetricsInterceptor(
             attrs["modelResponse"] = streamResponseModel
         }
 
+        config.defaultLatency.additionalAttributes.forEach { extractor ->
+            attrs.putAllWithoutOverride(extractor(context, result))
+        }
+
+        config.attributeExtractors.forEach { extractor ->
+            attrs.putAllWithoutOverride(extractor(context, result))
+        }
+
         return attrs
     }
 
+    private suspend fun resolveCounter(port: MetricsPort, metric: CustomMetric): CounterMetric {
+        return resolveInstrument(InstrumentKey(metric.type, metric.name)) {
+            port.counter(metric.name, metric.description)
+        } as CounterMetric
+    }
+
+    private suspend fun resolveHistogram(port: MetricsPort, metric: CustomMetric): HistogramMetric {
+        return resolveInstrument(InstrumentKey(metric.type, metric.name)) {
+            port.histogram(metric.name, metric.description)
+        } as HistogramMetric
+    }
+
+    private suspend fun resolveUpDownCounter(port: MetricsPort, metric: CustomMetric): UpDownCounterMetric {
+        return resolveInstrument(InstrumentKey(metric.type, metric.name)) {
+            port.upDownCounter(metric.name, metric.description)
+        } as UpDownCounterMetric
+    }
+
+    private suspend fun resolveInstrument(key: InstrumentKey, create: () -> Any): Any {
+        return customInstrumentsMutex.withLock {
+            customInstruments.getOrPut(key, create)
+        }
+    }
+
+    private fun mergeWithoutOverride(
+        base: Map<String, String>,
+        extras: Map<String, String>
+    ): Map<String, String> {
+        val merged = base.toMutableMap()
+        merged.putAllWithoutOverride(extras)
+        return merged
+    }
+
+    private fun MutableMap<String, String>.putAllWithoutOverride(values: Map<String, String>) {
+        values.forEach { (key, value) ->
+            if (key !in this) {
+                this[key] = value
+            }
+        }
+    }
+
     companion object {
-        private const val METRICS_NAME = "gateway.inference.request.duration"
+        private const val STATUS_OK = "ok"
+        private const val STATUS_ERROR = "error"
+        private const val UNKNOWN_EXCEPTION = "UnknownException"
+        private const val DOMAIN_ERROR = "DomainError"
     }
 }

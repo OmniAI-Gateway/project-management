@@ -1,8 +1,8 @@
 package org.omniai.gateway.app
 
 
-import org.omniai.sdk.interceptors.metrics.TelemetryMeter
-import org.omniai.sdk.interceptors.metrics.TelemetryTracer
+import org.omniai.sdk.interceptors.metrics.Meter
+import org.omniai.sdk.interceptors.metrics.Tracer
 
 data class GatewayConfig(
     val port: Int,
@@ -13,8 +13,8 @@ data class GatewayConfig(
 )
 
 data class TelemetryRuntime(
-    val meter: TelemetryMeter,
-    val tracer: TelemetryTracer? = null
+    val meter: Meter,
+    val tracer: Tracer? = null
 )
 
 data class ProviderConfig(

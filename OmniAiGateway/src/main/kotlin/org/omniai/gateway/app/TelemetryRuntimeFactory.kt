@@ -15,18 +15,18 @@ import io.opentelemetry.instrumentation.runtimemetrics.java8.Cpu
 import io.opentelemetry.instrumentation.runtimemetrics.java8.GarbageCollector
 import io.opentelemetry.instrumentation.runtimemetrics.java8.MemoryPools
 import io.opentelemetry.instrumentation.runtimemetrics.java8.Threads
-import org.omniai.sdk.interceptors.metrics.NoOpTelemetryMeter
-import org.omniai.sdk.interceptors.metrics.NoOpTelemetryTracer
-import org.omniai.sdk.interceptors.metrics.TelemetryMeter
-import org.omniai.sdk.telemetry.JvmTelemetryMeter
-import org.omniai.sdk.telemetry.JvmTelemetryTracer
+import org.omniai.sdk.interceptors.metrics.Meter
+import org.omniai.sdk.interceptors.metrics.NoOpMeter
+import org.omniai.sdk.interceptors.metrics.NoOpTracer
+import org.omniai.sdk.telemetry.JvmMeter
+import org.omniai.sdk.telemetry.JvmTracer
 import java.time.Duration
 
 private const val OTEL_SCOPE = "omniai-gateway-sdk"
 
 fun buildTelemetryRuntime(config: GatewayConfig): TelemetryRuntime {
     if (!config.telemetryEnabled) {
-        return TelemetryRuntime(meter = PrometheusLikeTelemetryMeter(), tracer = NoOpTelemetryTracer)
+        return TelemetryRuntime(meter = PrometheusLikeMeter(), tracer = NoOpTracer)
     }
 
     val collectorEndpoint = config.otelCollectorEndpoint
@@ -39,17 +39,17 @@ fun buildTelemetryRuntime(config: GatewayConfig): TelemetryRuntime {
             Classes.registerObservers(openTelemetry)
             GarbageCollector.registerObservers(openTelemetry)
 
-            val meter = JvmTelemetryMeter(openTelemetry, OTEL_SCOPE)
-            val tracer = JvmTelemetryTracer(openTelemetry, OTEL_SCOPE)
+            val meter = JvmMeter(openTelemetry, OTEL_SCOPE)
+            val tracer = JvmTracer(openTelemetry, OTEL_SCOPE)
 
             TelemetryRuntime(meter = meter, tracer = tracer)
         } catch (e: Exception) {
             println("Aviso: Falha ao inicializar OpenTelemetry. Usando fallback. Erro: ${e.message}")
-            TelemetryRuntime(meter = NoOpTelemetryMeter, tracer = NoOpTelemetryTracer)
+            TelemetryRuntime(meter = NoOpMeter, tracer = NoOpTracer)
         }
     }
 
-    return TelemetryRuntime(meter = NoOpTelemetryMeter, tracer = NoOpTelemetryTracer)
+    return TelemetryRuntime(meter = NoOpMeter, tracer = NoOpTracer)
 }
 
 private fun initOpenTelemetrySdk(endpoint: String): OpenTelemetry {
@@ -80,7 +80,7 @@ private fun initOpenTelemetrySdk(endpoint: String): OpenTelemetry {
         .build()
 }
 
-private class PrometheusLikeTelemetryMeter : TelemetryMeter {
+private class PrometheusLikeMeter : Meter {
     private val totalRequests = AtomicLong(0)
     private val totalLatencyByMetric = ConcurrentHashMap<String, Double>()
 
