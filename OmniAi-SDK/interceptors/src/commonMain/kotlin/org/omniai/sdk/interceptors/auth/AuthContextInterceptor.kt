@@ -14,8 +14,10 @@ import org.omniai.sdk.interceptors.auth.domain.AuthValidationResult
 import org.omniai.sdk.interceptors.auth.domain.TokenValidationParams
 import org.omniai.sdk.interceptors.auth.interfaces.TokenAuthenticator
 import org.omniai.sdk.interceptors.auth.interfaces.PublicKeyCache
+import org.omniai.sdk.interceptors.auth.interfaces.IntrospectionCache
 import org.omniai.sdk.interceptors.auth.config.loadTokenAuthenticator
 import org.omniai.sdk.interceptors.auth.domain.AuthToken
+import kotlin.time.Duration
 import org.omniai.sdk.interceptors.auth.domain.DecodedJwt
 import org.omniai.sdk.interceptors.auth.domain.JWT
 import org.omniai.sdk.interceptors.auth.domain.OPAQUE
@@ -46,7 +48,9 @@ class AuthContextInterceptor(
         val bearerToken = context.request.providerOptions[AUTH_BEARER_TOKEN_KEY] as? String
 
         if (bearerToken.isNullOrBlank()) {
-            return chain.proceed(context)
+            return PipelineResult.Error(
+                InvalidRequest("Authentication failed")
+            )
         }
 
         val token = if (isJwt(bearerToken)) JWT(DecodedJwt.decode(bearerToken))
@@ -77,10 +81,19 @@ class AuthContextInterceptor(
         suspend fun build(
             setup: AuthSetupConfig,
             policies: List<TokenPolicy> = emptyList(),
-            cache: PublicKeyCache = InMemoryKeyCache()
+            publicKeyCache: PublicKeyCache = InMemoryKeyCache(),
+            introspectionCache: IntrospectionCache? = null,
+            positiveCacheTtl: Duration? = null,
+            negativeCacheTtl: Duration? = null,
         ): AuthContextInterceptor {
 
-            val configuredAuth = loadTokenAuthenticator(setup, cache)
+            val configuredAuth = loadTokenAuthenticator(
+                config = setup,
+                publicKeyCache = publicKeyCache,
+                introspectionCache = introspectionCache,
+                positiveCacheTtl = positiveCacheTtl,
+                negativeCacheTtl = negativeCacheTtl,
+            )
 
             return AuthContextInterceptor(
                 policies = policies,

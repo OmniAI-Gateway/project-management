@@ -8,9 +8,12 @@ import kotlin.io.encoding.ExperimentalEncodingApi
 
 @OptIn(ExperimentalEncodingApi::class)
 actual fun generateRsaPublicKeyBase64(modulusBase64Url: String, exponentBase64Url: String): String? {
+    // RFC 7517 §2: JWK Base64Url values MUST omit padding ('=') characters.
+    // Keycloak and all standard OIDC providers emit unpadded Base64Url for 'n' and 'e'.
+    val base64UrlNoPadding = Base64.UrlSafe.withPadding(Base64.PaddingOption.ABSENT)
     return try {
-        val nBytes = Base64.UrlSafe.decode(modulusBase64Url)
-        val eBytes = Base64.UrlSafe.decode(exponentBase64Url)
+        val nBytes = base64UrlNoPadding.decode(modulusBase64Url)
+        val eBytes = base64UrlNoPadding.decode(exponentBase64Url)
 
         val modulus = BigInteger(1, nBytes)
         val exponent = BigInteger(1, eBytes)

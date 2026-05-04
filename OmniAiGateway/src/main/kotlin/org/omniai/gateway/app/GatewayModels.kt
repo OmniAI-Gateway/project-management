@@ -4,12 +4,24 @@ package org.omniai.gateway.app
 import org.omniai.sdk.interceptors.metrics.MetricsPort
 import org.omniai.sdk.interceptors.metrics.Tracer
 
+sealed interface AuthorizationServerGatewayConfig {
+    data object None : AuthorizationServerGatewayConfig
+
+    data class Oidc(
+        val discoveryUrl: String,
+        val audience: String,
+        val clientId: String?,
+        val clientSecret: String?
+    ) : AuthorizationServerGatewayConfig
+}
+
 data class GatewayConfig(
     val port: Int,
     val providers: List<ProviderConfig>,
     val telemetryEnabled: Boolean,
     val otelEnabled: Boolean,
-    val otelCollectorEndpoint: String?
+    val otelCollectorEndpoint: String?,
+    val authConfig: AuthorizationServerGatewayConfig = AuthorizationServerGatewayConfig.None
 )
 
 data class TelemetryRuntime(

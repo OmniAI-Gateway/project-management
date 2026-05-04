@@ -2,10 +2,35 @@
 @port = 1900
 @baseUrl = http://{{ip}}:{{port}}
 
+@token = eyJhbGciOiJSUzI1NiIsInR5cCI6ImF0K2p3dCIsImtpZCI6IkZBa2FueEhrbkhGNGNPTkgwaXhpQm5SZzNpNkVHenVabzhGNnd0b1dsb1kifQ.eyJqdGkiOiJHd3NLcFQtQ2tLbm9HX1lJUGFNU1IiLCJzdWIiOiJkMzFjZXF0N2FjOHphMHI3OTQzbWsiLCJpYXQiOjE3Nzc4Mzc0NTEsImV4cCI6MTc3Nzg0MTA1MSwiY2xpZW50X2lkIjoiZDMxY2VxdDdhYzh6YTByNzk0M21rIiwiaXNzIjoiaHR0cDovL2xvY2FsaG9zdDozMDAxL29pZGMiLCJhdWQiOiJodHRwczovL2FwaS5vbW5pYWkuY29tIn0.OrltutmuDioVJ_As63fqIB4oxdvO186X-0OCWciQAdHzxNJKZ6xtd7jdbWpNh2GrUzwn67lWb2nyIOv0g3RNY3xisN1HtbNgkGuiXJNGHidvGBJQHw-muyEDRxYITQ_58wUymrByYYgkypiIvjdWwOnbpHC923if5nUNTwROsAohGDMANuOiWXpGYpl6X4c_7XoOVdV_4bnzi1Vd1rGUqg8P4Q1lBZQGaFqahvw6m-9pqqSqu7iX27BLbfev_5g7QXgPV298eqfb-lTFdadC_GnroKZJS7rLWWs1j7jOkRBPd5qqWWUFzo_FR-XRiifNMNyOYSdHJDmfyHFhIbRgxDrgVn_9oFilSO04usvjnJutUVRD97xO-Pr8zayaWz0sybpWYJM2w9qVn_XZvfG07-ilCiJUK0L41rdXPY3Crf56JmQeAjA8CS1Orm8xU0VBL9UDV1RVruzKT3UdxN5tn8J99fsZfC9HS20oKXkXfT8HZ1yClViGoBNN286PIfKDNr0Bm6wFW5I8Wuf7oB0fDpD2kzfdiqpypOariaxnLVKHapMibnjPkzOBdRkUPNxRr1Px3aQ62PHMK5myiMTXK7WU3PMbmRUcl_WqXZU8FYzCQ3rGZDygtvzn3e2OTcOSXvio1lcaJoF9yUBlqzpwKfw42EEQ1f46w0LBCZJaLfQ
 @openaiModel = gpt-4o-mini
 @anthropicModel = claude-3-7-sonnet-latest
 @geminiModel = gemini-2.5-flash
 
+@keycloakHost = localhost
+@keycloakPort = 9080
+@keycloakBaseUrl = http://{{keycloakHost}}:{{keycloakPort}}
+@keycloakRealm = omniai
+@keycloakClientId = my-api
+@keycloakClientSecret = xyhYzmy3uphucNkDP7LnbVMzYR76dGsH
+@keycloakUsername = joao
+@keycloakPassword = teste
+
+@logtoHost = localhost
+@logtoPort = 3001
+@logtoBaseUrl = http://{{logtoHost}}:{{logtoPort}}
+@logtoClientId = d31ceqt7ac8za0r7943mk
+@logtoClientSecret = JmsrdBUrI6rQJgyPvEaLrSMAGYd2qyAe
+@logtoResource = https://api.omniai.com
+
+POST {{logtoBaseUrl}}/oidc/token
+Content-Type: application/x-www-form-urlencoded
+
+grant_type=client_credentials
+    &client_id={{logtoClientId}}
+    &client_secret={{logtoClientSecret}}
+    &resource={{logtoResource}}
+    &scope=all
 ###
 # Nota: no estado atual do Main.kt, apenas Gemini esta ativo.
 # Se OpenAI/Anthropic estiverem desativados, os pedidos dessas secoes podem devolver 404.
@@ -13,6 +38,7 @@
 ### OpenAI - 1) Chat completion normal
 POST {{baseUrl}}/v1/chat/completions
 Content-Type: application/json
+Authorization: Bearer {{token}}
 
 {
   "model": "{{openaiModel}}",
@@ -140,4 +166,3 @@ Accept: text/event-stream
     }
   ]
 }
-

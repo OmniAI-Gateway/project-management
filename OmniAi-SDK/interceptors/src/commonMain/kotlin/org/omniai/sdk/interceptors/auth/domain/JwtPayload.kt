@@ -21,7 +21,8 @@ data class JwtPayload(
     // "sub" (Subject) Claim: Identifies the principal that is the subject of the JWT.
     val subject: String? = null,
     // "aud" (Audience) Claim: Identifies the recipients that the JWT is intended for.
-    val audience: String? = null,
+    // Per RFC 7519 §4.1.3, this can be a single StringOrURI or an array of StringOrURI values.
+    val audience: List<String>? = null,
     // "exp" (Expiration Time) Claim: Identifies the expiration time on or after which the JWT MUST NOT be accepted.
     val expirationTime: Long? = null,
     // "nbf" (Not Before) Claim: Identifies the time before which the JWT MUST NOT be accepted.
@@ -48,7 +49,14 @@ data class JwtPayload(
 
             val iss = jsonObject["iss"]?.jsonPrimitive?.contentOrNull
             val sub = jsonObject["sub"]?.jsonPrimitive?.contentOrNull
-            val aud = jsonObject["aud"]?.jsonPrimitive?.contentOrNull
+            // RFC 7519 §4.1.3: "aud" can be a single string OR an array of strings.
+            val aud: List<String>? = jsonObject["aud"]?.let { element ->
+                when (element) {
+                    is JsonArray     -> element.mapNotNull { it.jsonPrimitive.contentOrNull }
+                    is JsonPrimitive -> element.contentOrNull?.let { listOf(it) }
+                    else             -> null
+                }
+            }
             val exp = jsonObject["exp"]?.jsonPrimitive?.longOrNull
             val nbf = jsonObject["nbf"]?.jsonPrimitive?.longOrNull
             val iat = jsonObject["iat"]?.jsonPrimitive?.longOrNull
@@ -66,7 +74,14 @@ data class JwtPayload(
             val jsonObject = buildJsonObject {
                 value.issuer?.let { put("iss", it) }
                 value.subject?.let { put("sub", it) }
-                value.audience?.let { put("aud", it) }
+                // Serialize as plain string when single audience (max AS compatibility),
+                // or as a JSON array when multiple audiences are present.
+                value.audience?.let { aud ->
+                    when {
+                        aud.size == 1 -> put("aud", aud.single())
+                        aud.size > 1  -> put("aud", buildJsonArray { aud.forEach { add(it) } })
+                    }
+                }
                 value.expirationTime?.let { put("exp", it) }
                 value.notBefore?.let { put("nbf", it) }
                 value.issuedAt?.let { put("iat", it) }
