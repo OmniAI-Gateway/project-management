@@ -1,5 +1,6 @@
 package org.omniai.sdk.interceptors.metrics
 
+import MetricsInterceptor
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.test.runTest
@@ -26,23 +27,24 @@ class MetricsInterceptorTest {
 
     @Test
     fun `default histogram and typed attributes are emitted for unary responses`() = runTest {
-        val meter = RecordingMeter()
         val metricsPort = RecordingMetricsPort()
 
         val tenantKey = key<String>("tenant.id")
         val statusCodeKey = key<Int>("http.statusCode")
         val betaKey = key<Boolean>("feature.beta")
+        val tokenKey = key<Int>("token.total") // Passou a usar key estrita
 
         val context = baseContext()
         context.attributes[tenantKey] = "acme"
         context.attributes[statusCodeKey] = 200
         context.attributes[betaKey] = true
-        context.attributes.put("token.total", 42)
+        context.attributes[tokenKey] = 42
 
         val interceptor = MetricsInterceptor(
-            meter = meter,
             metricsPort = metricsPort,
             config = MetricsInterceptorConfig(
+                // Definimos um nome explícito para ser fácil de buscar no teste
+                defaultLatency = DefaultLatencyMetricConfig(name = "gateway.latency"),
                 attributeExtractors = MetricsAttributesBuilder().apply {
                     include(tenantKey)
                     include(statusCodeKey, alias = "http.status_code")
@@ -54,7 +56,7 @@ class MetricsInterceptorTest {
                         tags { _, _ -> mapOf("kind" to "all") }
                     }
                     histogram("gateway.tokens.total", "Total tokens") {
-                        value { ctx, _ -> ctx.attributes.get<Int>("token.total") }
+                        value { ctx, _ -> ctx.attributes[tokenKey] }
                     }
                 }
             )
@@ -63,8 +65,11 @@ class MetricsInterceptorTest {
         val result = interceptor.handle(context, StaticChain { PipelineResult.Unary(unaryResponse()) })
         assertIs<PipelineResult.Unary>(result)
 
-        assertEquals(1, meter.records.size)
-        val defaultAttrs = meter.records.single().attributes
+        // Verifica a emissão do Latency Default
+        val latencyEmission = metricsPort.emissions.single { it.name == "gateway.latency" }
+        assertEquals("ms", latencyEmission.unit) // Garantimos que a unidade 'ms' viaja!
+
+        val defaultAttrs = latencyEmission.attributes
         assertEquals("openai", defaultAttrs["providerRequest"])
         assertEquals("gpt-4o-mini", defaultAttrs["modelRequest"])
         assertEquals("UNARY", defaultAttrs["mode"])
@@ -75,17 +80,22 @@ class MetricsInterceptorTest {
         assertEquals("200", defaultAttrs["http.status_code"])
         assertEquals("true", defaultAttrs["feature.beta"])
 
-        assertEquals(2, metricsPort.emissions.size)
-        val counterMetric = metricsPort.emissions.first { it.name == "gateway.requests.total" }
+        // Verifica a emissão do Custom Counter
+        val counterMetric = metricsPort.emissions.single { it.name == "gateway.requests.total" }
         assertEquals(1.0, counterMetric.value)
         assertEquals("all", counterMetric.attributes["kind"])
-        assertEquals("acme", counterMetric.attributes["tenant.id"])
+        assertEquals("acme", counterMetric.attributes["tenant.id"]) // Atributos globais aplicados!
     }
 
     @Test
     fun `stream failures still record default latency metric with error tags`() = runTest {
-        val meter = RecordingMeter()
-        val interceptor = MetricsInterceptor(meter = meter)
+        val metricsPort = RecordingMetricsPort()
+        val interceptor = MetricsInterceptor(
+            metricsPort = metricsPort,
+            config = MetricsInterceptorConfig(
+                defaultLatency = DefaultLatencyMetricConfig(name = "gateway.latency")
+            )
+        )
         val context = baseContext()
 
         val result = interceptor.handle(
@@ -115,8 +125,8 @@ class MetricsInterceptorTest {
             // expected
         }
 
-        assertEquals(1, meter.records.size)
-        val attrs = meter.records.single().attributes
+        val latencyEmission = metricsPort.emissions.single { it.name == "gateway.latency" }
+        val attrs = latencyEmission.attributes
         assertEquals("error", attrs["status"])
         assertEquals("IllegalStateException", attrs["error.type"])
         assertEquals("openai", attrs["providerResponse"])
@@ -124,10 +134,8 @@ class MetricsInterceptorTest {
 
     @Test
     fun `custom metric instruments are created once and reused across requests`() = runTest {
-        val meter = RecordingMeter()
         val metricsPort = RecordingMetricsPort()
         val interceptor = MetricsInterceptor(
-            meter = meter,
             metricsPort = metricsPort,
             config = MetricsInterceptorConfig(
                 customMetrics = metricsConfiguration {
@@ -149,27 +157,28 @@ class MetricsInterceptorTest {
 
     @Test
     fun `default latency metric can be disabled`() = runTest {
-        val meter = RecordingMeter()
+        val metricsPort = RecordingMetricsPort()
         val interceptor = MetricsInterceptor(
-            meter = meter,
+            metricsPort = metricsPort,
             config = MetricsInterceptorConfig(
-                defaultLatency = DefaultLatencyMetricConfig(enabled = false)
+                defaultLatency = DefaultLatencyMetricConfig(enabled = false, name = "gateway.latency")
             )
         )
 
         val result = interceptor.handle(baseContext(), StaticChain { PipelineResult.Unary(unaryResponse()) })
 
         assertIs<PipelineResult.Unary>(result)
-        assertTrue(meter.records.isEmpty())
+        assertTrue(metricsPort.emissions.none { it.name == "gateway.latency" })
     }
 
     @Test
     fun `default additional attributes cannot override protected default keys`() = runTest {
-        val meter = RecordingMeter()
+        val metricsPort = RecordingMetricsPort()
         val interceptor = MetricsInterceptor(
-            meter = meter,
+            metricsPort = metricsPort,
             config = MetricsInterceptorConfig(
                 defaultLatency = DefaultLatencyMetricConfig(
+                    name = "gateway.latency",
                     additionalAttributes = MetricsAttributesBuilder().apply {
                         attribute("providerRequest") { _, _ -> "malicious-provider" }
                         attribute("modelRequest") { _, _ -> "malicious-model" }
@@ -182,7 +191,9 @@ class MetricsInterceptorTest {
         val result = interceptor.handle(baseContext(), StaticChain { PipelineResult.Unary(unaryResponse()) })
         assertIs<PipelineResult.Unary>(result)
 
-        val attributes = meter.records.single().attributes
+        val latencyEmission = metricsPort.emissions.single { it.name == "gateway.latency" }
+        val attributes = latencyEmission.attributes
+
         assertEquals("openai", attributes["providerRequest"])
         assertEquals("gpt-4o-mini", attributes["modelRequest"])
         assertEquals("ok", attributes["custom.default.tag"])
@@ -195,24 +206,11 @@ private class StaticChain(
     override suspend fun proceed(context: GatewayContext): PipelineResult = resolver(context)
 }
 
-private class RecordingMeter : Meter {
-    data class Record(
-        val metricName: String,
-        val durationMs: Double,
-        val attributes: Map<String, String>
-    )
-
-    val records = mutableListOf<Record>()
-
-    override fun recordLatency(metricName: String, durationMs: Double, attributes: Map<String, String>) {
-        records += Record(metricName, durationMs, attributes)
-    }
-}
-
 private class RecordingMetricsPort : MetricsPort {
     data class Emission(
         val type: InstrumentType,
         val name: String,
+        val unit: String?,
         val value: Double,
         val attributes: Map<String, String>
     )
@@ -222,24 +220,24 @@ private class RecordingMetricsPort : MetricsPort {
     val upDownCreations = mutableMapOf<String, Int>()
     val emissions = mutableListOf<Emission>()
 
-    override fun counter(name: String, description: String): CounterMetric {
+    override fun counter(name: String, description: String, unit: String?): CounterMetric {
         counterCreations[name] = (counterCreations[name] ?: 0) + 1
         return CounterMetric { value, attributes ->
-            emissions += Emission(InstrumentType.COUNTER, name, value, attributes)
+            emissions += Emission(InstrumentType.COUNTER, name, unit, value, attributes)
         }
     }
 
-    override fun histogram(name: String, description: String): HistogramMetric {
+    override fun histogram(name: String, description: String, unit: String?): HistogramMetric {
         histogramCreations[name] = (histogramCreations[name] ?: 0) + 1
         return HistogramMetric { value, attributes ->
-            emissions += Emission(InstrumentType.HISTOGRAM, name, value, attributes)
+            emissions += Emission(InstrumentType.HISTOGRAM, name, unit, value, attributes)
         }
     }
 
-    override fun upDownCounter(name: String, description: String): UpDownCounterMetric {
+    override fun upDownCounter(name: String, description: String, unit: String?): UpDownCounterMetric {
         upDownCreations[name] = (upDownCreations[name] ?: 0) + 1
         return UpDownCounterMetric { delta, attributes ->
-            emissions += Emission(InstrumentType.UP_DOWN_COUNTER, name, delta, attributes)
+            emissions += Emission(InstrumentType.UP_DOWN_COUNTER, name, unit, delta, attributes)
         }
     }
 }
