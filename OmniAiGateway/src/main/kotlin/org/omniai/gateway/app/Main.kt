@@ -61,7 +61,7 @@ suspend fun main() {
                                 include(ClientIpMetadataKey, alias = "client.ip")
                                 attribute("discovery") { _, _ -> (config.authConfig as?
                                         AuthorizationServerGatewayConfig.Oidc)?.discoveryUrl ?: "discovery" }
-                                attribute("sdk.version") { _, _ -> "1.0.0" } // Hardcoded, como sugeriste
+                                attribute("sdk.version") { _, _ -> "1.0.0" }
                                 attribute("aud") { _, _ -> (config.authConfig as?  AuthorizationServerGatewayConfig.Oidc)?.audience ?: "anonymous" }
                             }
                             defaultLatency {
