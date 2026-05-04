@@ -12,8 +12,8 @@ class InterceptorsDsl {
     /**
      * Installs telemetry metrics interceptors based on configuration.
      */
-    fun telemetryMetrics(block: TelemetryMetricsInterceptorBuilder.() -> Unit) {
-        telemetryMetricsInterceptorBuild(block).forEach(::use)
+    fun metrics(block: MetricsInterceptorBuilder.() -> Unit) {
+        metricsInterceptorBuild(block).forEach(::use)
     }
 
     /**

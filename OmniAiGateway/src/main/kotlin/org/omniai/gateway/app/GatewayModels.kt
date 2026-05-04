@@ -1,7 +1,7 @@
 package org.omniai.gateway.app
 
 
-import org.omniai.sdk.interceptors.metrics.Meter
+import org.omniai.sdk.interceptors.metrics.MetricsPort
 import org.omniai.sdk.interceptors.metrics.Tracer
 
 data class GatewayConfig(
@@ -13,7 +13,7 @@ data class GatewayConfig(
 )
 
 data class TelemetryRuntime(
-    val meter: Meter,
+    val metricsPort: MetricsPort,
     val tracer: Tracer? = null
 )
 

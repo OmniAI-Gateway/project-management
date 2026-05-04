@@ -1,5 +1,6 @@
 package org.omniai.sdk.gateway.client.dsl.interceptors
 
+import MetricsInterceptor
 import org.omniai.sdk.core.pipeline.Interceptor
 import org.omniai.sdk.interceptors.metrics.CustomMetric
 import org.omniai.sdk.interceptors.metrics.DefaultLatencyMetricConfig
@@ -7,15 +8,12 @@ import org.omniai.sdk.interceptors.metrics.DefaultLatencyMetricConfigBuilder
 import org.omniai.sdk.interceptors.metrics.MetricsAttributeExtractor
 import org.omniai.sdk.interceptors.metrics.MetricsAttributesBuilder
 import org.omniai.sdk.interceptors.metrics.MetricsConfigurationBuilder
-import org.omniai.sdk.interceptors.metrics.MetricsInterceptor
 import org.omniai.sdk.interceptors.metrics.MetricsInterceptorConfig
 import org.omniai.sdk.interceptors.metrics.MetricsPort
-import org.omniai.sdk.interceptors.metrics.Meter
 import org.omniai.sdk.interceptors.metrics.Tracer
 import org.omniai.sdk.interceptors.metrics.TracingInterceptor
 
-class TelemetryMetricsInterceptorBuilder {
-    var meter: Meter? = null
+class MetricsInterceptorBuilder {
     var metricsPort: MetricsPort? = null
     var tracer: Tracer? = null
     private var defaultLatencyConfig: DefaultLatencyMetricConfig = DefaultLatencyMetricConfig()
@@ -35,20 +33,15 @@ class TelemetryMetricsInterceptorBuilder {
     }
 
     internal fun build(): List<Interceptor> {
-        val resolvedMeter = requireNotNull(meter) {
-            "Meter is required to build telemetry metrics interceptors"
-        }
-        if (customMetrics.isNotEmpty()) {
-            requireNotNull(metricsPort) {
-                "MetricsPort is required when customMetrics are configured."
-            }
+        val resolvedPort = requireNotNull(metricsPort) {
+            "MetricsPort is required to build telemetry metrics interceptors"
         }
 
         val interceptors = mutableListOf<Interceptor>()
         tracer?.let { interceptors += TracingInterceptor(it) }
+
         interceptors += MetricsInterceptor(
-            meter = resolvedMeter,
-            metricsPort = metricsPort,
+            metricsPort = resolvedPort,
             config = MetricsInterceptorConfig(
                 defaultLatency = defaultLatencyConfig,
                 attributeExtractors = attributeExtractors,
@@ -59,6 +52,6 @@ class TelemetryMetricsInterceptorBuilder {
     }
 }
 
-fun telemetryMetricsInterceptorBuild(
-    block: TelemetryMetricsInterceptorBuilder.() -> Unit
-): List<Interceptor> = TelemetryMetricsInterceptorBuilder().apply(block).build()
+fun metricsInterceptorBuild(
+    block: MetricsInterceptorBuilder.() -> Unit
+): List<Interceptor> = MetricsInterceptorBuilder().apply(block).build()

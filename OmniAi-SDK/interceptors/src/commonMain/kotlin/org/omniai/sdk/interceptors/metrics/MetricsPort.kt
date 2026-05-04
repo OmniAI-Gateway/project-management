@@ -13,11 +13,9 @@ fun interface UpDownCounterMetric {
 }
 
 interface MetricsPort {
-    fun counter(name: String, description: String = ""): CounterMetric
-
-    fun histogram(name: String, description: String = ""): HistogramMetric
-
-    fun upDownCounter(name: String, description: String = ""): UpDownCounterMetric
+    fun counter(name: String, description: String, unit: String? = null): CounterMetric
+    fun histogram(name: String, description: String, unit: String? = null): HistogramMetric
+    fun upDownCounter(name: String, description: String, unit: String? = null): UpDownCounterMetric
 }
 
 object NoOpMetricsPort : MetricsPort {
@@ -25,9 +23,9 @@ object NoOpMetricsPort : MetricsPort {
     private val noopHistogram = HistogramMetric { _, _ -> }
     private val noopUpDownCounter = UpDownCounterMetric { _, _ -> }
 
-    override fun counter(name: String, description: String): CounterMetric = noopCounter
+    override fun counter(name: String, description: String, unit: String?): CounterMetric = noopCounter
 
-    override fun histogram(name: String, description: String): HistogramMetric = noopHistogram
+    override fun histogram(name: String, description: String, unit: String?): HistogramMetric = noopHistogram
 
-    override fun upDownCounter(name: String, description: String): UpDownCounterMetric = noopUpDownCounter
+    override fun upDownCounter(name: String, description: String, unit: String?): UpDownCounterMetric = noopUpDownCounter
 }

@@ -13,6 +13,7 @@ data class CustomMetric(
     val name: String,
     val type: InstrumentType,
     val description: String = "",
+    val unit: String = "",
     val extractor: (GatewayContext, PipelineResult?) -> Double?,
     val attributes: (GatewayContext, PipelineResult?) -> Map<String, String> = { _, _ -> emptyMap() }
 )
