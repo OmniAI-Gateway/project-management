@@ -4,6 +4,7 @@ import io.ktor.server.engine.embeddedServer
 import io.ktor.server.netty.Netty
 import io.ktor.server.routing.routing
 import org.omniai.sdk.core.http.KtorHttpTransportClient
+import org.omniai.sdk.core.pipeline.PipelineResult
 import org.omniai.sdk.gateway.client.assemble
 import org.omniai.sdk.gateway.client.dsl.omniAiGateway
 import org.omniai.sdk.gateway.client.extensions.anthropic
@@ -53,11 +54,42 @@ suspend fun main() {
 
                 interceptors {
                     if (config.telemetryEnabled) {
-                        telemetryMetrics {
-                            meter = telemetryRuntime.meter
+                        metrics {
+                            metricsPort = telemetryRuntime.metricsPort
                             tracer = telemetryRuntime.tracer
                             attributes {
-                                include(ClientIpMetadataKey)
+                                include(ClientIpMetadataKey, alias = "client.ip")
+                                attribute("discovery") { _, _ -> (config.authConfig as?
+                                        AuthorizationServerGatewayConfig.Oidc)?.discoveryUrl ?: "discovery" }
+                                attribute("sdk.version") { _, _ -> "1.0.0" }
+                                attribute("aud") { _, _ -> (config.authConfig as?  AuthorizationServerGatewayConfig.Oidc)?.audience ?: "anonymous" }
+                            }
+                            defaultLatency {
+                                enabled = true
+                            }
+                            customMetrics {
+                                counter(
+                                    name = "gateway.llm.tokens",
+                                    description = "Total de tokens consumidos",
+                                    unit = "{tokens}"
+                                ) {
+                                    value { _, result ->
+                                        (result as? PipelineResult.Unary)?.response?.usage?.totalTokens
+                                    }
+                                }
+                                counter(
+                                    name = "gateway.requests.errors",
+                                    description = "Número de requests falhados",
+                                    unit = "1"
+                                ) {
+                                    value { _, result ->
+                                        if (result is PipelineResult.Error) 1.0 else null
+                                    }
+                                    tags { _, result ->
+                                        val error = result as? PipelineResult.Error
+                                        mapOf("error.message" to (error?.error?.message ?: "unknown"))
+                                    }
+                                }
                             }
                         }
                     }

@@ -15,18 +15,21 @@ import io.opentelemetry.instrumentation.runtimemetrics.java8.Cpu
 import io.opentelemetry.instrumentation.runtimemetrics.java8.GarbageCollector
 import io.opentelemetry.instrumentation.runtimemetrics.java8.MemoryPools
 import io.opentelemetry.instrumentation.runtimemetrics.java8.Threads
-import org.omniai.sdk.interceptors.metrics.NoOpTelemetryMeter
-import org.omniai.sdk.interceptors.metrics.NoOpTelemetryTracer
-import org.omniai.sdk.interceptors.metrics.TelemetryMeter
-import org.omniai.sdk.telemetry.JvmTelemetryMeter
-import org.omniai.sdk.telemetry.JvmTelemetryTracer
+import org.omniai.sdk.interceptors.metrics.NoOpTracer
+import org.omniai.sdk.interceptors.metrics.MetricsPort
+import org.omniai.sdk.interceptors.metrics.NoOpMetricsPort
+import org.omniai.sdk.interceptors.metrics.CounterMetric
+import org.omniai.sdk.interceptors.metrics.HistogramMetric
+import org.omniai.sdk.interceptors.metrics.UpDownCounterMetric
+import io.opentelemetry.api.common.Attributes
+import org.omniai.sdk.telemetry.JvmTracer
 import java.time.Duration
 
 private const val OTEL_SCOPE = "omniai-gateway-sdk"
 
 fun buildTelemetryRuntime(config: GatewayConfig): TelemetryRuntime {
     if (!config.telemetryEnabled) {
-        return TelemetryRuntime(meter = PrometheusLikeTelemetryMeter(), tracer = NoOpTelemetryTracer)
+        return TelemetryRuntime(metricsPort = PrometheusLikeMetricsPort(), tracer = NoOpTracer)
     }
 
     val collectorEndpoint = config.otelCollectorEndpoint
@@ -39,17 +42,17 @@ fun buildTelemetryRuntime(config: GatewayConfig): TelemetryRuntime {
             Classes.registerObservers(openTelemetry)
             GarbageCollector.registerObservers(openTelemetry)
 
-            val meter = JvmTelemetryMeter(openTelemetry, OTEL_SCOPE)
-            val tracer = JvmTelemetryTracer(openTelemetry, OTEL_SCOPE)
+            val metricsPort = JvmMetricsPort(openTelemetry, OTEL_SCOPE)
+            val tracer = JvmTracer(openTelemetry, OTEL_SCOPE)
 
-            TelemetryRuntime(meter = meter, tracer = tracer)
+            TelemetryRuntime(metricsPort = metricsPort, tracer = tracer)
         } catch (e: Exception) {
             println("Aviso: Falha ao inicializar OpenTelemetry. Usando fallback. Erro: ${e.message}")
-            TelemetryRuntime(meter = NoOpTelemetryMeter, tracer = NoOpTelemetryTracer)
+            TelemetryRuntime(metricsPort = NoOpMetricsPort, tracer = NoOpTracer)
         }
     }
 
-    return TelemetryRuntime(meter = NoOpTelemetryMeter, tracer = NoOpTelemetryTracer)
+    return TelemetryRuntime(metricsPort = NoOpMetricsPort, tracer = NoOpTracer)
 }
 
 private fun initOpenTelemetrySdk(endpoint: String): OpenTelemetry {
@@ -80,17 +83,88 @@ private fun initOpenTelemetrySdk(endpoint: String): OpenTelemetry {
         .build()
 }
 
-private class PrometheusLikeTelemetryMeter : TelemetryMeter {
-    private val totalRequests = AtomicLong(0)
-    private val totalLatencyByMetric = ConcurrentHashMap<String, Double>()
+class JvmMetricsPort(openTelemetry: OpenTelemetry, scopeName: String) : MetricsPort {
+    private val otelMeter = openTelemetry.getMeter(scopeName)
 
-    override fun recordLatency(metricName: String, durationMs: Double, attributes: Map<String, String>) {
-        totalRequests.incrementAndGet()
-        totalLatencyByMetric.merge(metricName, durationMs) { current, add -> current + add }
+    override fun counter(name: String, description: String, unit: String?): CounterMetric {
+        val builder = otelMeter.counterBuilder(name).setDescription(description)
+        unit?.let { builder.setUnit(it) }
+        val otelCounter = builder.build()
+        return CounterMetric { value, attributes ->
+            otelCounter.add(value.toLong(), toOtelAttributes(attributes))
+        }
+    }
 
-        val labels = attributes.entries.joinToString(",") { (k, v) -> "$k=\"$v\"" }
-        // Prometheus-like line format; replace by OTEL exporter integration when available.
-        println("${metricName}_ms{$labels} $durationMs")
+    override fun histogram(name: String, description: String, unit: String?): HistogramMetric {
+        val builder = otelMeter.histogramBuilder(name).setDescription(description)
+        unit?.let { builder.setUnit(it) }
+        val otelHistogram = builder.build()
+        return HistogramMetric { value, attributes ->
+            otelHistogram.record(value, toOtelAttributes(attributes))
+        }
+    }
+
+    override fun upDownCounter(name: String, description: String, unit: String?): UpDownCounterMetric {
+        val builder = otelMeter.upDownCounterBuilder(name).setDescription(description)
+        unit?.let { builder.setUnit(it) }
+        val otelUpDown = builder.build()
+        return UpDownCounterMetric { delta, attributes ->
+            otelUpDown.add(delta.toLong(), toOtelAttributes(attributes))
+        }
+    }
+
+    private fun toOtelAttributes(attributes: Map<String, String>): Attributes {
+        val builder = Attributes.builder()
+        attributes.forEach { (k, v) -> builder.put(k, v) }
+        return builder.build()
     }
 }
 
+private class PrometheusLikeMetricsPort : MetricsPort {
+    private val metricsMap = ConcurrentHashMap<String, PrometheusLikeInstrument>()
+
+    abstract class PrometheusLikeInstrument {
+        abstract fun record(value: Double, attributes: Map<String, String>, type: String, name: String)
+        protected fun printMetric(name: String, value: Double, attributes: Map<String, String>, type: String) {
+            val labels = attributes.entries.joinToString(",") { (k, v) -> "$k=\"$v\"" }
+            println("${name}_${type}{$labels} $value")
+        }
+    }
+
+    override fun counter(name: String, description: String, unit: String?): CounterMetric {
+        val instrument = metricsMap.getOrPut(name) { 
+            object : PrometheusLikeInstrument() {
+                var total = 0.0
+                override fun record(value: Double, attributes: Map<String, String>, type: String, name: String) {
+                    total += value
+                    printMetric(name, total, attributes, "total")
+                }
+            }
+        }
+        return CounterMetric { value, attributes -> instrument.record(value, attributes, "counter", name) }
+    }
+
+    override fun histogram(name: String, description: String, unit: String?): HistogramMetric {
+        val instrument = metricsMap.getOrPut(name) { 
+            object : PrometheusLikeInstrument() {
+                override fun record(value: Double, attributes: Map<String, String>, type: String, name: String) {
+                    printMetric(name, value, attributes, "ms")
+                }
+            }
+        }
+        return HistogramMetric { value, attributes -> instrument.record(value, attributes, "histogram", name) }
+    }
+
+    override fun upDownCounter(name: String, description: String, unit: String?): UpDownCounterMetric {
+        val instrument = metricsMap.getOrPut(name) { 
+            object : PrometheusLikeInstrument() {
+                var current = 0.0
+                override fun record(value: Double, attributes: Map<String, String>, type: String, name: String) {
+                    current += value
+                    printMetric(name, current, attributes, "current")
+                }
+            }
+        }
+        return UpDownCounterMetric { delta, attributes -> instrument.record(delta, attributes, "updown", name) }
+    }
+}
