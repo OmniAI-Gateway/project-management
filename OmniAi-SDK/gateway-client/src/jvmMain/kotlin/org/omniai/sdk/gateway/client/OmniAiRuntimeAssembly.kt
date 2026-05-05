@@ -11,12 +11,13 @@ import org.omniai.sdk.gateway.client.auth.AuthorizationServerConfig
 import org.omniai.sdk.inbound.anthropic.AnthropicInboundAdapter
 import org.omniai.sdk.inbound.gemini.GeminiInboundAdapter
 import org.omniai.sdk.inbound.openai.OpenAiInboundAdapter
-import org.omniai.sdk.interceptors.auth.AuthContextInterceptor
-import org.omniai.sdk.interceptors.auth.domain.AuthSetupConfig
+import org.omniai.sdk.interceptors.auth.AuthenticationInterceptor
+import org.omniai.sdk.interceptors.auth.PolicyEnforcerInterceptor
 import org.omniai.sdk.core.pipeline.getInterceptorPriority
 import org.omniai.sdk.gateway.client.core.OmniAiConfig
 import org.omniai.sdk.gateway.client.core.OmniAiRuntime
 import org.omniai.sdk.gateway.client.core.ExecutionMode
+import org.omniai.sdk.interceptors.auth.domain.AuthSetupConfig
 
 suspend fun OmniAiConfig.assemble(
     httpClient: HttpTransportClient
@@ -79,7 +80,7 @@ private suspend fun OmniAiConfig.buildInterceptors(
     httpClient: HttpTransportClient
 ): List<Interceptor> {
     val resolved = mutableListOf<Interceptor>()
-    resolved += buildAuthorizationInterceptor(authorizationServer, httpClient)
+    resolved.addAll(buildAuthorizationInterceptors(authorizationServer, httpClient))
     resolved += configuredInterceptors
 
     resolved.sortByDescending { getInterceptorPriority(it) }
@@ -87,26 +88,25 @@ private suspend fun OmniAiConfig.buildInterceptors(
     return resolved
 }
 
-private suspend fun buildAuthorizationInterceptor(
+private suspend fun buildAuthorizationInterceptors(
     config: AuthorizationServerConfig,
     httpClient: HttpTransportClient
-): Interceptor {
+): List<Interceptor> {
     return when (config) {
         is AuthorizationServerConfig.None -> {
-            AuthContextInterceptor.build(
-                setup = AuthSetupConfig.Off,
-                policies = config.policies
+            listOf(
+                AuthenticationInterceptor.build(setup = AuthSetupConfig.Off),
+                PolicyEnforcerInterceptor(config.pdp)
             )
         }
         is AuthorizationServerConfig.Custom -> {
-            AuthContextInterceptor(
-                policies = config.policies,
-                authenticator = config.authenticator,
-                validationParams = null
+            listOf(
+                AuthenticationInterceptor(config.authenticator),
+                PolicyEnforcerInterceptor(config.pdp)
             )
         }
         is AuthorizationServerConfig.Discovery -> {
-            AuthContextInterceptor.build(
+            val authN = AuthenticationInterceptor.build(
                 setup = AuthSetupConfig.Discovery(
                     discoveryUrl = config.discoveryUrl,
                     httpClient = httpClient,
@@ -114,10 +114,13 @@ private suspend fun buildAuthorizationInterceptor(
                     authClientId = config.clientId ?: "",
                     authClientSecret = config.clientSecret ?: ""
                 ),
-                policies = config.policies,
                 introspectionCache = config.introspectionCache,
                 positiveCacheTtl = config.positiveCacheTtl,
                 negativeCacheTtl = config.negativeCacheTtl,
+            )
+            listOf(
+                authN,
+                PolicyEnforcerInterceptor(config.pdp)
             )
         }
     }

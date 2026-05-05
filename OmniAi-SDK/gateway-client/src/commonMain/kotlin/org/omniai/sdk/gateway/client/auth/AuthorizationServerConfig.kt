@@ -1,20 +1,22 @@
 package org.omniai.sdk.gateway.client.auth
 
+
 import org.omniai.sdk.interceptors.auth.interfaces.TokenAuthenticator
-import org.omniai.sdk.interceptors.auth.TokenPolicy
 import org.omniai.sdk.interceptors.auth.interfaces.IntrospectionCache
+import org.omniai.sdk.interceptors.auth.interfaces.PolicyDecisionPoint
+import org.omniai.sdk.interceptors.auth.pdp.PassThroughPDP
 import kotlin.time.Duration
 
 sealed interface AuthorizationServerConfig {
-    val policies: List<TokenPolicy>
+    val pdp: PolicyDecisionPoint
 
     object None : AuthorizationServerConfig {
-        override val policies: List<TokenPolicy> = emptyList()
+        override val pdp: PolicyDecisionPoint = PassThroughPDP()
     }
 
     data class Custom(
         val authenticator: TokenAuthenticator,
-        override val policies: List<TokenPolicy> = emptyList()
+        override val pdp: PolicyDecisionPoint = PassThroughPDP()
     ) : AuthorizationServerConfig
 
     data class Discovery(
@@ -25,7 +27,7 @@ sealed interface AuthorizationServerConfig {
         val introspectionCache: IntrospectionCache? = null,
         val positiveCacheTtl: Duration? = null,
         val negativeCacheTtl: Duration? = null,
-        override val policies: List<TokenPolicy> = emptyList()
+        override val pdp: PolicyDecisionPoint = PassThroughPDP()
     ) : AuthorizationServerConfig
 }
 
@@ -55,6 +57,7 @@ class DiscoveryAuthorizationServerDsl {
     var introspectionCache: IntrospectionCache? = null
     var positiveCacheTtl: Duration? = null
     var negativeCacheTtl: Duration? = null
+    var pdp: PolicyDecisionPoint = PassThroughPDP()
 
     internal fun build(): AuthorizationServerConfig.Discovery {
         require(discoveryUrl.isNotBlank()) { "Authorization discoveryUrl cannot be blank." }
@@ -68,6 +71,7 @@ class DiscoveryAuthorizationServerDsl {
             introspectionCache = introspectionCache,
             positiveCacheTtl = positiveCacheTtl,
             negativeCacheTtl = negativeCacheTtl,
+            pdp = pdp
         )
     }
 }
