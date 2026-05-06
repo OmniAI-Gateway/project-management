@@ -105,7 +105,8 @@ def get_logto_token():
         "redirect_uri": REDIRECT_URI,
         "code": auth_code,
         "code_verifier": code_verifier,
-        "resource": RESOURCE
+        "resource": RESOURCE,
+        "scope": SCOPE
     }
 
     encoded_data = urllib.parse.urlencode(data).encode("utf-8")
