@@ -30,7 +30,6 @@ class GeminiInboundAdapter(
         map: TypedMap,
     ): Either<DomainError, GeminiGenerateContentResponse> {
         val domainRequest = translator.toDomain(request).withModelOverride(map).also {
-            //preserva contexto/metadata
             it.providerOptions.putAll(map)
         }
         return when (val domainResponse = service.generate(domainRequest, map)) {

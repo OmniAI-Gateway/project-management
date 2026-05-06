@@ -224,7 +224,7 @@ private fun GeminiGenerateContentResponse.toDomainChunkEvent(previousId: String,
             sequence = sequence,
             choiceIndex = candidate.index ?: 0,
             toolCallIndex = 0,
-            toolCallId = functionCall.id ?: "gemini-tool-call-${Random.nextInt(100000, 999999)}",
+            toolCallId = "gemini-tool-call-${Random.nextInt(100000, 999999)}",
             functionName = functionCall.name,
             providerEventType = "tool_call_started"
         )
@@ -287,12 +287,10 @@ private fun RequestContentPart.toGeminiPart(): GeminiPart? =
     when (this) {
         is TextPart -> GeminiPart(text = text)
         is ToolCallPart -> GeminiPart(
-            thoughtSignature =  "skip_thought_signature_validator",
+            thoughtSignature = "skip_thought_signature_validator",
             functionCall = GeminiInputFunctionCall(
-                id = toolCallId,
                 name = functionName,
-                args = JsonValue.JsonObject(argumentsJson).toKotlinxJsonObject(),
-                thoughtSignature = "skip_thought_signature_validator"
+                args = JsonValue.JsonObject(argumentsJson).toKotlinxJsonObject()
             )
         )
         is ToolResultPart -> GeminiPart(
@@ -355,7 +353,7 @@ private fun GeminiResponsePart.toDomainPart(): ResponseContentPart? {
         functionCall != null -> {
             val fc = functionCall ?: return null
             ToolCallPart(
-                toolCallId = fc.id ?: "gemini-tool-call-0",
+                toolCallId = "gemini-tool-call-0",
                 functionName = fc.name,
                 argumentsJson = fc.args?.toDomainJsonObject()?.properties.orEmpty()
             )

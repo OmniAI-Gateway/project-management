@@ -17,6 +17,10 @@ import org.omniai.sdk.gateway.ktor.geminiConnector
 import org.omniai.sdk.inbound.openai.OpenAiInboundAdapter
 import org.omniai.sdk.inbound.anthropic.AnthropicInboundAdapter
 import org.omniai.sdk.inbound.gemini.GeminiInboundAdapter
+import org.omniai.sdk.interceptors.auth.AUTH_RESULT_KEY
+import org.omniai.sdk.interceptors.auth.domain.AuthValidationResult
+import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.contentOrNull
 
 suspend fun main() {
     val config = loadGatewayConfig()
@@ -58,6 +62,26 @@ suspend fun main() {
                             metricsPort = telemetryRuntime.metricsPort
                             tracer = telemetryRuntime.tracer
                             attributes {
+                                attribute("user.email") { gContext, _ ->
+                                    val authResult = gContext.attributes[AUTH_RESULT_KEY]
+                                    (authResult as? AuthValidationResult.Jwt)
+                                        ?.decoded?.payload?.privateClaims?.get("email")?.jsonPrimitive?.contentOrNull
+                                }
+                                attribute("user.username") { gContext, _ ->
+                                    val authResult = gContext.attributes[AUTH_RESULT_KEY]
+                                    (authResult as? AuthValidationResult.Jwt)
+                                        ?.decoded?.payload?.privateClaims
+                                        ?.get("preferred_username")
+                                        ?.jsonPrimitive?.contentOrNull
+                                        ?: (authResult as? AuthValidationResult.Opaque)?.introspectionResult?.username
+                                }
+                                attribute("user.sub") { gContext, _ ->
+                                    when (val authResult = gContext.attributes[AUTH_RESULT_KEY]) {
+                                        is AuthValidationResult.Jwt -> authResult.decoded.payload.subject
+                                        is AuthValidationResult.Opaque -> authResult.introspectionResult.sub
+                                        else -> null
+                                    }
+                                }
                                 include(ClientIpMetadataKey, alias = "client.ip")
                                 attribute("discovery") { _, _ -> (config.authConfig as?
                                         AuthorizationServerGatewayConfig.Oidc)?.discoveryUrl ?: "discovery" }
@@ -68,6 +92,7 @@ suspend fun main() {
                                 enabled = true
                             }
                             customMetrics {
+                                
                                 counter(
                                     name = "gateway.llm.tokens",
                                     description = "Total de tokens consumidos",

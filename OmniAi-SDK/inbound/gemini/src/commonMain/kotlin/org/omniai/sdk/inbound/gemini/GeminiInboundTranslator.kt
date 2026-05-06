@@ -133,7 +133,6 @@ private fun toGeminiEvent(domainEvent: CommonResponseEvent): GeminiGenerateConte
                             parts = listOf(
                                 GeminiResponsePart(
                                     functionCall = GeminiFunctionCall(
-                                        id = domainEvent.toolCallId,
                                         name = domainEvent.functionName,
                                         args = JsonObject(emptyMap())
                                     )
@@ -153,7 +152,6 @@ private fun toGeminiEvent(domainEvent: CommonResponseEvent): GeminiGenerateConte
                             parts = listOf(
                                 GeminiResponsePart(
                                     functionCall = GeminiFunctionCall(
-                                        id = null,
                                         name = "",
                                         args = JsonObject(mapOf("partialJson" to JsonPrimitive(domainEvent.argumentsFragment)))
                                     )
@@ -212,7 +210,7 @@ private fun GeminiPart.toDomainPart(index: Int): RequestContentPart? =
         functionCall != null -> {
             val call = functionCall ?: return null
             ToolCallPart(
-                toolCallId = call.id ?: "gemini-tool-call-$index",
+                toolCallId = "gemini-tool-call-$index",
                 functionName = call.name,
                 argumentsJson = call.args?.toDomainJsonObject()?.properties.orEmpty()
             )
@@ -273,8 +271,7 @@ private fun toGeminiPart(part: ResponseContentPart): GeminiResponsePart =
         is ToolCallPart -> GeminiResponsePart(
             functionCall = GeminiFunctionCall(
                 name = part.functionName,
-                args = JsonValue.JsonObject(part.argumentsJson).toKotlinxJsonObject(),
-                id = part.toolCallId
+                args = JsonValue.JsonObject(part.argumentsJson).toKotlinxJsonObject()
             )
         )
         is JsonPart -> GeminiResponsePart(text = part.json.toString())
