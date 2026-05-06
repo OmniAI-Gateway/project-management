@@ -19,8 +19,8 @@
 @logtoHost = localhost
 @logtoPort = 3001
 @logtoBaseUrl = http://{{logtoHost}}:{{logtoPort}}
-@logtoClientId = d31ceqt7ac8za0r7943mk
-@logtoClientSecret = JmsrdBUrI6rQJgyPvEaLrSMAGYd2qyAe
+@logtoClientId = jpnjkg638x2vhkdkl16rf
+@logtoClientSecret = eZg6p2wjtotiluJgXwf21Ndw07VbGrMx
 @logtoResource = https://api.omniai.com
 
 POST {{logtoBaseUrl}}/oidc/token
