@@ -3,20 +3,16 @@ package org.omniai.sdk.gateway.client.auth
 
 import org.omniai.sdk.interceptors.auth.interfaces.TokenAuthenticator
 import org.omniai.sdk.interceptors.auth.interfaces.IntrospectionCache
-import org.omniai.sdk.interceptors.auth.interfaces.PolicyDecisionPoint
+import org.omniai.sdk.interceptors.auth.interfaces.PolicyDecisionPointPort
 import org.omniai.sdk.interceptors.auth.pdp.PassThroughPDP
 import kotlin.time.Duration
 
 sealed interface AuthorizationServerConfig {
-    val pdp: PolicyDecisionPoint
 
-    object None : AuthorizationServerConfig {
-        override val pdp: PolicyDecisionPoint = PassThroughPDP()
-    }
+    object None : AuthorizationServerConfig
 
     data class Custom(
-        val authenticator: TokenAuthenticator,
-        override val pdp: PolicyDecisionPoint = PassThroughPDP()
+        val authenticator: TokenAuthenticator
     ) : AuthorizationServerConfig
 
     data class Discovery(
@@ -26,8 +22,7 @@ sealed interface AuthorizationServerConfig {
         val clientSecret: String? = null,
         val introspectionCache: IntrospectionCache? = null,
         val positiveCacheTtl: Duration? = null,
-        val negativeCacheTtl: Duration? = null,
-        override val pdp: PolicyDecisionPoint = PassThroughPDP()
+        val negativeCacheTtl: Duration? = null
     ) : AuthorizationServerConfig
 }
 
@@ -57,7 +52,6 @@ class DiscoveryAuthorizationServerDsl {
     var introspectionCache: IntrospectionCache? = null
     var positiveCacheTtl: Duration? = null
     var negativeCacheTtl: Duration? = null
-    var pdp: PolicyDecisionPoint = PassThroughPDP()
 
     internal fun build(): AuthorizationServerConfig.Discovery {
         require(discoveryUrl.isNotBlank()) { "Authorization discoveryUrl cannot be blank." }
@@ -70,8 +64,7 @@ class DiscoveryAuthorizationServerDsl {
             clientSecret = clientSecret,
             introspectionCache = introspectionCache,
             positiveCacheTtl = positiveCacheTtl,
-            negativeCacheTtl = negativeCacheTtl,
-            pdp = pdp
+            negativeCacheTtl = negativeCacheTtl
         )
     }
 }

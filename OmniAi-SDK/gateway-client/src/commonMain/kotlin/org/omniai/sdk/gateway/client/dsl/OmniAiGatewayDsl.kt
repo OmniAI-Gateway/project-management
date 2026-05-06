@@ -2,6 +2,8 @@ package org.omniai.sdk.gateway.client.dsl
 
 import org.omniai.sdk.gateway.client.auth.AuthorizationServerConfig
 import org.omniai.sdk.gateway.client.auth.AuthorizationServerDsl
+import org.omniai.sdk.gateway.client.auth.SecurityConfig
+import org.omniai.sdk.gateway.client.auth.SecurityDsl
 import org.omniai.sdk.core.ports.InferenceServicePort
 import org.omniai.sdk.gateway.client.core.OmniAiConfig
 import org.omniai.sdk.gateway.client.core.ExecutionMode
@@ -15,7 +17,7 @@ fun omniAiGateway(block: OmniAiGatewayDsl.() -> Unit): OmniAiConfig =
 class OmniAiGatewayDsl {
     private val inboundsDsl = InboundsDsl()
     private var executionMode: ExecutionMode? = null
-    private var authorizationServerConfig: AuthorizationServerConfig = AuthorizationServerConfig.None
+    private var securityConfig: SecurityConfig = SecurityConfig()
 
     fun inbounds(block: InboundsDsl.() -> Unit) {
         inboundsDsl.apply(block)
@@ -25,8 +27,8 @@ class OmniAiGatewayDsl {
         executionMode = ExecutionDsl().apply(block).build()
     }
 
-    fun authorizationServer(block: AuthorizationServerDsl.() -> Unit) {
-        authorizationServerConfig = AuthorizationServerDsl().apply(block).build()
+    fun security(block: SecurityDsl.() -> Unit) {
+        securityConfig = SecurityDsl().apply(block).build()
     }
 
     fun build(): OmniAiConfig {
@@ -36,7 +38,7 @@ class OmniAiGatewayDsl {
         return OmniAiConfig(
             inbounds = inboundsDsl.build(),
             execution = resolvedExecution,
-            authorizationServer = authorizationServerConfig
+            security = securityConfig
         )
     }
 }

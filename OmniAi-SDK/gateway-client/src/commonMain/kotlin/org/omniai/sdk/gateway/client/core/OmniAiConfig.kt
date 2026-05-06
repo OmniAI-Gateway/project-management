@@ -7,6 +7,7 @@ import org.omniai.sdk.core.ports.InferenceServicePort
 import org.omniai.sdk.core.ports.OutboundPort
 import org.omniai.sdk.domain.common.Provider
 import org.omniai.sdk.gateway.client.auth.AuthorizationServerConfig
+import org.omniai.sdk.gateway.client.auth.SecurityConfig
 import org.omniai.sdk.inbound.anthropic.AnthropicInboundAdapter
 import org.omniai.sdk.inbound.gemini.GeminiInboundAdapter
 import org.omniai.sdk.inbound.openai.OpenAiInboundAdapter
@@ -25,7 +26,7 @@ import org.omniai.sdk.contracts.gemini.output.GeminiGenerateContentResponse
 data class OmniAiConfig(
     val inbounds: InboundRegistration,
     val execution: ExecutionMode,
-    val authorizationServer: AuthorizationServerConfig
+    val security: SecurityConfig
 )
 
 /**
@@ -50,4 +51,3 @@ sealed interface ExecutionMode {
     ) : ExecutionMode
     data class CustomService(val service: InferenceServicePort) : ExecutionMode
 }
-
