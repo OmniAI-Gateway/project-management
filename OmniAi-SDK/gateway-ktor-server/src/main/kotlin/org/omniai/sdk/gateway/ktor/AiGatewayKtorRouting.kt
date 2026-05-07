@@ -11,7 +11,6 @@ import io.ktor.server.routing.Route
 import io.ktor.server.routing.post
 import kotlinx.coroutines.flow.Flow
 import kotlinx.serialization.json.Json
-import kotlinx.serialization.encodeToString
 import org.omniai.sdk.binders.ConfigurableMetadataBinder
 import org.omniai.sdk.contracts.anthropic.input.AnthropicMessagesRequest
 import org.omniai.sdk.contracts.anthropic.output.AnthropicMessageResponse

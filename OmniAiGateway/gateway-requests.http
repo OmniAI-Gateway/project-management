@@ -2,8 +2,8 @@
 @port = 1900
 @baseUrl = http://{{ip}}:{{port}}
 
-@token = eyJhbGciOiJSUzI1NiIsInR5cCI6ImF0K2p3dCIsImtpZCI6IkZBa2FueEhrbkhGNGNPTkgwaXhpQm5SZzNpNkVHenVabzhGNnd0b1dsb1kifQ.eyJqdGkiOiJHd3NLcFQtQ2tLbm9HX1lJUGFNU1IiLCJzdWIiOiJkMzFjZXF0N2FjOHphMHI3OTQzbWsiLCJpYXQiOjE3Nzc4Mzc0NTEsImV4cCI6MTc3Nzg0MTA1MSwiY2xpZW50X2lkIjoiZDMxY2VxdDdhYzh6YTByNzk0M21rIiwiaXNzIjoiaHR0cDovL2xvY2FsaG9zdDozMDAxL29pZGMiLCJhdWQiOiJodHRwczovL2FwaS5vbW5pYWkuY29tIn0.OrltutmuDioVJ_As63fqIB4oxdvO186X-0OCWciQAdHzxNJKZ6xtd7jdbWpNh2GrUzwn67lWb2nyIOv0g3RNY3xisN1HtbNgkGuiXJNGHidvGBJQHw-muyEDRxYITQ_58wUymrByYYgkypiIvjdWwOnbpHC923if5nUNTwROsAohGDMANuOiWXpGYpl6X4c_7XoOVdV_4bnzi1Vd1rGUqg8P4Q1lBZQGaFqahvw6m-9pqqSqu7iX27BLbfev_5g7QXgPV298eqfb-lTFdadC_GnroKZJS7rLWWs1j7jOkRBPd5qqWWUFzo_FR-XRiifNMNyOYSdHJDmfyHFhIbRgxDrgVn_9oFilSO04usvjnJutUVRD97xO-Pr8zayaWz0sybpWYJM2w9qVn_XZvfG07-ilCiJUK0L41rdXPY3Crf56JmQeAjA8CS1Orm8xU0VBL9UDV1RVruzKT3UdxN5tn8J99fsZfC9HS20oKXkXfT8HZ1yClViGoBNN286PIfKDNr0Bm6wFW5I8Wuf7oB0fDpD2kzfdiqpypOariaxnLVKHapMibnjPkzOBdRkUPNxRr1Px3aQ62PHMK5myiMTXK7WU3PMbmRUcl_WqXZU8FYzCQ3rGZDygtvzn3e2OTcOSXvio1lcaJoF9yUBlqzpwKfw42EEQ1f46w0LBCZJaLfQ
-@openaiModel = gpt-4o-mini
+@token = eyJhbGciOiJSUzI1NiIsInR5cCI6ImF0K2p3dCIsImtpZCI6IlRIcmVJZktYNFh4MGcwQ1R0dWJ3ZU9zOEhQaG02UUxienpYS0JJczYwSGcifQ.eyJqdGkiOiJYeVJHMW15OWJjVzR3WlZiUno1c3oiLCJzdWIiOiIyanVmY2o1dTY1NmdnNWJtcHgwemgiLCJpYXQiOjE3NzgxNjM1NzcsImV4cCI6MTc3ODE2NzE3NywiY2xpZW50X2lkIjoiMmp1ZmNqNXU2NTZnZzVibXB4MHpoIiwiaXNzIjoiaHR0cDovL2xvY2FsaG9zdDozMDAxL29pZGMiLCJhdWQiOiJodHRwczovL2FwaS5vbW5pYWkuY29tIn0.RnBEfyu62biSERTJFZdbLT-GG5Oa6nfQPNoje8JzgMWaSUob5Hb7KUEquR9pAl_jPxvs1gUEfIOy_93ItlbeM5YQyzbu-3n8m-DxAquWN19ciG1TJ6kFr02NSMTP0HcjbHISqWOYm8say7iff6U2kuTXqqsPxuK-50l1S7cBLZBuCdaQ1wk5_imQsZUpvIh3OqF-mTtj_TGL4JqWHbCprxo-cTkabmuBe5ZJ7vQfxPvtsgDd-o34_5ptCNz2za_tOmTuMwMJQD0aakMExxu3XsXogTJeUr0f3qk-19fVIFKxbktJ83VJLWq9Rby-d_E-Jifzcff_hsfv5SDqwDZlC5zFq61JR6x76CmTl9wzb7LFhkfDQiHKaVU8yO8BJ6hoSjl6v7pC98bdG0pjMyTPBoE0XTewVJpsgWuipfRIdHyCR1Y5R9CLYxVVWtFg-naXoGMvRhzLMg89Nq9-wOLV8m5934E5wFO0ZydJwqnwyBflSk9qu05CgqnMN8HpKcLPHaZD8KFtAxG2LNlX5oqdBuRNu8hFrRppxlLlW74BeLfgaHfbVr-_0UZqZ33Y7mxeZAD-TDoU55IpZa-270PrYbmhZmWWC3_hCLno0sax09KNfa_4ketsXNjAHDugVzZFLDt5QshXreqC_i_srZxMVvb7sIjmSH1sfZz8jLK0Wb8
+
 @anthropicModel = claude-3-7-sonnet-latest
 @geminiModel = gemini-2.5-flash
 
@@ -19,8 +19,8 @@
 @logtoHost = localhost
 @logtoPort = 3001
 @logtoBaseUrl = http://{{logtoHost}}:{{logtoPort}}
-@logtoClientId = jpnjkg638x2vhkdkl16rf
-@logtoClientSecret = eZg6p2wjtotiluJgXwf21Ndw07VbGrMx
+@logtoClientId = 2jufcj5u656gg5bmpx0zh
+@logtoClientSecret = 4NYUQkdGfXyvt09AnOBLcYecVgdId4Tp
 @logtoResource = https://api.omniai.com
 
 POST {{logtoBaseUrl}}/oidc/token
@@ -36,6 +36,8 @@ grant_type=client_credentials
 # Se OpenAI/Anthropic estiverem desativados, os pedidos dessas secoes podem devolver 404.
 
 ### OpenAI - 1) Chat completion normal
+@openaiModel = teste
+
 POST {{baseUrl}}/v1/chat/completions
 Content-Type: application/json
 Authorization: Bearer {{token}}
@@ -65,6 +67,7 @@ Content-Type: application/json
 POST {{baseUrl}}/v1/chat/completions
 Content-Type: application/json
 Accept: text/event-stream
+Authorization: Bearer {{token}}
 
 {
   "model": "{{openaiModel}}",
@@ -77,6 +80,8 @@ Accept: text/event-stream
 ### Anthropic - 1) Messages normal
 POST {{baseUrl}}/v1/messages
 Content-Type: application/json
+Authorization: Bearer {{token}}
+
 
 {
   "model": "{{anthropicModel}}",
@@ -104,6 +109,7 @@ Content-Type: application/json
 POST {{baseUrl}}/v1/messages
 Content-Type: application/json
 Accept: text/event-stream
+Authorization: Bearer {{token}}
 
 {
   "model": "{{anthropicModel}}",
@@ -154,6 +160,7 @@ Content-Type: application/json
 POST {{baseUrl}}/v1beta/models/{{geminiModel}}:generateContent?stream=true
 Content-Type: application/json
 Accept: text/event-stream
+Authorization: Bearer {{token}}
 
 {
   "model": "{{geminiModel}}",

@@ -1,5 +1,8 @@
 package org.omniai.gateway.app
 
+import io.ktor.server.application.serverConfig
+import io.ktor.server.engine.*
+import io.ktor.server.netty.*
 import io.ktor.server.engine.embeddedServer
 import io.ktor.server.netty.Netty
 import io.ktor.server.routing.routing
@@ -86,7 +89,8 @@ suspend fun main() {
                                 attribute("discovery") { _, _ -> (config.authConfig as?
                                         AuthorizationServerGatewayConfig.Oidc)?.discoveryUrl ?: "discovery" }
                                 attribute("sdk.version") { _, _ -> "1.0.0" }
-                                attribute("aud") { _, _ -> (config.authConfig as?  AuthorizationServerGatewayConfig.Oidc)?.audience ?: "anonymous" }
+                                attribute("aud") { _, _ -> (config.authConfig as?
+                                        AuthorizationServerGatewayConfig.Oidc)?.audience ?: "anonymous" }
                             }
                             defaultLatency {
                                 enabled = true
@@ -140,14 +144,25 @@ suspend fun main() {
 
     val runtime = gateway.assemble(httpClient)
 
-    val server = embeddedServer(Netty, port = config.port) {
-        configureHttp(jsonConfig)
-        routing {
-            openAiConnector(json = jsonConfig).connect(OpenAiInboundAdapter(runtime.service))
-            anthropicConnector(json = jsonConfig).connect(AnthropicInboundAdapter(runtime.service))
-            geminiConnector(json = jsonConfig).connect(GeminiInboundAdapter(runtime.service))
+    val server = embeddedServer(
+        factory = Netty,
+        configure = {
+            connector {
+                port = config.port
+                host = "0.0.0.0"
+            }
+            requestReadTimeoutSeconds = 60
+            responseWriteTimeoutSeconds = 120
+            tcpKeepAlive = true
+        },
+        module = {
+            configureHttp(jsonConfig)
+            routing {
+                openAiConnector(json = jsonConfig).connect(OpenAiInboundAdapter(runtime.service))
+                anthropicConnector(json = jsonConfig).connect(AnthropicInboundAdapter(runtime.service))
+                geminiConnector(json = jsonConfig).connect(GeminiInboundAdapter(runtime.service))
+            }
         }
-    }
-
+    )
     server.start(wait = true)
 }
