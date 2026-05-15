@@ -111,7 +111,30 @@
     Ao mesmo tempo, o uso de LLMs evoluiu de interações simples para sistemas baseados em agentes (\textit{agentic workflows}) \cite{ibm_agentic_workflows}. Nestes cenários, o modelo não se limita a devolver texto; pode decidir invocar ferramentas externas, interpretar resultados intermédios e produzir uma resposta final com base nesses dados. O \textit{Model Context Protocol} (MCP) surgiu como proposta de normalização para a comunicação entre modelos, aplicações e ferramentas externas \cite{mcp_protocol}.
 
     \section{Motivação e Definição do Problema}
-    A existência de múltiplos fornecedores de LLMs e a ausência de um protocolo comum implicam diferentes interfaces de acesso aos modelos, estruturas específicas de pedidos e respostas, modelos distintos de contabilização de \textit{tokens}, custos variáveis e implementações particulares para invocação de funções externas. Por exemplo, a API OpenAI organiza a interação em torno de \textit{chat completions} e \textit{tool calls}; a Anthropic utiliza uma arquitetura baseada em \textit{messages} e blocos de conteúdo; e a Gemini estrutura a geração através de \textit{contents}, \textit{parts}, \textit{function declarations} e configurações de geração próprias.
+
+    \begin{figure}[H]
+        \centering
+        \includegraphics[width=0.9\textwidth]{P1.png}
+        \caption{Acoplamento direto entre clientes e um fornecedor de inferência}
+        \label{fig:p1}
+    \end{figure}
+    \begin{figure}[H]
+        \centering
+        \includegraphics[width=0.9\textwidth]{P2.png}
+        \caption{Multiplicação de integrações diretas com vários fornecedores}
+        \label{fig:p2}
+    \end{figure}
+    \begin{figure}[H]
+        \centering
+        \includegraphics[width=0.9\textwidth]{P3.png}
+        \caption{Cliente trocar de fornecedor}
+        \label{fig:p3}
+    \end{figure}
+
+    As Figuras \ref{fig:p1}, \ref{fig:p2} e \ref{fig:p3} ilustram o acoplamento direto entre clientes e fornecedores de inferência, bem como a dificuldade que os clientes tem em trocar de fornecedor devido a todo acoplamento que existe
+
+    A existência de múltiplos fornecedores de LLMs e a ausência de um protocolo comum implicam
+    diferentes interfaces de acesso aos modelos, estruturas específicas de pedidos e respostas, modelos distintos de contabilização de tokens, custos variáveis e implementações particulares para invocação de funções externas (ver Figuras \ref{fig:p1}--\ref{fig:p3}). Por exemplo, a API OpenAI organiza a interação em torno de chat completions e tool calls; a Anthropic utiliza uma arquitetura baseada em messages e blocos de conteúdo; e a Gemini estrutura a geração através de contents, parts, function declarations e configurações de geração próprias.
 
     Estas diferenças criam acoplamento entre as aplicações cliente e os fornecedores. Sempre que uma aplicação pretende trocar de modelo, suportar mais do que um fornecedor, adicionar um mecanismo de \textit{fallback} ou integrar ferramentas externas, torna-se necessário duplicar lógica de tradução, autenticação, tratamento de erros e interpretação de respostas. Esta duplicação aumenta a complexidade e dificulta a evolução do sistema, um problema recorrente em sistemas que combinam lógica de aplicação com integrações externas especializadas \cite{ml_code_smells,ml_code_smells1}.
 
@@ -120,6 +143,13 @@
     O problema central deste projeto é, assim, a ausência de uma camada de abstração capaz de separar as aplicações cliente das particularidades de cada fornecedor de LLMs, mantendo simultaneamente suporte para segurança, monitorização, \textit{tool calling} e integração dinâmica com ferramentas externas.
 
     \section{Objetivos e Proposta de Solução}
+    \begin{figure}[H]
+        \centering
+        \includegraphics[width=0.9\textwidth]{P4.png}
+        \caption{Centralização com OmniAI Gateway}
+        \label{fig:p4}
+    \end{figure}
+
     A solução proposta evoluiu para a construção de um \textbf{OmniAI SDK}, isto é, uma biblioteca reutilizável que permite instanciar uma \textbf{OmniAI Gateway}. A Gateway funciona como ponto de entrada único para aplicações cliente, centralizando o acesso a APIs de inferência, ferramentas externas e mecanismos transversais de segurança e operação. Esta abordagem aproxima-se do padrão de API Gateway \cite{api_gateway_design} e, no contexto específico de modelos de IA, do padrão de AI Gateway enquanto camada centralizada de acesso a modelos \cite{ai_gateway_pattern,karl_ai_gateway}. Embora existam soluções relacionadas, como LiteLLM e OpenRouter \cite{litellm,openrouter}, o foco deste projeto está na construção de um SDK extensível, configurável e integrado com uma Gateway final própria.
 
     O SDK foi desenvolvido em Kotlin Multiplatform, permitindo partilhar o núcleo de domínio entre targets diferentes e preparar a distribuição para JVM e JavaScript/Node.js \cite{kotlin_multiplatform}. Esta decisão torna possível disponibilizar a biblioteca em ecossistemas distintos: via Maven para aplicações JVM/Kotlin e via NPM para ambientes Node.js/TypeScript.
@@ -321,6 +351,13 @@ metrics {
 
     \begin{figure}[H]
         \centering
+        \includegraphics[width=0.9\textwidth]{AutenticationFlow.jpeg}
+        \caption{Sequência OIDC: descoberta, JWKS e cache de chaves}
+        \label{fig:oidc-sequence}
+    \end{figure}
+
+    \begin{figure}[H]
+        \centering
         \includegraphics[width=\textwidth]{autenticacao.jpeg}
         \caption{Fluxo interno do interceptor de autenticação}
         \label{fig:auth-interceptor}
@@ -339,29 +376,9 @@ metrics {
 
     \begin{figure}[H]
         \centering
-        \resizebox{0.95\textwidth}{!}{%
-            \begin{tikzpicture}[
-                >=Latex,
-                node distance=1.0cm and 1.2cm,
-                box/.style={draw, rounded corners, align=center, minimum height=1.0cm, text width=3.2cm, fill=yellow!20},
-                decision/.style={draw, diamond, aspect=2, align=center, text width=2.8cm, fill=blue!15},
-                ext/.style={draw, rounded corners, align=center, minimum height=1.0cm, text width=3.0cm, fill=green!20}
-            ]
-            \node[box] (context) {GatewayContext\\auth result\\request metadata};
-            \node[box, right=of context] (provider) {AuthorizationInputProvider\\claims + plan + model};
-            \node[ext, right=of provider] (pdp) {PDP\\policy decision};
-            \node[decision, right=of pdp] (decision) {Allow?};
-            \node[box, right=of decision] (next) {Next interceptor\\or dispatcher};
-            \node[box, below=of decision] (deny) {PipelineResult.Error\\erro de autorização};
-
-            \draw[->] (context) -- (provider);
-            \draw[->] (provider) -- (pdp);
-            \draw[->] (pdp) -- (decision);
-            \draw[->] (decision) -- node[above]{sim} (next);
-            \draw[->] (decision) -- node[right]{não} (deny);
-            \end{tikzpicture}}
+        \includegraphics[width=0.9\textwidth]{Authorization.jpeg}
         \caption{Arquitetura do interceptor de autorização}
-        \label{fig:authorization-interceptor}
+        \label{fig:oidc-sequence}
     \end{figure}
 
     A entrada da autorização é construída a partir do contexto. O \texttt{AuthorizationInputProvider} pode extrair claims do JWT, resultado de introspeção, modelo pedido, fornecedor, plano do cliente, endereço IP ou qualquer outro atributo propagado pela Gateway. Se o PDP devolver \texttt{Allow}, a pipeline continua. Se devolver \texttt{Deny}, o interceptor interrompe o fluxo e devolve um erro de domínio. Esta separação segue o modelo PEP/PDP/PAP/PIP usado em arquiteturas de autorização centralizada \cite{authorization_pips}.
