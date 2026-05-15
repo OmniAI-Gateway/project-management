@@ -26,7 +26,7 @@ kotlin {
         }
 
         jvmMain.dependencies {
-            implementation(project(":services"))
+            implementation(project(":dispatcher"))
             implementation(project(":interceptors"))
             implementation(project(":contracts:ktor-http"))
             implementation(project(":outbound:openai"))

@@ -79,8 +79,7 @@ class GeminiOfficialSdkContractTest {
                         GeminiPart(
                             functionCall = GeminiInputFunctionCall(
                                 name = "get_weather",
-                                args = json.parseToJsonElement("""{"city":"Lisbon","days":2}""").jsonObject,
-                                id = "call_1"
+                                args = json.parseToJsonElement("""{"city":"Lisbon","days":2}""").jsonObject
                             )
                         ),
                         GeminiPart(

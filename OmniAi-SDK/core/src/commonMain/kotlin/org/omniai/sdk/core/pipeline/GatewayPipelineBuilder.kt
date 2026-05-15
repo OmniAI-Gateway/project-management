@@ -1,17 +1,17 @@
 package org.omniai.sdk.core.pipeline
 
-import org.omniai.sdk.core.ports.InferenceServicePort
+import org.omniai.sdk.core.ports.DispatcherPort
 
 class GatewayPipelineBuilder {
     private val interceptors = mutableListOf<Interceptor>()
-    private lateinit var terminalService: InferenceServicePort
+    private lateinit var terminalDispatcher: DispatcherPort
 
     fun install(interceptor: Interceptor) {
         interceptors.add(interceptor)
     }
 
-    fun installService(servicePort: InferenceServicePort) {
-        terminalService = servicePort
+    fun installDispatcher(dispatcherPort: DispatcherPort) {
+        terminalDispatcher = dispatcherPort
     }
 
     fun intercept(block: suspend (GatewayContext, InterceptorChain) -> PipelineResult) {
@@ -23,10 +23,10 @@ class GatewayPipelineBuilder {
     }
 
     fun build(): GatewayPipeline {
-        check(::terminalService.isInitialized) {
-            "Terminal service obrigatório: chama installService(...) antes de build()."
+        check(::terminalDispatcher.isInitialized) {
+            "Terminal dispatcher obrigatório: chama installDispatcher(...) antes de build()."
         }
-        return GatewayPipeline(interceptors.toList(), terminalService)
+        return GatewayPipeline(interceptors.toList(), terminalDispatcher)
     }
 }
 

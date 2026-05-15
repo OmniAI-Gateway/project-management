@@ -4,7 +4,7 @@ import org.omniai.sdk.gateway.client.auth.AuthorizationServerConfig
 import org.omniai.sdk.gateway.client.auth.AuthorizationServerDsl
 import org.omniai.sdk.gateway.client.auth.SecurityConfig
 import org.omniai.sdk.gateway.client.auth.SecurityDsl
-import org.omniai.sdk.core.ports.InferenceServicePort
+import org.omniai.sdk.core.ports.DispatcherPort
 import org.omniai.sdk.gateway.client.core.OmniAiConfig
 import org.omniai.sdk.gateway.client.core.ExecutionMode
 import org.omniai.sdk.gateway.client.dsl.inbounds.InboundsDsl
@@ -33,7 +33,7 @@ class OmniAiGatewayDsl {
 
     fun build(): OmniAiConfig {
         val resolvedExecution = requireNotNull(executionMode) {
-            "You must define an execution block with either useNativePipeline or useCustomService."
+            "You must define an execution block with either useNativePipeline or useCustomDispatcher."
         }
         return OmniAiConfig(
             inbounds = inboundsDsl.build(),
@@ -51,13 +51,13 @@ class ExecutionDsl {
         executionMode = NativePipelineDsl().apply(block).build()
     }
 
-    fun useCustomService(service: InferenceServicePort) {
+    fun useCustomDispatcher(dispatcher: DispatcherPort) {
         require(executionMode == null) { "You can only define one execution mode." }
-        executionMode = ExecutionMode.CustomService(service)
+        executionMode = ExecutionMode.CustomDispatcher(dispatcher)
     }
 
     internal fun build(): ExecutionMode = requireNotNull(executionMode) {
-        "You must choose an execution mode: useNativePipeline or useCustomService."
+        "You must choose an execution mode: useNativePipeline or useCustomDispatcher."
     }
 }
 
@@ -73,8 +73,11 @@ class NativePipelineDsl {
         interceptorsDsl.apply(block)
     }
 
-    internal fun build(): ExecutionMode.NativePipeline = ExecutionMode.NativePipeline(
-        outbounds = outboundsDsl.build(),
-        interceptors = interceptorsDsl.build()
-    )
+    internal fun build(): ExecutionMode.NativePipeline {
+        val outbounds = outboundsDsl.build()
+        return ExecutionMode.NativePipeline(
+            outbounds = outbounds,
+            interceptors = interceptorsDsl.build(outbounds)
+        )
+    }
 }

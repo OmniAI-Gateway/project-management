@@ -1,12 +1,27 @@
 package org.omniai.sdk.gateway.client.dsl.interceptors
 
+import org.omniai.sdk.core.commom.key
+import org.omniai.sdk.core.commom.AttributeKey
 import org.omniai.sdk.core.pipeline.Interceptor
+import org.omniai.sdk.core.ports.OutboundPort
+import org.omniai.sdk.interceptors.circuitBreaker.CircuitBreakerConfig
+import org.omniai.sdk.interceptors.circuitBreaker.CircuitBreakerInterceptor
+import org.omniai.sdk.interceptors.circuitBreaker.CircuitBreakerStore
+import org.omniai.sdk.interceptors.circuitBreaker.InMemoryCircuitBreakerStore
+import org.omniai.sdk.interceptors.fallback.FallbackInterceptor
+
+val DefaultDeniedOutboundsKey = key<Set<String>>("denied_outbounds")
 
 class InterceptorsDsl {
     private val interceptors = mutableListOf<Interceptor>()
+    private val deferredInterceptors = mutableListOf<(List<OutboundPort>) -> Interceptor>()
 
     fun use(interceptor: Interceptor) {
         interceptors += interceptor
+    }
+
+    fun use(deferred: (List<OutboundPort>) -> Interceptor) {
+        deferredInterceptors += deferred
     }
 
     /**
@@ -23,5 +38,31 @@ class InterceptorsDsl {
         use(RateLimitingInterceptorBuilder().apply(block).build())
     }
 
-    internal fun build(): List<Interceptor> = interceptors.toList()
+    /**
+     * Configures and installs a CircuitBreakerInterceptor.
+     */
+    fun circuitBreaker(block: CircuitBreakerBuilder.() -> Unit = {}) {
+        val builder = CircuitBreakerBuilder().apply(block)
+        use { outbounds -> builder.build(outbounds) }
+    }
+
+    /**
+     * Configures and installs a FallbackInterceptor.
+     */
+    fun fallback() {
+        use { outbounds -> FallbackInterceptor(outbounds, DefaultDeniedOutboundsKey) }
+    }
+
+    internal fun build(outbounds: List<OutboundPort>): List<Interceptor> = 
+        interceptors.toList() + deferredInterceptors.map { it(outbounds) }
+}
+
+class CircuitBreakerBuilder {
+    var store: CircuitBreakerStore = InMemoryCircuitBreakerStore()
+    var config: CircuitBreakerConfig = CircuitBreakerConfig()
+    var deniedOutboundsKey: AttributeKey<Set<String>> = DefaultDeniedOutboundsKey
+
+    internal fun build(outbounds: List<OutboundPort>): CircuitBreakerInterceptor {
+        return CircuitBreakerInterceptor(store, config, deniedOutboundsKey, outbounds)
+    }
 }

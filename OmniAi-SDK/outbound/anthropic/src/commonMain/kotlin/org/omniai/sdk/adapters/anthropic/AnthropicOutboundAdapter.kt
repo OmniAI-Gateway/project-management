@@ -36,11 +36,14 @@ class AnthropicOutboundAdapter(
     private val baseUrl: String = "https://api.anthropic.com/v1",
     private val transportClient: HttpTransportClient = defaultHttpTransportClient(),
     private val anthropicVersion: String = "2023-06-01",
+    key: String? = null
 ) : OutboundPort {
 
     private val translator = AnthropicOutboundTranslator()
 
     override val provider: Provider = Provider.ANTHROPIC
+
+    override val key: String = key ?: "${provider.value}-${model.model}-${apiKey.takeLast(4)}"
 
     override suspend fun generate(request: CommonRequest): Either<DomainError, CommonResponse> {
         val providerRequest = translator.fromDomain(request)

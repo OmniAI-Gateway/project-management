@@ -44,7 +44,7 @@ kotlin {
         }
 
         jvmMain.dependencies {
-            api(project(":services"))
+            api(project(":dispatcher"))
         }
 
         commonTest.dependencies {

@@ -1,7 +1,7 @@
 package org.omniai.sdk.gateway.client.dsl.inbounds
 
 import org.omniai.sdk.core.ports.InboundConnector
-import org.omniai.sdk.core.ports.InferenceServicePort
+import org.omniai.sdk.core.ports.DispatcherPort
 import org.omniai.sdk.gateway.client.core.InboundRegistration
 import org.omniai.sdk.contracts.openai.input.OpenAiChatCompletionsRequest
 import org.omniai.sdk.contracts.openai.output.OpenAiChatCompletionsResponse
@@ -43,7 +43,7 @@ class InboundsDsl {
 }
 
 data class CustomInboundSetup(
-    val factory: (InferenceServicePort) -> InboundPort<*, *, *>,
+    val factory: (DispatcherPort) -> InboundPort<*, *, *>,
     val connect: (InboundPort<*, *, *>) -> Unit
 )
 

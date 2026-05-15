@@ -35,11 +35,14 @@ class OpenAiOutboundAdapter(
     private val apiKey: String,
     private val baseUrl: String = "https://api.openai.com/v1",
     private val transportClient: HttpTransportClient = defaultHttpTransportClient(),
+    key: String? = null
 ) : OutboundPort {
 
     private val translator = OpenAiOutboundTranslator()
 
     override val provider: Provider = Provider.OPENAI
+
+    override val key: String = key ?: "${provider.value}-${model.model}-${apiKey.takeLast(4)}"
 
     override suspend fun generate(request: CommonRequest): Either<DomainError, CommonResponse> {
         val providerRequest = translator.fromDomain(request)

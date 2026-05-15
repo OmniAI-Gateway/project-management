@@ -2,7 +2,7 @@ package org.omniai.sdk.gateway.client.dsl
 
 import org.omniai.sdk.core.pipeline.Interceptor
 import org.omniai.sdk.core.ports.InboundConnector
-import org.omniai.sdk.core.ports.InferenceServicePort
+import org.omniai.sdk.core.ports.DispatcherPort
 import org.omniai.sdk.core.ports.OutboundPort
 import org.omniai.sdk.contracts.anthropic.input.AnthropicMessagesRequest
 import org.omniai.sdk.contracts.anthropic.output.AnthropicMessageResponse
@@ -65,8 +65,8 @@ class JsOmniAiGatewayBuilder {
                         builder.interceptorsList.forEach { use(it) }
                     }
                 }
-            } else if (builder.customService != null) {
-                useCustomService(builder.customService!!)
+            } else if (builder.customDispatcher != null) {
+                useCustomDispatcher(builder.customDispatcher!!)
             }
         }
         return this
@@ -105,7 +105,7 @@ class JsExecutionBuilder {
     internal var isNativePipeline = false
     internal val outboundsList = mutableListOf<OutboundPort>()
     internal val interceptorsList = mutableListOf<Interceptor>()
-    internal var customService: InferenceServicePort? = null
+    internal var customDispatcher: DispatcherPort? = null
 
     fun useNativePipeline(setup: (JsNativePipelineBuilder) -> Unit) {
         isNativePipeline = true
@@ -115,8 +115,8 @@ class JsExecutionBuilder {
         interceptorsList.addAll(builder.interceptorsList)
     }
 
-    fun useCustomService(service: dynamic) {
-        this.customService = service.unsafeCast<InferenceServicePort>()
+    fun useCustomDispatcher(dispatcher: dynamic) {
+        this.customDispatcher = dispatcher.unsafeCast<DispatcherPort>()
     }
 }
 

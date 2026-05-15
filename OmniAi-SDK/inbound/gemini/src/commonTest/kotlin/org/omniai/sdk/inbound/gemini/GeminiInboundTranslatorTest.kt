@@ -50,7 +50,6 @@ class GeminiInboundTranslatorTest {
                         GeminiPart(text = "hello"),
                         GeminiPart(
                             functionCall = GeminiFunctionCall(
-                                id = "call_1",
                                 name = "weather",
                                 args = JsonObject(mapOf("city" to JsonPrimitive("Lisbon")))
                             )

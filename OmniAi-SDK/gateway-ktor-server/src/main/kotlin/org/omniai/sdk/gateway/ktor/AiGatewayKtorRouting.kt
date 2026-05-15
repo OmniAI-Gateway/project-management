@@ -26,6 +26,7 @@ import org.omniai.sdk.domain.errors.InvalidRequest
 import org.omniai.sdk.domain.errors.ParsingError
 import org.omniai.sdk.domain.errors.ProviderApiError
 import org.omniai.sdk.core.ports.InboundConnector
+import org.omniai.sdk.core.http.ErrorHttpMapper
 
 val defaultGatewayJson = Json {
     ignoreUnknownKeys = true
@@ -155,12 +156,7 @@ private suspend inline fun <reified T : Any> ApplicationCall.respondAsSse(eventF
 }
 
 private suspend fun ApplicationCall.respondDomainError(error: DomainError) {
-    val status = when (error) {
-        is InvalidRequest, is ParsingError -> HttpStatusCode.BadRequest
-        is ApiDownError -> HttpStatusCode.ServiceUnavailable
-        is ProviderApiError -> HttpStatusCode.BadGateway
-        else -> HttpStatusCode.InternalServerError
-    }
+    val status = ErrorHttpMapper.toHttpStatusCode(error.code)
     respond(status, mapOf("error" to error.message))
 }
 

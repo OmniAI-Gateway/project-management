@@ -7,9 +7,21 @@ import org.omniai.sdk.domain.errors.InvalidRequest
 import org.omniai.sdk.domain.errors.ParsingError
 import org.omniai.sdk.domain.errors.ProviderApiError
 import org.omniai.sdk.domain.errors.UnknownDomainError
+import org.omniai.sdk.domain.errors.UnauthorizedError
+import org.omniai.sdk.domain.errors.ForbiddenError
+import org.omniai.sdk.domain.errors.NotFoundError
+import org.omniai.sdk.domain.errors.TimeoutError
+import org.omniai.sdk.domain.errors.ConflictError
+import org.omniai.sdk.domain.errors.TooManyRequestsError
 
 fun HttpCallResult<*>.toDomainError(provider: Provider): DomainError = when (this) {
     is HttpCallResult.ApiError -> when (code) {
+        401 -> UnauthorizedError(message = "${provider.value} rejected request with status 401: ${message.orEmpty()}")
+        403 -> ForbiddenError(message = "${provider.value} rejected request with status 403: ${message.orEmpty()}")
+        404 -> NotFoundError(message = "${provider.value} rejected request with status 404: ${message.orEmpty()}")
+        408 -> TimeoutError(message = "${provider.value} request timed out: ${message.orEmpty()}")
+        409 -> ConflictError(message = "${provider.value} request conflict: ${message.orEmpty()}")
+        429 -> TooManyRequestsError(message = "${provider.value} rate limit exceeded: ${message.orEmpty()}")
         in 400..499 -> InvalidRequest(
             message = "${provider.value} rejected request with status $code: ${message.orEmpty()}",
             statusCode = code,

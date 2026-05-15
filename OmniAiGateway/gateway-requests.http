@@ -31,9 +31,6 @@ grant_type=client_credentials
     &client_secret={{logtoClientSecret}}
     &resource={{logtoResource}}
     &scope=all
-###
-# Nota: no estado atual do Main.kt, apenas Gemini esta ativo.
-# Se OpenAI/Anthropic estiverem desativados, os pedidos dessas secoes podem devolver 404.
 
 ### OpenAI - 1) Chat completion normal
 @openaiModel = teste
@@ -123,6 +120,7 @@ Authorization: Bearer {{token}}
 ### Gemini - 1) GenerateContent normal
 POST {{baseUrl}}/v1beta/models/{{geminiModel}}:generateContent
 Content-Type: application/json
+Authorization: Bearer {{token}}
 
 {
   "model": "{{geminiModel}}",

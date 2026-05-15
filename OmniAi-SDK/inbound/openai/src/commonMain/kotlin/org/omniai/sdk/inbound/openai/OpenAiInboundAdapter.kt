@@ -10,12 +10,12 @@ import org.omniai.sdk.core.commom.TypedMap
 import org.omniai.sdk.core.commom.failure
 import org.omniai.sdk.core.commom.success
 import org.omniai.sdk.core.ports.InboundPort
-import org.omniai.sdk.core.ports.InferenceServicePort
+import org.omniai.sdk.core.ports.DispatcherPort
 import org.omniai.sdk.domain.common.Provider
 import org.omniai.sdk.domain.errors.DomainError
 
 class OpenAiInboundAdapter(
-    private val service: InferenceServicePort,
+    private val dispatcher: DispatcherPort,
     private val translator: OpenAiInboundTranslator = OpenAiInboundTranslator()
 ) : InboundPort<OpenAiChatCompletionsRequest, OpenAiChatCompletionsResponse, OpenAiChatCompletionsResponse> {
 
@@ -28,7 +28,7 @@ class OpenAiInboundAdapter(
         val domainRequest = translator.toDomain(request).also {
             it.providerOptions.putAll(map)
         }
-        return when (val domainResponse = service.generate(domainRequest, map)) {
+        return when (val domainResponse = dispatcher.generate(domainRequest, map)) {
             is Success -> success(translator.fromDomain(domainResponse.value))
             is Failure -> failure(domainResponse.value)
         }
@@ -41,7 +41,7 @@ class OpenAiInboundAdapter(
         val domainRequest = translator.toDomain(request).also {
             it.providerOptions.putAll(map)
         }
-        return when (val streamResult = service.generateStream(domainRequest, map)) {
+        return when (val streamResult = dispatcher.generateStream(domainRequest, map)) {
             is Success -> success(translator.fromDomainEvent(streamResult.value))
             is Failure -> failure(streamResult.value)
         }

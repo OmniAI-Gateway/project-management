@@ -3,7 +3,7 @@ package org.omniai.sdk.gateway.client.core
 import org.omniai.sdk.core.commom.TypedMap
 import org.omniai.sdk.core.pipeline.Interceptor
 import org.omniai.sdk.core.ports.InboundConnector
-import org.omniai.sdk.core.ports.InferenceServicePort
+import org.omniai.sdk.core.ports.DispatcherPort
 import org.omniai.sdk.core.ports.OutboundPort
 import org.omniai.sdk.domain.common.Provider
 import org.omniai.sdk.gateway.client.auth.AuthorizationServerConfig
@@ -33,7 +33,7 @@ data class OmniAiConfig(
  * Runtime graph returned after assembly on the host platform.
  */
 data class OmniAiRuntime(
-    val service: InferenceServicePort,
+    val dispatcher: DispatcherPort,
     val metadata: TypedMap = TypedMap()
 )
 
@@ -49,5 +49,5 @@ sealed interface ExecutionMode {
         val outbounds: List<OutboundPort>,
         val interceptors: List<Interceptor>
     ) : ExecutionMode
-    data class CustomService(val service: InferenceServicePort) : ExecutionMode
+    data class CustomDispatcher(val dispatcher: DispatcherPort) : ExecutionMode
 }
