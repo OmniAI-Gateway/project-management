@@ -1,0 +1,16 @@
+package org.omniai.sdk.domain.errors
+
+enum class ErrorCode {
+    BAD_REQUEST,
+    UNAUTHORIZED,
+    FORBIDDEN,
+    NOT_FOUND,
+    CONFLICT,
+    TOO_MANY_REQUESTS,
+    INTERNAL_SERVER_ERROR,
+    PROVIDER_ERROR,
+    SERVICE_UNAVAILABLE,
+    TIMEOUT,
+    GATEWAY_TIMEOUT,
+    UNKNOWN_ERROR
+}
