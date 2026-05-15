@@ -158,9 +158,9 @@ suspend fun main() {
         module = {
             configureHttp(jsonConfig)
             routing {
-                openAiConnector(json = jsonConfig).connect(OpenAiInboundAdapter(runtime.service))
-                anthropicConnector(json = jsonConfig).connect(AnthropicInboundAdapter(runtime.service))
-                geminiConnector(json = jsonConfig).connect(GeminiInboundAdapter(runtime.service))
+                openAiConnector(json = jsonConfig).connect(OpenAiInboundAdapter(runtime.dispatcher))
+                anthropicConnector(json = jsonConfig).connect(AnthropicInboundAdapter(runtime.dispatcher))
+                geminiConnector(json = jsonConfig).connect(GeminiInboundAdapter(runtime.dispatcher))
             }
         }
     )

@@ -74,7 +74,7 @@ class OpenAiOutboundAdapterTest {
     @Test
     fun `generate maps api error to invalid request`() = runTest {
         val fakeClient = FakeHttpTransportClient().apply {
-            executeResult = HttpCallResult.ApiError(code = 401, message = "invalid token")
+            executeResult = HttpCallResult.ApiError(code = 400, message = "invalid tokens")
         }
 
         val adapter = OpenAiOutboundAdapter(

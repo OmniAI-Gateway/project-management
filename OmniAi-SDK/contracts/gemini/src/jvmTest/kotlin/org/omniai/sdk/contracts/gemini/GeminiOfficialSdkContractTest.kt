@@ -151,7 +151,7 @@ class GeminiOfficialSdkContractTest {
                     "role": "model",
                     "parts": [
                       {"text": "Done"},
-                      {"functionCall": {"name": "get_weather", "args": {"city": "Lisbon"}, "id": "call_1"}}
+                      {"functionCall": {"name": "get_weather", "args": {"city": "Lisbon"}}}
                     ]
                   },
                   "finishReason": "STOP",

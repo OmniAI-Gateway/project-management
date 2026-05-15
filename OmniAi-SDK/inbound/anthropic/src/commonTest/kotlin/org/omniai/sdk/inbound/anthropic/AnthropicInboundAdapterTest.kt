@@ -16,7 +16,7 @@ import org.omniai.sdk.core.commom.Either
 import org.omniai.sdk.core.commom.Success
 import org.omniai.sdk.core.commom.TypedMap
 import org.omniai.sdk.core.commom.success
-import org.omniai.sdk.core.ports.InferenceServicePort
+import org.omniai.sdk.core.ports.DispatcherPort
 import org.omniai.sdk.domain.common.CommonRole
 import org.omniai.sdk.domain.common.Model
 import org.omniai.sdk.domain.common.Provider
@@ -35,7 +35,7 @@ class AnthropicInboundAdapterTest {
 	fun `generate translates anthropic request and maps service response`() = runTest {
 		var receivedRequest: CommonRequest? = null
 
-		val service = object : InferenceServicePort {
+		val service = object : DispatcherPort {
 			override suspend fun generate(
                 request: CommonRequest,
                 attributes: TypedMap
@@ -85,7 +85,7 @@ class AnthropicInboundAdapterTest {
 
 	@Test
 	fun `generateStream delegates to service and maps domain events`() = runTest {
-		val service = object : InferenceServicePort {
+		val service = object : DispatcherPort {
 			override suspend fun generate(
                 request: CommonRequest,
                 attributes: TypedMap
