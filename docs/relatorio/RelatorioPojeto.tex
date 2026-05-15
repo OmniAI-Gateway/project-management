@@ -59,7 +59,7 @@
         \vfill
 
         {\large
-        Engenharia Informática \\
+        Engenharia Informática e de Computadores \\
         \vspace{0.3cm}
         \today
         }
@@ -68,20 +68,27 @@
 
 % ================= ELEMENTOS PRÉ-TEXTUAIS =================
     \begin{abstract}
-        \textbf{Resumo:}
-        A ausência de um protocolo comum na comunicação com Modelos de Linguagem de Grande Escala (LLMs) obriga as aplicações a integrarem diferentes interfaces de acesso e implementações particulares para a invocação de ferramentas externas. Para resolver esta fragmentação tecnológica, este projeto propõe o desenvolvimento do \textbf{OmniAI SDK}, um \textit{Software Development Kit} construído em Kotlin Multiplatform (KMP). Baseado nos princípios da Arquitetura Hexagonal (\textit{Ports and Adapters}), o SDK isola a lógica de domínio e suporta a comunicação bidirecional compatível com os padrões das APIs de referência, nomeadamente OpenAI, Anthropic e Gemini. O núcleo do sistema implementa uma \textit{pipeline} extensível e configurável, inspirada no modelo de filtros de Servlets, que executa \textit{interceptors} pré-construídos para autorização, autenticação, métricas, \textit{rate limiting}, \textit{circuit breaker} e \textit{fallback}. Adicionalmente, o SDK integra um MCP Broker, permitindo o registo dinâmico de ferramentas externas através de configuração. Distribuído de forma multiplataforma para ambientes JVM, via Maven, e Node.js/TypeScript, via NPM, o SDK foi validado através da construção da \textbf{OmniAI Gateway}, uma aplicação final que consome a biblioteca para instanciar rapidamente uma API Gateway robusta. A avaliação demonstra que a solução minimiza o acoplamento tecnológico e o esforço de integração, garantindo resiliência, escalabilidade e centralização na gestão de modelos de IA.
-
-        \vspace{0.4cm}
-        \noindent\textbf{Palavras-chave:} LLM, API Gateway, Kotlin Multiplatform, Arquitetura Hexagonal, Model Context Protocol, Interceptors.
+        A ausência de um protocolo comum na comunicação com Modelos de Linguagem de Grande Escala (LLMs) obriga as aplicações a integrarem diferentes interfaces de acesso e implementações particulares para a invocação de ferramentas externas. Para resolver esta fragmentação tecnológica, este projeto propõe o desenvolvimento do \textbf{OmniAI SDK}, um \textit{Software Development Kit} construído em Kotlin Multiplatform (KMP). Baseado nos princípios da Arquitetura Hexagonal (\textit{Ports and Adapters}), o SDK isola a lógica de domínio e suporta a comunicação bidirecional compatível com os padrões das APIs de referência, nomeadamente OpenAI, Anthropic e Gemini. O núcleo do sistema implementa uma \textit{pipeline} extensível e configurável, inspirada no modelo de filtros de Servlets, que executa \textit{interceptors} pré-construídos para autorização, autenticação, métricas, \textit{rate limiting}, \textit{circuit breaker} e \textit{fallback}. Adicionalmente, o SDK integra um MCP Broker, permitindo o registo dinâmico de ferramentas externas através de configuração. Distribuído de forma multiplataforma para ambientes JVM, via Maven, e Node.js/TypeScript, via NPM, o SDK foi validado através da construção da \textbf{OmniAI Gateway}, uma aplicação final que consome a biblioteca para instanciar rapidamente uma Gateway. A avaliação demonstra que a solução minimiza o acoplamento tecnológico e o esforço de integração, garantindo resiliência, escalabilidade e centralização na gestão de modelos de IA.
     \end{abstract}
 
     \renewcommand{\abstractname}{Abstract}
     \begin{abstract}
-        \textbf{Abstract:}
-        The lack of a common protocol for communicating with Large Language Models (LLMs) forces applications to integrate diverse access interfaces and specific implementations for external tool invocation. To address this technological fragmentation, this project proposes the development of the \textbf{OmniAI SDK}, a Software Development Kit built with Kotlin Multiplatform (KMP). Based on Hexagonal Architecture (Ports and Adapters) principles, the SDK isolates domain logic and supports bidirectional communication compatible with reference API standards, namely OpenAI, Anthropic, and Gemini. The system's core implements an extensible and configurable pipeline, inspired by the Servlet filter model, executing pre-built interceptors for authorization, authentication, metrics, rate limiting, circuit breaking, and fallback mechanisms. Furthermore, the SDK integrates an MCP Broker, enabling the dynamic registration of external tools through configuration. Distributed cross-platform for JVM environments, via Maven, and Node.js/TypeScript, via NPM, the SDK was validated through the construction of the \textbf{OmniAI Gateway}, a final application that consumes the library to rapidly instantiate a robust API Gateway. The evaluation demonstrates that the solution minimizes technological coupling and integration effort, ensuring resilience, scalability, and centralized management of AI models.
-
-        \vspace{0.4cm}
-        \noindent\textbf{Keywords:} LLM, API Gateway, Kotlin Multiplatform, Hexagonal Architecture, Model Context Protocol, Interceptors.
+        The lack of a common protocol for communicating with Large Language Models
+        (LLMs) forces applications to integrate different access interfaces and
+        specific implementations for invoking external tools. To address this
+        technological fragmentation, this project proposes the development of the OmniAI SDK, a
+        Development Kit built on Kotlin Multiplatform (KMP). Based on the principles of the
+        Hexagonal Architecture (Ports and Adapters), the SDK isolates the domain logic and supports
+        bidirectional communication compatible with the standards of reference APIs, namely OpenAI,
+        Anthropic, and Gemini. The system’s core implements an extensible and configurable pipeline, inspired
+        by the Servlet filter model, which executes pre-built interceptors for authorization, au-
+        thentication, metrics, rate limiting, circuit breaker, and fallback. Additionally, the SDK integrates an
+        MCP Broker, enabling the dynamic registration of external tools through configuration.
+        Distributed across multiple platforms for JVM environments via Maven and Node.js/TypeScript
+        via NPM, the SDK was validated through the development of the OmniAI Gateway, an end-user
+        application that leverages the library to rapidly instantiate a Gateway. The evaluation demonstrates that
+        the solution minimizes technological coupling and integration effort, ensuring resilience,
+        scalability, and centralization in AI model management.
     \end{abstract}
 
     \tableofcontents
@@ -165,7 +172,7 @@
 
     \begin{figure}[H]
         \centering
-        \includegraphics[width=0.95\textwidth]{../arquitet.png}
+        \includegraphics[width=0.95\textwidth]{arquitet}
         \caption{Visão da integração entre Ktor, inbounds, pipeline, interceptors, outbounds e HTTP client no OmniAI SDK}
         \label{fig:arquitet-sdk}
     \end{figure}
@@ -207,20 +214,20 @@
     A primeira abordagem do projeto centrou-se na construção direta de uma Gateway que recebia pedidos HTTP e os encaminhava para fornecedores de inferência. Esta estratégia permitiu validar rapidamente os contratos externos e perceber as diferenças entre APIs. No entanto, também revelou problemas de acoplamento: cada nova API exigia lógica própria de tradução, autenticação, tratamento de erro e configuração.
 
     A evolução natural foi separar a Gateway final da biblioteca base. O OmniAI SDK passou a concentrar o domínio, os contratos, os adapters e a \textit{pipeline}; a OmniAI Gateway passou a ser uma aplicação que consome essa biblioteca. Esta separação tornou a solução mais reutilizável: outras aplicações podem usar o SDK para criar gateways próprias, com configurações e políticas diferentes.
-    
+
     \section{Decisões de Desenho e Alternativas Descartadas}
     Em engenharia de software, a análise de \textit{trade-offs} e a delimitação do âmbito são fundamentais. Durante a fase de desenho arquitetural, foram avaliadas abordagens técnicas que acabaram por ser descartadas de forma consciente, priorizando a estabilidade e o foco no domínio principal da Gateway:
-    
+
     \begin{itemize}
-    	\item \textbf{Geração de Bridges com KSP (Kotlin Symbol Processing):} Inicialmente, ponderou-se a utilização de KSP para gerar automaticamente as \textit{bridges} de comunicação multiplataforma entre o código Kotlin e o ecossistema TypeScript/Node.js. Contudo, após análise, concluiu-se que a complexidade de configuração do KSP e o tempo de desenvolvimento necessário para mapear todos os \textit{edge cases} de tipagem teriam um impacto severo no planeamento. Optou-se por uma exportação manual controlada (usando \texttt{@JsExport}), garantindo a entrega da biblioteca dentro do prazo estipulado.
-    	\item \textbf{Injeção Automática de Ferramentas via SSE:} Foi também avaliada a possibilidade de a Gateway intercetar automaticamente os pedidos de \textit{tool calling} durante fluxos de \textit{streaming} (\textit{Server-Sent Events} - SSE) e injetar as respostas das ferramentas sem que o cliente tivesse de gerir esse ciclo. No entanto, a gestão de estado complexa necessária para suspender, intercetar e retomar um \textit{stream} de \textit{tokens} de forma concorrente e segura introduziria uma enorme complexidade na primeira versão do SDK. Esta capacidade foi documentada como trabalho futuro, mantendo o roteamento base resiliente e previsível.
+        \item \textbf{Geração de Bridges com KSP (Kotlin Symbol Processing):} Inicialmente, ponderou-se a utilização de KSP para gerar automaticamente as \textit{bridges} de comunicação multiplataforma entre o código Kotlin e o ecossistema TypeScript/Node.js. Contudo, após análise, concluiu-se que a complexidade de configuração do KSP e o tempo de desenvolvimento necessário para mapear todos os \textit{edge cases} de tipagem teriam um impacto severo no planeamento. Optou-se por uma exportação manual controlada (usando \texttt{@JsExport}), garantindo a entrega da biblioteca dentro do prazo estipulado.
+        \item \textbf{Injeção Automática de Ferramentas via SSE:} Foi também avaliada a possibilidade de a Gateway intercetar automaticamente os pedidos de \textit{tool calling} durante fluxos de \textit{streaming} (\textit{Server-Sent Events} - SSE) e injetar as respostas das ferramentas sem que o cliente tivesse de gerir esse ciclo. No entanto, a gestão de estado complexa necessária para suspender, intercetar e retomar um \textit{stream} de \textit{tokens} de forma concorrente e segura introduziria uma enorme complexidade na primeira versão do SDK. Esta capacidade foi documentada como trabalho futuro, mantendo o roteamento base resiliente e previsível.
     \end{itemize}
-    
+
     \section{Evolução Arquitetural: De \textit{Inference Service} a \textit{Dispatcher}}
-    A primeira iteração do sistema consistiu numa Gateway monolítica. A lógica de comunicação, a tradução de contratos e o roteamento estavam fortemente acoplados num único componente designado por \texttt{InferenceService}. 
-    
+    A primeira iteração do sistema consistiu numa Gateway monolítica. A lógica de comunicação, a tradução de contratos e o roteamento estavam fortemente acoplados num único componente designado por \texttt{InferenceService}.
+
     Embora esta estratégia tenha permitido validar rapidamente a comunicação com os fornecedores (OpenAI, Anthropic e Gemini), rapidamente se identificou um problema de escalabilidade de código: o serviço estava a tornar-se num \textit{God Object}, violando o Princípio de Responsabilidade Única (SRP). Cada nova API ou funcionalidade transversal (como métricas ou \textit{rate limiting}) exigia alterações diretas neste serviço central.
-    
+
     Para resolver este acoplamento, a arquitetura sofreu uma refatorização profunda. O serviço monolítico foi decomposto e substituído por um \textit{Dispatcher} central (\texttt{DispatcherPort}). A responsabilidade deste \textit{Dispatcher} passou a ser única e exclusiva: coordenar o envio do pedido para o \textit{Outbound Adapter} correto. Simultaneamente, toda a lógica transversal que congestionava o sistema foi extraída para uma \textit{pipeline} configurável de \textit{interceptors}.
 
     \section{Evolução para a Pipeline de Interceptors}
@@ -228,7 +235,7 @@
 
     \begin{figure}[H]
         \centering
-        \includegraphics[width=0.9\textwidth]{../pipeline.drawio.png}
+        \includegraphics[width=0.9\textwidth]{pipeline.drawio}
         \caption{Visão conceptual da pipeline de interceptors}
         \label{fig:pipeline}
     \end{figure}
@@ -250,13 +257,13 @@
     \begin{figure}[H]
         \centering
         \resizebox{\textwidth}{!}{%
-        \begin{tikzpicture}[
-            >=Latex,
-            node distance=1.0cm and 1.2cm,
-            box/.style={draw, rounded corners, align=center, minimum height=1.0cm, text width=3.1cm, fill=yellow!20},
-            port/.style={draw, rounded corners, align=center, minimum height=1.0cm, text width=3.0cm, fill=blue!15},
-            ext/.style={draw, rounded corners, align=center, minimum height=1.0cm, text width=3.1cm, fill=green!20}
-        ]
+            \begin{tikzpicture}[
+                >=Latex,
+                node distance=1.0cm and 1.2cm,
+                box/.style={draw, rounded corners, align=center, minimum height=1.0cm, text width=3.1cm, fill=yellow!20},
+                port/.style={draw, rounded corners, align=center, minimum height=1.0cm, text width=3.0cm, fill=blue!15},
+                ext/.style={draw, rounded corners, align=center, minimum height=1.0cm, text width=3.1cm, fill=green!20}
+            ]
             \node[box] (context) {GatewayContext\\request + attributes};
             \node[box, right=of context] (interceptor) {MetricsInterceptor\\start time\\chain.proceed};
             \node[box, right=of interceptor] (result) {PipelineResult\\Unary / Stream / Error};
@@ -271,7 +278,7 @@
             \draw[->] (result) -- (port);
             \draw[->] (port) -- (otel);
             \draw[->] (otel) -- (backend);
-        \end{tikzpicture}}
+            \end{tikzpicture}}
         \caption{Arquitetura do interceptor de métricas e observabilidade}
         \label{fig:metrics-architecture}
     \end{figure}
@@ -314,7 +321,7 @@ metrics {
 
     \begin{figure}[H]
         \centering
-        \includegraphics[width=\textwidth]{../autenticacao.png}
+        \includegraphics[width=\textwidth]{autenticacao.jpeg}
         \caption{Fluxo interno do interceptor de autenticação}
         \label{fig:auth-interceptor}
     \end{figure}
@@ -333,13 +340,13 @@ metrics {
     \begin{figure}[H]
         \centering
         \resizebox{0.95\textwidth}{!}{%
-        \begin{tikzpicture}[
-            >=Latex,
-            node distance=1.0cm and 1.2cm,
-            box/.style={draw, rounded corners, align=center, minimum height=1.0cm, text width=3.2cm, fill=yellow!20},
-            decision/.style={draw, diamond, aspect=2, align=center, text width=2.8cm, fill=blue!15},
-            ext/.style={draw, rounded corners, align=center, minimum height=1.0cm, text width=3.0cm, fill=green!20}
-        ]
+            \begin{tikzpicture}[
+                >=Latex,
+                node distance=1.0cm and 1.2cm,
+                box/.style={draw, rounded corners, align=center, minimum height=1.0cm, text width=3.2cm, fill=yellow!20},
+                decision/.style={draw, diamond, aspect=2, align=center, text width=2.8cm, fill=blue!15},
+                ext/.style={draw, rounded corners, align=center, minimum height=1.0cm, text width=3.0cm, fill=green!20}
+            ]
             \node[box] (context) {GatewayContext\\auth result\\request metadata};
             \node[box, right=of context] (provider) {AuthorizationInputProvider\\claims + plan + model};
             \node[ext, right=of provider] (pdp) {PDP\\policy decision};
@@ -352,7 +359,7 @@ metrics {
             \draw[->] (pdp) -- (decision);
             \draw[->] (decision) -- node[above]{sim} (next);
             \draw[->] (decision) -- node[right]{não} (deny);
-        \end{tikzpicture}}
+            \end{tikzpicture}}
         \caption{Arquitetura do interceptor de autorização}
         \label{fig:authorization-interceptor}
     \end{figure}
