@@ -280,37 +280,17 @@
     A ordem de execução é configurável. No target JVM, o SDK suporta a anotação \texttt{InterceptorPriority}, usada para executar primeiro interceptors com prioridade superior. No target JavaScript, onde a reflexão sobre anotações é limitada, a ordem segue a sequência definida pela DSL. Assim, comportamentos como autenticação e autorização podem ocorrer no início da cadeia, enquanto métricas, tracing ou logging podem envolver a execução completa.
 
     \subsection{Interceptor de Telemetria e Observabilidade}
-    O \texttt{MetricsInterceptor} mede o ciclo completo do pedido. No início da execução, guarda em \texttt{GatewayContext.attributes} o instante inicial; depois chama \texttt{chain.proceed(context)}; no fim calcula duração, estado e tipo de erro. Em respostas \textit{streaming}, o interceptor envolve o \texttt{Flow} e só emite métricas quando o fluxo termina, permitindo medir a duração real da resposta progressiva.
+    O \texttt{MetricsInterceptor} é o componente central para a recolha de dados operacionais, sendo crítico para a gestão de performance e visibilidade em sistemas baseados em LLMs. Este interceptor mede o ciclo de vida completo de cada pedido, capturando métricas de latência, sucesso/erro e metadados de execução.
 
-    A arquitetura de métricas está separada por portas. O interceptor não conhece diretamente OpenTelemetry, Prometheus ou qualquer backend concreto. Em vez disso, usa a porta \texttt{MetricsPort}, que disponibiliza três tipos de instrumentos: \texttt{counter}, \texttt{histogram} e \texttt{upDownCounter}. No target JVM existe um adapter para OpenTelemetry, que transforma estes instrumentos comuns em instrumentos do \textit{Meter} do OpenTelemetry. Na Gateway final, o \textit{runtime} cria o \texttt{MetricsPort}, configura o exportador OTLP e envia os dados para o OpenTelemetry Collector, que por sua vez pode expor métricas para Prometheus e Grafana.
+    A implementação distingue-se pelo suporte nativo a \textit{streaming}. Em respostas progressivas, o interceptor não bloqueia a execução; em vez disso, utiliza operadores de fluxo (\texttt{onEach} e \texttt{onCompletion}) para capturar metadados do fornecedor e do modelo à medida que os eventos atravessam a \textit{pipeline}. As métricas são emitidas apenas quando o fluxo é encerrado, garantindo uma medição precisa da duração total da interação (\textit{End-to-End Latency}), mesmo em cenários de resposta longa.
+
+    A arquitetura segue o princípio de inversão de dependência através da porta \texttt{MetricsPort}. O SDK fornece as definições de instrumentos comuns (\texttt{counter}, \texttt{histogram} e \texttt{upDownCounter}), enquanto o adaptador concreto no target JVM mapeia estas chamadas para o ecossistema \textbf{OpenTelemetry}. Esta separação permite que o SDK permaneça agnóstico a ferramentas específicas de monitorização, facilitando a exportação para \textbf{Prometheus}, \textbf{Grafana} ou outros coletores OTLP através da OmniAI Gateway.
 
     \begin{figure}[H]
         \centering
-        \resizebox{\textwidth}{!}{%
-            \begin{tikzpicture}[
-                >=Latex,
-                node distance=1.0cm and 1.2cm,
-                box/.style={draw, rounded corners, align=center, minimum height=1.0cm, text width=3.1cm, fill=yellow!20},
-                port/.style={draw, rounded corners, align=center, minimum height=1.0cm, text width=3.0cm, fill=blue!15},
-                ext/.style={draw, rounded corners, align=center, minimum height=1.0cm, text width=3.1cm, fill=green!20}
-            ]
-            \node[box] (context) {GatewayContext\\request + attributes};
-            \node[box, right=of context] (interceptor) {MetricsInterceptor\\start time\\chain.proceed};
-            \node[box, right=of interceptor] (result) {PipelineResult\\Unary / Stream / Error};
-            \node[box, below=of interceptor] (config) {MetricsInterceptorConfig\\latency\\custom metrics\\attributes};
-            \node[port, below=of result] (port) {MetricsPort\\counter\\histogram\\upDownCounter};
-            \node[ext, right=of port] (otel) {OpenTelemetry\\Meter + Tracer};
-            \node[ext, right=of otel] (backend) {Collector\\Prometheus\\Grafana};
-
-            \draw[->] (context) -- (interceptor);
-            \draw[->] (interceptor) -- (result);
-            \draw[->] (config) -- (interceptor);
-            \draw[->] (result) -- (port);
-            \draw[->] (port) -- (otel);
-            \draw[->] (otel) -- (backend);
-            \end{tikzpicture}}
-        \caption{Arquitetura do interceptor de métricas e observabilidade}
-        \label{fig:metrics-architecture}
+        \includegraphics[width=0.9\textwidth]{MetricsInterceptorArch.jpeg}
+        \caption{Fluxo interno de processamento e lógica de observabilidade para pedidos unários e streaming}
+        \label{fig:p3}
     \end{figure}
 
     Para adicionar uma métrica, a aplicação usa a DSL do \texttt{gateway-client}. O programador pode ativar a latência padrão, acrescentar atributos globais e definir métricas próprias com uma função \texttt{value}, que extrai o valor a partir do contexto e do resultado, e uma função \texttt{tags}, que acrescenta dimensões de análise.
@@ -346,8 +326,19 @@ metrics {
 
     Este desenho permite separar três preocupações: a lógica de negócio da métrica, definida na DSL; a recolha no interceptor; e a exportação no adapter de telemetria. Também facilita testes, porque \texttt{NoOpMetricsPort} pode ser usado quando a observabilidade está desligada.
 
+    \begin{figure}[H]
+        \centering
+        \includegraphics[width=0.9\textwidth]{MetricsGateway.jpeg}
+        \caption{observabilidade e métricas operacionais da OmniAI Gateway}
+        \label{fig:p3}
+    \end{figure}
+
     \subsection{Interceptor de Autenticação}
-    A autenticação é realizada pelo \texttt{AuthenticationInterceptor}. A responsabilidade deste interceptor é provar a identidade técnica do chamador antes de permitir que o pedido avance. O token é extraído no adapter HTTP a partir do cabeçalho \texttt{Authorization: Bearer <token>} e propagado para o domínio através de metadata. Quando o interceptor executa, lê esse token em \texttt{providerOptions}, classifica-o como JWT ou opaco e delega a validação para um \texttt{TokenAuthenticator}.
+    A autenticação é realizada pelo \texttt{AuthenticationInterceptor}, que atua como o primeiro guardião da \textit{pipeline} de segurança. A sua responsabilidade é provar a identidade técnica do chamador antes de permitir que o pedido avance para o \textit{dispatcher}.
+
+    O fluxo inicia-se com a extração do \textit{token} no adapter HTTP a partir do cabeçalho \texttt{Authorization: Bearer <token>}, sendo este propagado para o domínio através de metadados. O interceptor utiliza uma heurística baseada no número de segmentos (separados por pontos) para classificar o \textit{token}: se possuir três segmentos, é tratado como um \textit{JSON Web Token} (JWT); caso contrário, é classificado como um \textit{token} opaco. Esta distinção permite ao sistema selecionar a estratégia de validação adequada, delegando a execução para um \texttt{TokenAuthenticator}.
+
+    No modo \textit{OIDC Discovery} (alinhado com o \textbf{RFC 8414} \cite{rfc8414}), a Gateway obtém dinamicamente os metadados do \textit{Authorization Server} (como o Logto ou Keycloak), incluindo o \textit{issuer}, o \texttt{jwks\_uri} e o \textit{endpoint} de introspeção.
 
     \begin{figure}[H]
         \centering
@@ -356,6 +347,24 @@ metrics {
         \label{fig:oidc-sequence}
     \end{figure}
 
+    Para a validação de JWTs (\textbf{RFC 7519} \cite{rfc7519}), o sistema implementa as seguintes etapas:
+    \begin{enumerate}
+        \item Extração do identificador de chave (\texttt{kid}) do cabeçalho do \textit{token} (\textbf{RFC 7515} \cite{rfc7515}).
+        \item Recuperação da chave pública correspondente a partir de um \textit{JSON Web Key Set} (JWKS, \textbf{RFC 7517} \cite{rfc7517}).
+        \item Validação da assinatura criptográfica e verificação de \textit{claims} temporais (\texttt{exp}, \texttt{nbf}) e de identidade (\texttt{iss}, \texttt{aud}).
+    \end{enumerate}
+
+    Para otimizar este processo e evitar latência excessiva, o \texttt{JwksClient} utiliza uma \textit{cache} de chaves públicas em memória (\texttt{InMemoryKeyCache}). Este componente implementa um mecanismo de rotação de chaves em \textit{background} e um período de \textit{cooldown} (\texttt{minimumTimeToFetchKeys}) que impede o sistema de realizar pedidos repetitivos ao servidor de autorização em caso de chaves não encontradas, mitigando potenciais vetores de negação de serviço (DoS).
+
+    Para \textit{tokens} opacos, a Gateway utiliza o protocolo de \textit{Token Introspection} (\textbf{RFC 7662} \cite{rfc7662}). Dado que este processo exige uma chamada de rede ao \textit{Authorization Server} para cada pedido, a implementação inclui um \texttt{IntrospectionCache} robusto com duas estratégias complementares:
+    \begin{itemize}
+        \item \textbf{Positive Caching}: Resultados de sucesso (token ativo) são guardados por um período configurável, limitado superiormente pelo tempo de vida (\textit{expiration}) do próprio \textit{token}.
+        \item \textbf{Negative Caching}: Resultados de falha (token inválido ou inativo) são guardados por um curto período (\textit{negative TTL}) para prevenir ataques de força bruta.
+    \end{itemize}
+    Por questões de segurança, os \textit{tokens} opacos são transformados através de um \textit{hash} seguro antes de serem armazenados na \textit{cache}, garantindo que credenciais em texto limpo nunca fiquem expostas na memória do sistema.
+
+    O resultado da validação é encapsulado num \texttt{AuthValidationResult} e armazenado nos atributos do contexto sob a chave \texttt{AUTH\_RESULT\_KEY}. Isto permite que os interceptores seguintes (autorização, métricas, etc.) reutilizem a identidade já apurada sem necessidade de novas validações.
+
     \begin{figure}[H]
         \centering
         \includegraphics[width=\textwidth]{autenticacao.jpeg}
@@ -363,25 +372,33 @@ metrics {
         \label{fig:auth-interceptor}
     \end{figure}
 
-    No modo OIDC Discovery, a Gateway obtém os metadados do Authorization Server, incluindo \textit{issuer}, \texttt{jwks\_uri} e, quando disponível, o endpoint de introspeção. Para JWTs, o SDK lê o \texttt{kid} do cabeçalho, procura a chave pública no JWKS, valida a assinatura e verifica parâmetros como emissor e audiência. Para tokens opacos, usa o endpoint de introspeção para confirmar se o token está ativo e obter metadados como \texttt{sub} ou \texttt{username}. O resultado validado fica guardado em \texttt{AUTH\_RESULT\_KEY}, permitindo que interceptors seguintes, métricas e autorização reutilizem a identidade já apurada.
-
-    Os RFCs relevantes para esta parte são: OAuth 2.0 Authorization Framework \cite{rfc6749}, Bearer Token Usage \cite{rfc6750}, PKCE usado no \textit{bootstrap} de autenticação \cite{rfc7636}, JSON Web Signature \cite{rfc7515}, JSON Web Key/JWKS \cite{rfc7517,jwks_medium}, JSON Web Token \cite{rfc7519}, Token Introspection \cite{rfc7662,ibm_oauth_introspection,scalekit_introspection}, Authorization Server Metadata/Discovery \cite{rfc8414} e boas práticas de segurança para JWTs \cite{rfc8725}. Em termos práticos, estes RFCs justificam a estrutura de validação: transporte do token como Bearer, descoberta de chaves, validação criptográfica, validação de claims e introspeção de tokens não auto-contidos.
-
     A Gateway final usa Logto como Authorization Server local \cite{logto_docs}, executado em Docker juntamente com PostgreSQL, OpenTelemetry Collector, Prometheus e Grafana. A escolha do Logto deveu-se à simplicidade de configuração local, suporte a aplicações Machine-to-Machine e funcionalidades úteis para gerir recursos de API. Também foram realizados testes exploratórios com Keycloak \cite{keycloak_docs}, mas o Logto foi mantido como opção principal por reduzir a complexidade operacional durante o desenvolvimento.
 
     O script \texttt{run\_claude.py} valida este fluxo num cenário real: abre o browser para autenticação no Logto, usa PKCE para trocar o código por um token e inicia o Claude Code apontando \texttt{ANTHROPIC\_BASE\_URL} para a OmniAI Gateway. Desta forma, um cliente compatível com Anthropic consegue enviar pedidos autenticados através da Gateway.
 
     \subsection{Interceptor de Autorização}
-    A autorização é separada da autenticação. Enquanto a autenticação responde à pergunta ``quem é o chamador?'', a autorização responde à pergunta ``este chamador pode executar este pedido?''. No SDK, esta lógica é implementada pelo \texttt{PolicyEnforcerInterceptor}, que atua como PEP (\textit{Policy Enforcement Point}) e delega a decisão a um PDP (\textit{Policy Decision Point}) através da porta \texttt{PolicyDecisionPointPort}.
+    A autorização é tratada como uma camada distinta e subsequente à autenticação. Enquanto a autenticação estabelece a identidade do chamador, a autorização determina se essa identidade possui permissão para executar uma operação específica sobre um recurso. No OmniAI SDK, esta lógica é centralizada no \texttt{PolicyEnforcerInterceptor}.
+
+    Este componente segue o modelo arquitetural de referência para autorização centralizada, atuando como um \textit{Policy Enforcement Point} (PEP). A sua função é intercetar o pedido, recolher os atributos necessários e delegar a decisão a um \textit{Policy Decision Point} (PDP) através da porta \texttt{PolicyDecisionPointPort}.
 
     \begin{figure}[H]
         \centering
         \includegraphics[width=0.9\textwidth]{Authorization.jpeg}
-        \caption{Arquitetura do interceptor de autorização}
-        \label{fig:oidc-sequence}
+        \caption{Arquitetura do interceptor de autorização: separação entre PEP e PDP}
+        \label{fig:authorization-architecture}
     \end{figure}
 
-    A entrada da autorização é construída a partir do contexto. O \texttt{AuthorizationInputProvider} pode extrair claims do JWT, resultado de introspeção, modelo pedido, fornecedor, plano do cliente, endereço IP ou qualquer outro atributo propagado pela Gateway. Se o PDP devolver \texttt{Allow}, a pipeline continua. Se devolver \texttt{Deny}, o interceptor interrompe o fluxo e devolve um erro de domínio. Esta separação segue o modelo PEP/PDP/PAP/PIP usado em arquiteturas de autorização centralizada \cite{authorization_pips}.
+    O processo de autorização baseia-se num modelo de dados estruturado, designado por \texttt{AuthorizationInput}, que segue o padrão \textbf{Subject-Action-Resource (SAR)}:
+    \begin{itemize}
+        \item \textbf{Subject}: Representa o utilizador ou aplicação, incluindo o seu identificador, funções (\textit{roles}) e atributos extraídos do \textit{token} validado (via \textit{claims} de JWT ou introspeção).
+        \item \textbf{Action}: Define a operação pretendida (ex: \texttt{chat\_completion}, \texttt{list\_models}).
+        \item \textbf{Resource}: Identifica o alvo da operação, como o fornecedor (\texttt{openai}, \texttt{anthropic}) ou um modelo específico.
+        \item \textbf{Context}: Contém atributos ambientais ou metadados adicionais do pedido, como o endereço IP ou o \textit{timestamp}, que complementam o modelo SAR para decisões contextuais ricas.
+    \end{itemize}
+
+    A construção deste \textit{input} é responsabilidade do \texttt{AuthorizationInputProvider}. Esta abstração permite que a Gateway seja extremamente flexível, podendo extrair dados de diversas fontes, como o endereço IP do cliente, o plano de subscrição ou metadados específicos do pedido. Esta riqueza de dados permite implementar políticas de controlo de acesso baseado em atributos.
+
+    A porta do PDP permite integrar diferentes motores de política. O SDK já prevê suporte para o padrão emergente \textbf{AuthZen}, facilitando a integração com servidores de autorização externos e motores de políticas como o \textit{Open Policy Agent} (OPA). Esta separação segue o modelo PEP/PDP/PAP/PIP amplamente utilizado em sistemas de autorização escaláveis \cite{authorization_pips}. Caso o PDP devolva uma decisão de \textit{Deny}, o interceptor interrompe imediatamente a \textit{pipeline}, garantindo que pedidos não autorizados nunca cheguem aos fornecedores de inferência.
 
     \subsection{Interceptor de Rate Limiting}
     O \texttt{RateLimitInterceptor} aplica limites de utilização antes da chamada ao fornecedor. A lógica é orientada por políticas: cada \texttt{RateLimitPolicy} extrai dados do \texttt{GatewayContext} e devolve um conjunto de \texttt{RateLimitTarget}. Cada target contém uma chave, por exemplo cliente/modelo/plano, e uma \texttt{RateLimitDefinition}, composta por limite, tipo e janela temporal.
