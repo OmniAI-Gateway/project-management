@@ -241,7 +241,16 @@
     As ferramentas de desenvolvimento incluíram Git para controlo de versões, IntelliJ IDEA como ambiente principal de desenvolvimento e agentes de apoio à programação, como Antigravity, para acelerar exploração e geração de código. Estes agentes foram usados como apoio ao desenvolvimento, mantendo a validação no código, nos testes e nos cenários executados.
 
     \section{A Primeira Iteração da Gateway}
-    A primeira abordagem do projeto centrou-se na construção direta de uma Gateway que recebia pedidos HTTP e os encaminhava para fornecedores de inferência. Esta estratégia permitiu validar rapidamente os contratos externos e perceber as diferenças entre APIs. No entanto, também revelou problemas de acoplamento: cada nova API exigia lógica própria de tradução, autenticação, tratamento de erro e configuração.
+
+    A primeira iteração do projeto consistiu na construção direta de uma Gateway HTTP responsável por receber pedidos de clientes e encaminhá-los para fornecedores de inferência. Nesta fase inicial, o objetivo principal era validar rapidamente a viabilidade da solução, testar a comunicação com diferentes APIs e compreender as diferenças práticas entre os contratos da OpenAI, Anthropic e Gemini.
+
+    Esta abordagem permitiu obter resultados rápidos, mas revelou limitações importantes à medida que o sistema cresceu. A lógica de tradução entre formatos, a configuração dos fornecedores, a autenticação, o tratamento de erros e o encaminhamento dos pedidos começaram a ficar concentrados na própria aplicação Gateway. Como consequência, cada novo fornecedor ou funcionalidade transversal exigia alterações diretas no mesmo conjunto de componentes, aumentando o acoplamento e dificultando a evolução do projeto.
+
+    Além disso, tornou-se claro que a Gateway não deveria ser apenas uma aplicação final, mas sim uma consequência de uma biblioteca reutilizável. O problema identificado no projeto não era apenas criar uma Gateway específica, mas fornecer uma base extensível para construir gateways de IA com diferentes configurações, fornecedores e políticas operacionais.
+
+    A partir desta constatação, a arquitetura foi reorganizada. O \textbf{OmniAI SDK} passou a concentrar os elementos reutilizáveis do sistema, incluindo o domínio comum, os contratos, os adapters de entrada e saída, a pipeline de interceptors e os mecanismos de configuração. Por outro lado, a \textbf{OmniAI Gateway} passou a ser uma aplicação concreta construída sobre o SDK, responsável por carregar configuração, instanciar os componentes necessários e expor os endpoints HTTP.
+
+    Esta separação trouxe maior modularidade e reutilização. A Gateway final deixou de conter a lógica principal de integração com fornecedores e passou a consumir o SDK como uma camada de infraestrutura. Desta forma, outras aplicações podem usar o mesmo SDK para criar gateways próprias, com diferentes fornecedores, políticas de autenticação, mecanismos de observabilidade ou estratégias de roteamento.
 
     A evolução natural foi separar a Gateway final da biblioteca base. O OmniAI SDK passou a concentrar o domínio, os contratos, os adapters e a \textit{pipeline}; a OmniAI Gateway passou a ser uma aplicação que consome essa biblioteca. Esta separação tornou a solução mais reutilizável: outras aplicações podem usar o SDK para criar gateways próprias, com configurações e políticas diferentes.
 
@@ -419,9 +428,18 @@ metrics {
     O \texttt{RequestLoggingInterceptor} regista fornecedor, modelo, sucesso, erro e conclusão de streams através da abstração \texttt{GatewayLogger}. No target JVM, pode ser ligado a SLF4J; no target JS, pode usar consola. O \texttt{TracingInterceptor}, por sua vez, envolve o pedido num span chamado \texttt{gateway.request.process}. Quando combinado com OpenTelemetry, este span permite correlacionar latência, erros, chamadas externas e métricas agregadas.
 
     \section{MCP Broker e Ferramentas Externas}
-    O MCP Broker foi criado para registar e expor ferramentas externas de forma desacoplada das APIs de inferência. O módulo contém abstrações para ferramentas, recursos, \textit{prompts}, geração de esquemas JSON e mapeamento para tipos do SDK MCP. O desenho prevê que a configuração de ferramentas possa ser carregada a partir de ficheiros YAML, permitindo adicionar ou alterar ferramentas sem modificar o código da Gateway.
 
-    A Figura~\ref{fig:tool-calling} representa o ciclo de \textit{tool calling} \cite{toolCallingCycle}. Primeiro, o cliente envia um pedido que inclui ou referencia ferramentas disponíveis. Depois, o modelo pode responder com uma chamada de ferramenta. A Gateway executa ou encaminha essa chamada, recolhe o resultado e devolve-o ao modelo para a resposta final.
+    O MCP Broker foi introduzido para separar a gestão de ferramentas externas da lógica específica das APIs de inferência. Em vez de cada adapter conhecer diretamente as ferramentas disponíveis e a forma como estas são executadas, o Broker fornece uma camada intermédia responsável por representar ferramentas, recursos e \textit{prompts} de forma uniforme.
+
+    O módulo inclui abstrações para a definição de ferramentas MCP, modelos de recursos, modelos de \textit{prompts}, geração de esquemas JSON e mapeamento entre o domínio interno e os tipos usados pelo SDK MCP. Esta estrutura permite descrever uma ferramenta através do seu nome, descrição, parâmetros esperados e função de execução, mantendo essa definição separada dos contratos específicos de OpenAI, Anthropic ou Gemini.
+
+    A motivação principal desta abordagem é permitir que o sistema suporte \textit{tool calling} de forma extensível. Embora cada fornecedor represente chamadas de ferramentas de maneira diferente, o domínio comum do OmniAI SDK permite normalizar esses conceitos. Assim, uma ferramenta pode ser descrita uma vez no sistema e posteriormente convertida para o formato esperado por cada fornecedor.
+
+    O desenho do Broker prevê também que, no futuro, as ferramentas possam ser carregadas a partir de ficheiros de configuração, como YAML. Esta capacidade permitiria adicionar, remover ou alterar ferramentas sem recompilar a Gateway, tornando a solução mais flexível para cenários em que diferentes instalações necessitam de conjuntos distintos de ferramentas. No estado atual, o módulo estabelece sobretudo as abstrações e o mapeamento necessários para essa evolução.
+
+    A Figura~\ref{fig:tool-calling} representa o ciclo geral de \textit{tool calling}. Primeiro, o cliente envia um pedido que inclui ou referencia as ferramentas disponíveis. Em seguida, o modelo pode decidir invocar uma dessas ferramentas, devolvendo uma chamada estruturada com o nome da função e os argumentos necessários. A Gateway fica então responsável por executar ou encaminhar essa chamada, recolher o resultado e devolvê-lo ao modelo para que este produza a resposta final.
+
+    Esta separação permite que a execução de ferramentas evolua de forma independente dos adapters de inferência. Dessa forma, novas ferramentas, novos transportes MCP ou novas formas de configuração podem ser integradas sem alterar o núcleo da pipeline nem os contratos principais da Gateway.
 
     \begin{figure}[H]
         \centering
@@ -431,9 +449,16 @@ metrics {
     \end{figure}
 
     \section{Distribuição Multiplataforma}
-    O SDK está preparado para targets JVM e JavaScript/Node.js. No target JVM, a distribuição prevista é via Maven, permitindo que aplicações Kotlin ou Java adicionem o SDK como dependência. No target JavaScript, a compilação para JS permite preparar uma distribuição via NPM, expondo APIs compatíveis com Node.js e TypeScript.
 
-    A camada JavaScript inclui uma fachada exportada com \texttt{@JsExport}, permitindo construir configurações da Gateway a partir de código JS. Algumas partes de runtime ainda devem ser consolidadas para paridade total com JVM, mas a estrutura de target e empacotamento já foi considerada no desenho do projeto.
+    Um dos objetivos do OmniAI SDK é permitir que a lógica principal da Gateway possa ser reutilizada em diferentes ambientes de execução. Para isso, o projeto foi desenvolvido em Kotlin Multiplatform, com suporte para os targets JVM e JavaScript/Node.js.
+
+    No target JVM, o SDK pode ser utilizado por aplicações Kotlin ou Java. Este é o target mais consolidado no estado atual do projeto, sendo usado pela aplicação \texttt{OmniAiGateway} através de um \textit{composite build} do Gradle. Esta abordagem permitiu validar o SDK numa aplicação real sem exigir uma publicação intermédia. Numa fase posterior, a distribuição poderá ser feita através de um repositório Maven, permitindo que outras aplicações adicionem o SDK como dependência normal.
+
+    No target JavaScript/Node.js, o projeto prepara a exposição de uma API consumível a partir do ecossistema Node.js e TypeScript. Para esse efeito, foi criada uma fachada exportada com \texttt{@JsExport}, permitindo configurar e instanciar componentes da Gateway a partir de código JavaScript. Esta camada tem como objetivo aproximar o SDK de cenários onde a aplicação cliente ou a própria Gateway sejam desenvolvidas em Node.js.
+
+    Apesar desta preparação multiplataforma, a paridade entre JVM e JavaScript ainda não é total. Algumas partes do runtime, como transporte HTTP, integração com mecanismos de segurança, observabilidade e montagem completa da Gateway, ainda exigem consolidação no target JavaScript. Assim, a distribuição via NPM deve ser entendida como uma linha de evolução preparada pela arquitetura, mas ainda não totalmente finalizada.
+
+    Esta decisão arquitetural permite separar o núcleo comum do SDK dos detalhes específicos de cada plataforma. O domínio, os contratos, a pipeline e parte da lógica de configuração podem ser partilhados, enquanto componentes dependentes do ambiente de execução podem ter implementações próprias em JVM ou JavaScript. Desta forma, o projeto mantém uma base comum reutilizável e abre caminho para futuras distribuições em Maven e NPM.
 
     \chapter{Provas de Conceito (PoCs) e Validação}
 
@@ -477,12 +502,33 @@ metrics {
     Durante a fase de planeamento foram identificados riscos técnicos e operacionais que continuam relevantes para a evolução do projeto.
 
     \section{Riscos}
+
+    Durante o desenvolvimento do projeto foram identificados vários riscos técnicos e operacionais. Estes riscos influenciaram decisões de desenho, prioridades de implementação e estratégias de validação.
+
     \begin{itemize}
-        \item \textbf{Curva de aprendizagem tecnológica:} a utilização de Kotlin Multiplatform, MCP e múltiplas APIs de inferência exigiu estudo inicial e criação de protótipos.
-        \item \textbf{Instabilidade de serviços externos:} APIs de terceiros podem falhar, alterar contratos ou aplicar \textit{rate limits}; a mitigação passa por testes locais, mocks, \textit{fallback} e \textit{circuit breaker}.
-        \item \textbf{Custos de utilização:} testes com modelos pagos podem gerar custos inesperados; a mitigação passa por limites de consumo, modelos locais e fornecedores com quotas gratuitas.
-        \item \textbf{Complexidade de normalização:} nem todos os conceitos têm correspondência direta entre OpenAI, Anthropic e Gemini; a mitigação passa por manter um domínio comum extensível e opções específicas por fornecedor.
-        \item \textbf{Segurança e dados sensíveis:} a centralização da Gateway exige validação cuidadosa de autenticação, autorização, logs e métricas para evitar exposição de dados.
+        \item \textbf{Curva de aprendizagem tecnológica:}
+        O projeto exigiu a utilização de tecnologias e conceitos com elevada complexidade, nomeadamente Kotlin Multiplatform, arquitetura hexagonal, APIs de inferência de diferentes fornecedores, autenticação baseada em OIDC/OAuth2 e o Model Context Protocol. Esta diversidade tecnológica representou um risco inicial, porque aumentou o tempo necessário para compreender os contratos externos, configurar o ambiente de desenvolvimento e definir uma arquitetura estável.
+        A mitigação passou pela realização de protótipos incrementais, pelo estudo isolado das APIs de OpenAI, Anthropic e Gemini, e pela separação progressiva do sistema em módulos com responsabilidades claras.
+
+        \item \textbf{Instabilidade de serviços externos:}
+        A Gateway depende de serviços de terceiros, como APIs de inferência, servidores de autorização e ferramentas externas. Estes serviços podem apresentar indisponibilidade temporária, alterações nos contratos, limites de utilização ou comportamentos diferentes dos documentados. Este risco poderia comprometer a validação da solução e tornar os testes dependentes de fatores externos.
+        Para reduzir este impacto, foram usados testes locais, servidores simulados, mocks e abstrações sobre o transporte HTTP. Além disso, a arquitetura inclui mecanismos de resiliência, como \textit{fallback} e \textit{circuit breaker}, que permitem lidar melhor com falhas de fornecedores.
+
+        \item \textbf{Custos de utilização:}
+        A execução de testes com modelos pagos pode gerar custos inesperados, especialmente em cenários de \textit{streaming}, chamadas repetidas ou testes de integração. Este risco é relevante porque a Gateway incentiva a experimentação com múltiplos fornecedores e modelos.
+        A mitigação passou por limitar o número de chamadas reais, utilizar fornecedores com quotas gratuitas sempre que possível, recorrer a testes locais e validar grande parte da lógica através de contratos, adapters e servidores simulados.
+
+        \item \textbf{Complexidade de normalização entre fornecedores:}
+        As APIs de OpenAI, Anthropic e Gemini partilham conceitos semelhantes, como mensagens, modelos, parâmetros de geração e ferramentas, mas representam esses conceitos de formas diferentes. Alguns elementos, como \textit{tool calling}, \textit{streaming}, multimodalidade e metadados específicos, não têm correspondência direta entre fornecedores.
+        Este risco poderia levar a uma abstração demasiado rígida ou à perda de informação específica de cada API. Para o mitigar, foi definido um domínio comum extensível, complementado por campos de opções específicas do fornecedor. Desta forma, o SDK consegue representar o núcleo comum sem impedir a passagem de características particulares de cada API.
+
+        \item \textbf{Segurança e dados sensíveis:}
+        A centralização dos pedidos numa Gateway aumenta a responsabilidade sobre autenticação, autorização, gestão de tokens, logs, métricas e chaves de API. Um erro nesta camada poderia expor dados sensíveis ou permitir acesso indevido a modelos e recursos.
+        A mitigação passou pela introdução de uma pipeline de segurança com autenticação e autorização separadas, validação de tokens, integração com um Authorization Server e cuidado na recolha de métricas e logs. Ainda assim, este risco continua relevante para uma evolução futura em direção a ambientes de produção e cenários multi-tenant.
+
+        \item \textbf{Âmbito e complexidade funcional:}
+        O domínio das Gateways de IA inclui várias funcionalidades possíveis, como roteamento por custo, políticas avançadas de autorização, execução automática de ferramentas, suporte completo a MCP, cache semântica e gestão de quotas por utilizador. Implementar todas estas capacidades numa primeira versão aumentaria significativamente o risco de atrasos e instabilidade.
+        A mitigação passou pela definição de um âmbito inicial mais controlado, focado na arquitetura base, nos adapters principais, na pipeline de interceptors e numa Gateway funcional construída sobre o SDK. As funcionalidades mais avançadas foram identificadas como trabalho futuro.
     \end{itemize}
 
     \section{Planeamento}
@@ -494,18 +540,31 @@ metrics {
             \hline
             \textbf{Semana} & \textbf{Período} & \textbf{Descrição} \\
             \hline
-            1--2 & Fev. & Estudo das APIs de inferência, MCP e definição inicial do problema. \\
-            3--4 & Mar. & Configuração inicial do projeto, estrutura Gradle multi-módulo e domínio comum. \\
-            5--7 & Mar./Abr. & Implementação inicial de contratos, adapters e integração com fornecedores. \\
-            8--10 & Abr. & Evolução da pipeline, interceptors de segurança, métricas e resiliência. \\
-            11--13 & Mai. & Desenvolvimento da OmniAI Gateway em Ktor e configuração por ficheiro. \\
-            14--16 & Mai./Jun. & Validação com aplicações cliente, autenticação com Logto e testes de integração. \\
-            17--21 & Jun./Jul. & Consolidação, documentação, relatório final e preparação da entrega. \\
+            1 & 18 fev -- 22 fev (parcial) & Estudo das APIs de inferência e protocolo MCP. \\
+            2 & 23 fev -- 1 mar & Continuação da semana anterior e início da proposta. \\
+            3 & 2 mar -- 8 mar & \textbf{Entrega Proposta do projeto} \\
+            4 & 9 mar -- 15 mar & Configuração inicial da biblioteca, definição da arquitetura base e das interfaces. \\
+            5 & 16 mar -- 22 mar & Integração com as APIs de inferência. Foco inicial em dois fornecedores estáveis. \\
+            6 & 23 mar -- 29 mar & Integração do MCP no OmniAI Core. Invocação e registo dinâmico de ferramentas, gerindo o ciclo de \textit{tool calling}. \\
+            7 & 30 mar -- 5 abr & Implementação do roteamento inteligente de modelos (otimização de custos) e mecanismos de redundância (\textit{fallback} e \textit{retry}). \\
+            8 & 6 abr -- 12 abr & Implementação dos mecanismos de segurança, como controlo de acesso, preparação do contexto e remoção de dados sensíveis. \\
+            9 & 13 abr -- 19 abr & Conclusão das implementações anteriores. \\
+            10 & 20 abr -- 26 abr & \textbf{Apresentação de Progresso} \\
+            11 & 27 abr -- 3 mai & Início do desenvolvimento da aplicação final OmniAI Gateway. Exposição da WEB API. \\
+            12 & 4 mai -- 10 mai & Continuação da semana anterior e integração do MCP na OmniAI Gateway. \\
+            13 & 11 mai -- 17 mai & Término de todas as APIs de comunicação para o exterior. \\
+            14 & 18 mai -- 24 mai & Testes de integração do Core e da Gateway. \\
+            15 & 25 mai -- 31 mai & \textbf{Entrega da Versão beta} \\
+            16 & 1 jun -- 7 jun & Refinamento de testes a todos os módulos. \\
+            17 & 8 jun -- 14 jun & Refinamento de código, desempenho e limpeza de bugs do sistema. \\
+            18 & 15 jun -- 21 jun & Continuação da semana anterior e refinamento do relatório final. \\
+            19 & 22 jun -- 28 jun 2026 & Conclusão do relatório final. \\
+            20 & 29 jun -- 5 jul 2026 & Vistoria completa a todo o sistema e polimento de falhas para a entrega da Versão final. \\
+            21 & 6 jul -- 11 jul 2026 (parcial) & \textbf{Entrega Final do Projeto e Relatório} \\
             \hline
         \end{tabular}
-        \caption{Planeamento resumido do projeto}
+        \caption{Planeamento semanal do projeto}
     \end{table}
-
 % ================= BIBLIOGRAFIA =================
     \renewcommand{\bibname}{Referências}
     \bibliographystyle{IEEEtran}
