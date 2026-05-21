@@ -68,27 +68,15 @@
 
 % ================= ELEMENTOS PRÉ-TEXTUAIS =================
     \begin{abstract}
+        Os Modelos de Linguagem de Grande Escala (\textit{Large Language Models -- LLMs}) \cite{ibm_llm_topics} são modelos treinados com grandes volumes de texto, capazes de compreender linguagem natural e gerar respostas úteis para tarefas. Na prática, a maioria das aplicações consome LLMs através de APIs de inferência disponibilizadas por fornecedores externos, o que coloca desafios de integração e interoperabilidade quando existem múltiplos contratos e formatos em uso.
         A ausência de um protocolo comum na comunicação com Modelos de Linguagem de Grande Escala (LLMs) obriga as aplicações a integrarem diferentes interfaces de acesso e implementações particulares para a invocação de ferramentas externas. Para resolver esta fragmentação tecnológica, este projeto propõe o desenvolvimento do \textbf{OmniAI SDK}, um \textit{Software Development Kit} construído em Kotlin Multiplatform (KMP). Baseado nos princípios da Arquitetura Hexagonal (\textit{Ports and Adapters}), o SDK isola a lógica de domínio e suporta a comunicação bidirecional compatível com os padrões das APIs de referência, nomeadamente OpenAI, Anthropic e Gemini. O núcleo do sistema implementa uma \textit{pipeline} extensível e configurável, inspirada no modelo de filtros de Servlets, que executa \textit{interceptors} pré-construídos para autorização, autenticação, métricas, \textit{rate limiting}, \textit{circuit breaker} e \textit{fallback}. Adicionalmente, o SDK integra um MCP Broker, permitindo o registo dinâmico de ferramentas externas através de configuração. Distribuído de forma multiplataforma para ambientes JVM, via Maven, e Node.js/TypeScript, via NPM, o SDK foi validado através da construção da \textbf{OmniAI Gateway}, uma aplicação final que consome a biblioteca para instanciar rapidamente uma Gateway. A avaliação demonstra que a solução minimiza o acoplamento tecnológico e o esforço de integração, garantindo resiliência, escalabilidade e centralização na gestão de modelos de IA.
     \end{abstract}
 
     \renewcommand{\abstractname}{Abstract}
     \begin{abstract}
-        The lack of a common protocol for communicating with Large Language Models
-        (LLMs) forces applications to integrate different access interfaces and
-        specific implementations for invoking external tools. To address this
-        technological fragmentation, this project proposes the development of the OmniAI SDK, a
-        Development Kit built on Kotlin Multiplatform (KMP). Based on the principles of the
-        Hexagonal Architecture (Ports and Adapters), the SDK isolates the domain logic and supports
-        bidirectional communication compatible with the standards of reference APIs, namely OpenAI,
-        Anthropic, and Gemini. The system’s core implements an extensible and configurable pipeline, inspired
-        by the Servlet filter model, which executes pre-built interceptors for authorization, au-
-        thentication, metrics, rate limiting, circuit breaker, and fallback. Additionally, the SDK integrates an
-        MCP Broker, enabling the dynamic registration of external tools through configuration.
-        Distributed across multiple platforms for JVM environments via Maven and Node.js/TypeScript
-        via NPM, the SDK was validated through the development of the OmniAI Gateway, an end-user
-        application that leverages the library to rapidly instantiate a Gateway. The evaluation demonstrates that
-        the solution minimizes technological coupling and integration effort, ensuring resilience,
-        scalability, and centralization in AI model management.
+        Large Language Models (LLMs) \cite{ibm_llm_topics} are models trained on massive volumes of text, capable of understanding natural language and generating useful responses for tasks. In practice, most applications consume LLMs through inference APIs provided by external vendors, which introduces integration and interoperability challenges when multiple contracts and formats are in use.
+
+        The absence of a common protocol for communicating with Large Language Models (LLMs) forces applications to integrate different access interfaces and specific implementations to invoke external tools. To address this technological fragmentation, this project proposes the development of the \textbf{OmniAI SDK}, a Software Development Kit built on Kotlin Multiplatform (KMP). Based on the principles of Hexagonal Architecture (\textit{Ports and Adapters}), the SDK isolates the domain logic and supports bidirectional communication compatible with the standards of reference APIs, namely OpenAI, Anthropic, and Gemini. The core of the system implements an extensible and configurable \textit{pipeline}, inspired by the Servlet filter model, which executes pre-built \textit{interceptors} for authorization, authentication, metrics, \textit{rate limiting}, \textit{circuit breaker}, and \textit{fallback}. Additionally, the SDK integrates an MCP Broker, allowing for the dynamic registration of external tools via configuration. Distributed as a multiplatform solution for JVM environments, via Maven, and Node.js/TypeScript, via NPM, the SDK was validated through the development of the \textbf{OmniAI Gateway}, an end-user application that consumes the library to quickly instantiate a Gateway. The evaluation demonstrates that the solution minimizes technological coupling and integration effort, ensuring resilience, scalability, and centralization in AI model management.
     \end{abstract}
 
     \tableofcontents
@@ -104,13 +92,15 @@
 
     É possível distinguir duas fases principais no ciclo de vida de um modelo: treino e inferência. O treino corresponde ao processo de aprendizagem a partir de grandes conjuntos de dados, exigindo elevados recursos computacionais. A inferência corresponde à utilização do modelo já treinado para gerar respostas a novos pedidos. Atualmente, a maioria das aplicações integra LLMs através de APIs de inferência disponibilizadas por fornecedores externos.
 
-    A comunicação com estas APIs é normalmente realizada em JSON, tanto nos pedidos como nas respostas. Antes de serem processados pelos modelos, os textos são convertidos em \textit{tokens}, pequenas unidades de informação que permitem ao modelo representar e manipular sequências de entrada e saída \cite{nvidia_tokens}. Como a resposta é gerada de forma incremental, muitas APIs suportam \textit{streaming}, permitindo enviar fragmentos da resposta ao cliente à medida que são produzidos.
+    A comunicação com estas APIs é normalmente representada em JSON, tanto nos pedidos como nas respostas. Antes de serem processados pelos modelos, os textos são convertidos em \textit{tokens}, pequenas unidades de informação que permitem ao modelo representar e manipular sequências de entrada e saída \cite{nvidia_tokens}. Como a resposta é gerada de forma incremental, muitas APIs suportam \textit{streaming}, permitindo enviar fragmentos da resposta ao cliente à medida que são produzidos.
 
-    Existem vários fornecedores relevantes, incluindo OpenAI \cite{openai_api}, Anthropic \cite{anthropic_api}, Google Gemini \cite{google_gemini_api} e Groq \cite{groq_api}. Embora todos disponibilizem APIs HTTP e estruturas JSON, cada fornecedor define contratos próprios, campos específicos, regras de autenticação e modelos distintos para \textit{tool calling}. A integração direta com vários fornecedores obriga, por isso, as aplicações a conhecerem detalhes internos de cada API.
+    Existem vários fornecedores relevantes, incluindo OpenAI \cite{openai_api}, Anthropic \cite{anthropic_api}, Google Gemini \cite{google_gemini_api} e Groq \cite{groq_api}. Embora todos disponibilizem APIs HTTP e estruturas JSON, cada fornecedor define contratos próprios, campos específicos, regras de autenticação e modelos distintos para \textit{tool calling}. A integração direta com vários fornecedores obriga, por isso, as aplicações a conhecerem detalhes de cada API.
 
-    Ao mesmo tempo, o uso de LLMs evoluiu de interações simples para sistemas baseados em agentes (\textit{agentic workflows}) \cite{ibm_agentic_workflows}. Nestes cenários, o modelo não se limita a devolver texto; pode decidir invocar ferramentas externas, interpretar resultados intermédios e produzir uma resposta final com base nesses dados. O \textit{Model Context Protocol} (MCP) surgiu como proposta de normalização para a comunicação entre modelos, aplicações e ferramentas externas \cite{mcp_protocol}.
+    Ao mesmo tempo, o uso de LLMs evoluiu de interações simples para sistemas baseados em agentes (\textit{agentic workflows}) \cite{ibm_agentic_workflows}. Nestes sistemas, o modelo não se limita a devolver texto, pode também desenvolver instruções para as chamadas a ferramentas externas, interpretar resultados intermédios e produzir uma resposta final com base nesses dados. O \textit{Model Context Protocol} (MCP) surgiu como proposta de normalização para a comunicação entre modelos, aplicações e ferramentas externas \cite{mcp_protocol}.
 
     \section{Motivação e Definição do Problema}
+
+    As Figuras \ref{fig:p1}, \ref{fig:p2} e \ref{fig:p3} ilustram o acoplamento direto entre clientes e fornecedores de inferência, bem como a dificuldade que os clientes tem em trocar de fornecedor devido a todo acoplamento que existe
 
     \begin{figure}[H]
         \centering
@@ -131,7 +121,7 @@
         \label{fig:p3}
     \end{figure}
 
-    As Figuras \ref{fig:p1}, \ref{fig:p2} e \ref{fig:p3} ilustram o acoplamento direto entre clientes e fornecedores de inferência, bem como a dificuldade que os clientes tem em trocar de fornecedor devido a todo acoplamento que existe
+
 
     A existência de múltiplos fornecedores de LLMs e a ausência de um protocolo comum implicam
     diferentes interfaces de acesso aos modelos, estruturas específicas de pedidos e respostas, modelos distintos de contabilização de tokens, custos variáveis e implementações particulares para invocação de funções externas (ver Figuras \ref{fig:p1}--\ref{fig:p3}). Por exemplo, a API OpenAI organiza a interação em torno de chat completions e tool calls; a Anthropic utiliza uma arquitetura baseada em messages e blocos de conteúdo; e a Gemini estrutura a geração através de contents, parts, function declarations e configurações de geração próprias.
@@ -224,7 +214,7 @@
     \subsection{Dispatcher}
     O \texttt{DispatcherPort} representa o ponto terminal da \textit{pipeline}. A implementação de despacho pode ser simples, escolhendo um fornecedor configurado, ou evoluir para estratégias mais avançadas, como seleção por custo, latência, disponibilidade, plano do cliente ou política de \textit{fallback}. No projeto, o módulo \texttt{dispatcher} inclui um \textit{router} simples e um \texttt{PipelineBackedDispatcher}.
 
-    \section{Ecossistema do SDK}
+    \section{Ecossistema do OmniAI SDK}
     O SDK está organizado como um projeto Gradle multi-módulo. Os módulos principais incluem \texttt{core}, \texttt{contracts}, \texttt{inbound}, \texttt{outbound}, \texttt{interceptors}, \texttt{mcp-broker}, \texttt{dispatcher}, \texttt{gateway-client} e \texttt{gateway-ktor-server}. Esta divisão permite evoluir cada área com responsabilidades claras.
 
     O módulo \texttt{gateway-client} disponibiliza uma DSL para montar uma Gateway. A aplicação final pode declarar os \textit{inbounds}, os \textit{outbounds}, os \textit{interceptors} e a configuração de segurança. O módulo \texttt{gateway-ktor-server} fornece o adapter HTTP/Ktor que expõe as rotas compatíveis com os contratos externos.
