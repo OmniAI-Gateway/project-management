@@ -134,7 +134,7 @@
 
         \end{tikzpicture}
         \caption{Acoplamento direto entre cliente e um fornecedor de inferência}
-        \label{fig:p1_final}
+        \label{fig:p1}
     \end{figure}
 
     \begin{figure}[H]
@@ -168,7 +168,7 @@
 
         \end{tikzpicture}
         \caption{Multiplicação de conexões com chaves de API descentralizadas}
-        \label{fig:p2_v2}
+        \label{fig:p2}
     \end{figure}
     \begin{figure}[H]
         \centering
@@ -206,7 +206,7 @@
 
         \end{tikzpicture}
         \caption{Cliente decide trocar de fornecedor}
-        \label{fig:p3_ajustada}
+        \label{fig:p3}
     \end{figure}
 
     As Figuras \ref{fig:p1}, \ref{fig:p2} e \ref{fig:p3} ilustram o acoplamento direto entre clientes e fornecedores de inferência, bem como a dificuldade que os clientes tem em trocar de fornecedor devido a todo acoplamento que existe
@@ -289,7 +289,9 @@
             \hline
             Conteúdo multimodal e estruturado & As APIs evoluem para conteúdo composto, não apenas texto simples. & Anthropic e Gemini modelam blocos naturalmente; OpenAI depende do contrato usado; tool calling introduz partes específicas. & \texttt{RequestContentPart} e \texttt{ResponseContentPart}. \\
             \hline
-            Utilização de tokens & Todas expõem algum tipo de contabilização de utilização. & OpenAI usa \texttt{prompt\_tokens}/\texttt{completion\_tokens}; Anthropic usa \texttt{input\_tokens}/\texttt{output\_tokens}; Gemini usa \texttt{usageMetadata}. & \texttt{CommonUsage}, com tokens de entrada, saída e total quando disponíveis. \\
+            Utilização de tokens & Todas expõem algum tipo de contabilização de utilização. & OpenAI usa \texttt{prompt\_tokens}/
+            \texttt{completion\_tokens}; Anthropic usa \texttt{input\_tokens}/
+            \texttt{output\_tokens}; Gemini usa \texttt{usageMetadata}. & \texttt{CommonUsage}, com tokens de entrada, saída e total quando disponíveis. \\
             \hline
         \end{tabularx}
         \caption{Mapeamento entre conceitos das APIs de inferência e o domínio comum}
@@ -310,7 +312,8 @@
             \hline
             Declaração de ferramenta & Anthropic & \texttt{tools[].input\_schema}. & Mesmo conceito, nome de campo diferente. \\
             \hline
-            Declaração de ferramenta & Gemini & \texttt{functionDeclarations[].parameters}. & Necessidade de traduzir declarações Gemini para a mesma estrutura comum. \\
+            Declaração de ferramenta & Gemini & \texttt{functionDeclarations[]
+                .parameters}. & Necessidade de traduzir declarações Gemini para a mesma estrutura comum. \\
             \hline
             Escolha de ferramenta & OpenAI & \texttt{tool\_choice} com valores como \texttt{auto}, \texttt{none} ou ferramenta específica. & Representação em \texttt{ToolChoice}. \\
             \hline
@@ -427,21 +430,26 @@
     \begin{figure}[H]
         \centering
         \begin{tikzpicture}[
-            node distance=0.7cm and 0.8cm,
-            root/.style={rectangle, draw, rounded corners, align=center, text width=4.2cm, minimum height=0.9cm, fill=gray!10, inner sep=5pt},
-            part/.style={rectangle, draw, rounded corners, align=left, text width=4.4cm, minimum height=1.1cm, inner sep=5pt},
-            arrow/.style={-Latex, thick}
+            node distance=0.8cm and 0.1cm,
+            root/.style={rectangle, draw, rounded corners, align=center, minimum height=0.7cm, inner sep=4pt, font=\small\bfseries},
+        % Aplicado text width e height uniformes para todas as partes
+            part/.style={rectangle, draw, rounded corners, align=left, text width=3.3cm, minimum height=1.6cm, inner sep=3pt, font=\footnotesize},
+            arrow/.style={thick}
         ]
+            % Nó Raiz
             \node[root] (request) {\texttt{CommonRequest}};
-            \node[part, below left=of request] (identity) {\textbf{Destino}\\\texttt{provider}\\\texttt{model}};
-            \node[part, below=of request] (conversation) {\textbf{Conversação}\\\texttt{systemPrompt}\\\texttt{messages[]} com \texttt{RequestContentPart}};
-            \node[part, below right=of request] (tools) {\textbf{Ferramentas e opções}\\\texttt{tools[]}\\\texttt{toolChoice}\\\texttt{providerOptions}};
-            \node[part, below=0.8cm of conversation] (generation) {\textbf{Geração}\\\texttt{generationConfig}\\temperatura, limites, \textit{stop} e formato de resposta};
 
-            \draw[arrow] (request) -- (identity);
-            \draw[arrow] (request) -- (conversation);
-            \draw[arrow] (request) -- (tools);
-            \draw[arrow] (request) -- (generation);
+            % Nós inferiores (alinhados horizontalmente)
+            \node[part, below left=0.8cm and -2.5cm of request] (identity) {\textbf{Destino}\\\texttt{provider}\\\texttt{model}};
+            \node[part, right=0.1cm of identity] (conversation) {\textbf{Conversação}\\\texttt{systemPrompt}\\\texttt{messages[]} com \texttt{RequestContentPart}};
+            \node[part, right=0.1cm of conversation] (tools) {\textbf{Ferramentas}\\\texttt{tools[]}\\\texttt{toolChoice}\\\texttt{providerOptions}};
+            \node[part, right=0.1cm of tools] (generation) {\textbf{Geração}\\\texttt{generationConfig}\\temperatura, limites, \textit{stop} e formato};
+
+            % Linhas conectoras
+            \draw[arrow] (request.south) -- ++(0,-0.4) -| (identity.north);
+            \draw[arrow] (request.south) -- ++(0,-0.4) -| (conversation.north);
+            \draw[arrow] (request.south) -- ++(0,-0.4) -| (tools.north);
+            \draw[arrow] (request.south) -- ++(0,-0.4) -| (generation.north);
         \end{tikzpicture}
         \caption{Estrutura interna principal de \texttt{CommonRequest}}
         \label{fig:common-request-structure}
@@ -512,22 +520,22 @@
                 map/.style={rectangle, draw, rounded corners, align=left, minimum width=5.0cm, minimum height=2.7cm, fill=gray!10},
                 arrow/.style={-Latex, thick}
             ]
-                \node[box] (auth) {Metadados de autenticação};
-                \node[box, below=of auth] (http) {Cabeçalhos e IP do cliente};
-                \node[box, below=of http] (provider) {Opções específicas do fornecedor};
+            \node[box] (auth) {Metadados de autenticação};
+            \node[box, below=of auth] (http) {Cabeçalhos e IP do cliente};
+            \node[box, below=of http] (provider) {Opções específicas do fornecedor};
 
-                \node[map, right=2.0cm of http] (typedmap) {\texttt{TypedMap}\\[0.2cm]
-                \texttt{AttributeKey<String>}\\
-                \texttt{AttributeKey<AuthResult>}\\
-                \texttt{AttributeKey<Set<String>>}\\
-                \texttt{AttributeKey<Int>}};
+            \node[map, right=2.0cm of http] (typedmap) {\texttt{TypedMap}\\[0.2cm]
+            \texttt{AttributeKey<String>}\\
+            \texttt{AttributeKey<AuthResult>}\\
+            \texttt{AttributeKey<Set<String>>}\\
+            \texttt{AttributeKey<Int>}};
 
-                \node[box, right=2.0cm of typedmap] (consumers) {Componentes do SDK\\ leem atributos tipados};
+            \node[box, right=2.0cm of typedmap] (consumers) {Componentes do SDK\\ leem atributos tipados};
 
-                \draw[arrow] (auth.east) -- (typedmap.west);
-                \draw[arrow] (http.east) -- (typedmap.west);
-                \draw[arrow] (provider.east) -- (typedmap.west);
-                \draw[arrow] (typedmap.east) -- (consumers.west);
+            \draw[arrow] (auth.east) -- (typedmap.west);
+            \draw[arrow] (http.east) -- (typedmap.west);
+            \draw[arrow] (provider.east) -- (typedmap.west);
+            \draw[arrow] (typedmap.east) -- (consumers.west);
             \end{tikzpicture}}
         \caption{Utilização da \texttt{TypedMap} para transportar atributos extensíveis}
         \label{fig:typed-map}
@@ -551,12 +559,12 @@
             arrow/.style={-Latex, thick}
         ]
             % --- CLIENTES ---
-            \node[box] (clients) {Clientes externos\\REST Client, Claude Code, SDKs};
+            \node[box] (clients) {Clientes externos\\ex: REST Client, Claude Code};
 
             % --- OMNIAI GATEWAY (Grupo) ---
-            \node[inner, right=1.5cm of clients, yshift=1.2cm] (config) {Configuração do POC\\ambiente e \texttt{application.conf}};
-            \node[inner, below=0.5cm of config] (ktor) {Conectores Ktor\\rotas HTTP compatíveis};
-            \node[sdk, below=0.5cm of ktor] (sdk) {OmniAI SDK\\domínio, contracts, ports, adapters};
+            \node[inner, right=1.5cm of clients, yshift=1.2cm] (config) {Configuração do POC \\ \texttt{application.conf}};
+            \node[inner, below=0.5cm of config] (ktor) {Gateway Endpoints};
+            \node[sdk, below=0.5cm of ktor] (sdk) {OmniAI SDK};
 
             % O grupo "fit" envolve os blocos internos
             \node[group, fit=(config)(ktor)(sdk), label={[align=center]above:\textbf{OmniAI Gateway POC}}] (gatewayGroup) {};
@@ -905,23 +913,32 @@ metrics {
     \begin{figure}[H]
         \centering
         \begin{tikzpicture}[
-            node distance=0.8cm and 1.0cm,
-            box/.style={rectangle, draw, rounded corners, align=center, text width=3.4cm, minimum height=0.9cm, inner sep=5pt},
-            gateway/.style={rectangle, draw, rounded corners, align=center, text width=4.0cm, minimum height=2.0cm, inner sep=6pt, fill=gray!10},
+        % node distance: vertical, horizontal
+            node distance=0.8cm and 1.5cm,
+        % Estilo uniforme para as caixas de cliente e fornecedores
+            box/.style={rectangle, draw, rounded corners, align=center, text width=4.0cm, minimum height=1.4cm, inner sep=5pt, thick},
+        % Estilo para a gateway (maior e com preenchimento)
+            gateway/.style={rectangle, draw, rounded corners, align=center, text width=4.5cm, minimum height=2.5cm, inner sep=6pt, fill=gray!15, thick},
             arrow/.style={-Latex, thick}
         ]
-            \node[box] (rest) {REST Client\\ \texttt{gateway-requests.http}};
-            \node[box, below=of rest] (claude) {Claude Code\\ \texttt{ANTHROPIC\_BASE\_URL}};
-            \node[box, below=of claude] (node) {SDK Anthropic\\ Node.js};
+            % --- COLUNA ESQUERDA ---
+            \node[box] (rest) {REST Client};
+            \node[box, below=0.8cm of rest] (claude) {Claude Code\\ \texttt{ANTHROPIC\_BASE\_URL}};
+            \node[box, below=0.8cm of claude] (node) {SDK Anthropic\\ Node.js};
 
-            \node[gateway, right=1.4cm of claude] (gateway) {OmniAI Gateway POC\\ Ktor + OmniAI SDK\\ Logto + Telemetria};
+            % --- GATEWAY CENTRAL ---
+            \node[gateway, right=of claude] (gateway) {\textbf{OmniAI Gateway POC}};
 
-            \node[box, right=1.4cm of gateway, yshift=0.8cm] (providers) {Fornecedor configurado\\ Gemini\\OpenAI-like\\Anthropic};
-            \node[box, right=1.4cm of gateway, yshift=-0.8cm] (obs) {Prometheus + Grafana\\ via OpenTelemetry Collector};
+            % --- COLUNA DIREITA ---
+            % Ajuste de yshift para espaçamento vertical no lado direito
+            \node[box, right=of gateway, yshift=1.2cm] (providers) {Fornecedor configurado\\ Gemini, OpenAI\\ Anthropic};
+            \node[box, right=of gateway, yshift=-1.2cm] (obs) {Prometheus + Grafana\\ via OpenTelemetry Collector};
 
+            % --- LIGAÇÕES ---
             \draw[arrow] (rest.east) -- (gateway.west);
             \draw[arrow] (claude.east) -- (gateway.west);
             \draw[arrow] (node.east) -- (gateway.west);
+
             \draw[arrow] (gateway.east) -- (providers.west);
             \draw[arrow] (gateway.east) -- (obs.west);
         \end{tikzpicture}
@@ -947,7 +964,8 @@ metrics {
     O objetivo desta validação foi confirmar que a Gateway consegue produzir telemetria em tempo real enquanto processa pedidos reais. A utilização de Prometheus e Grafana permitiu observar métricas operacionais da aplicação e confirmar que a instrumentação está separada da lógica de inferência, sendo configurada através da DSL e exportada por adapters próprios.
 
     \section{Validação com Aplicações Cliente}
-    Foram estudados e testados cenários com clientes que permitem alterar o endpoint da API. No caso do Claude Code, a variável \texttt{ANTHROPIC\_BASE\_URL} permite redirecionar pedidos para a Gateway. No caso do SDK oficial da Anthropic em Node.js, foi criado um teste em \texttt{node-tests/anthropicSDKTest.js}, configurado com \texttt{baseURL} local e chave fictícia, para validar que um cliente existente consegue falar com a OmniAI Gateway quando esta expõe um contrato compatível.
+    Foram estudados e testados cenários com clientes que permitem alterar o endpoint da API. No caso do Claude Code, a variável \texttt{ANTHROPIC\_BASE\_URL} permite redirecionar pedidos para a Gateway. \\
+    Foi criado um teste com o sdk oficial da anthropic em \texttt{node-tests/anthropicSDKTest.js}, configurado com \texttt{baseURL} local e chave fictícia, para validar que um cliente existente consegue falar com a OmniAI Gateway quando esta expõe um contrato compatível.
 
     Também foram estudadas aplicações como OpenCode, LibreChat e Dify, por permitirem configurar endpoints compatíveis com fornecedores existentes. Estes estudos demonstram o valor arquitetural da Gateway: quando o cliente já segue um contrato conhecido, a introdução da OmniAI Gateway pode ser feita por configuração de endpoint, sem alterar a lógica principal da aplicação cliente.
 
@@ -1040,6 +1058,8 @@ metrics {
         \end{tabular}
         \caption{Planeamento semanal do projeto}
     \end{table}
+
+
 % ================= BIBLIOGRAFIA =================
     \renewcommand{\bibname}{Referências}
     \bibliographystyle{IEEEtran}
