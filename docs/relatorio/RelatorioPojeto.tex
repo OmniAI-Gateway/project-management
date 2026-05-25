@@ -520,22 +520,22 @@
                 map/.style={rectangle, draw, rounded corners, align=left, minimum width=5.0cm, minimum height=2.7cm, fill=gray!10},
                 arrow/.style={-Latex, thick}
             ]
-            \node[box] (auth) {Metadados de autenticação};
-            \node[box, below=of auth] (http) {Cabeçalhos e IP do cliente};
-            \node[box, below=of http] (provider) {Opções específicas do fornecedor};
+                \node[box] (auth) {Metadados de autenticação};
+                \node[box, below=of auth] (http) {Cabeçalhos e IP do cliente};
+                \node[box, below=of http] (provider) {Opções específicas do fornecedor};
 
-            \node[map, right=2.0cm of http] (typedmap) {\texttt{TypedMap}\\[0.2cm]
-            \texttt{AttributeKey<String>}\\
-            \texttt{AttributeKey<AuthResult>}\\
-            \texttt{AttributeKey<Set<String>>}\\
-            \texttt{AttributeKey<Int>}};
+                \node[map, right=2.0cm of http] (typedmap) {\texttt{TypedMap}\\[0.2cm]
+                \texttt{AttributeKey<String>}\\
+                \texttt{AttributeKey<AuthResult>}\\
+                \texttt{AttributeKey<Set<String>>}\\
+                \texttt{AttributeKey<Int>}};
 
-            \node[box, right=2.0cm of typedmap] (consumers) {Componentes do SDK\\ leem atributos tipados};
+                \node[box, right=2.0cm of typedmap] (consumers) {Componentes do SDK\\ leem atributos tipados};
 
-            \draw[arrow] (auth.east) -- (typedmap.west);
-            \draw[arrow] (http.east) -- (typedmap.west);
-            \draw[arrow] (provider.east) -- (typedmap.west);
-            \draw[arrow] (typedmap.east) -- (consumers.west);
+                \draw[arrow] (auth.east) -- (typedmap.west);
+                \draw[arrow] (http.east) -- (typedmap.west);
+                \draw[arrow] (provider.east) -- (typedmap.west);
+                \draw[arrow] (typedmap.east) -- (consumers.west);
             \end{tikzpicture}}
         \caption{Utilização da \texttt{TypedMap} para transportar atributos extensíveis}
         \label{fig:typed-map}
@@ -588,7 +588,7 @@
 
     \begin{figure}[H]
         \centering
-        \includegraphics[width=0.95\textwidth]{arquitet}
+        \includegraphics[width=0.95\textwidth]{Arqui.png}
         \caption{Visão da integração entre Ktor, inbounds, pipeline, interceptors, outbounds e HTTP client no OmniAI SDK}
         \label{fig:arquitet-sdk}
     \end{figure}
