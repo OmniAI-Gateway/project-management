@@ -116,21 +116,97 @@
 
     \begin{figure}[H]
         \centering
-        \includegraphics[width=0.9\textwidth]{P1.png}
-        \caption{Acoplamento direto entre clientes e um fornecedor de inferência}
-        \label{fig:p1}
+        \begin{tikzpicture}[
+            node distance=3.5cm,
+            box/.style={rectangle, draw, rounded corners, align=center, text width=3.8cm, minimum height=1cm, inner sep=5pt, fill=white, thick},
+            keybox/.style={rectangle, draw, rounded corners=1pt, align=center, text width=1.5cm, minimum height=0.5cm, inner sep=2pt, fill=gray!20, font=\tiny, thick},
+            arrow/.style={-Latex, thick}
+        ]
+            % --- CLIENTE ---
+            \node[box] (cliente) {Cliente de API's de Inferência};
+            \node[keybox, anchor=north east] (key) at (cliente.south east) {API Key};
+
+            % --- FORNECEDOR ---
+            \node[box, right=of cliente] (fornecedor) {API do Gemini de acesso a inferência };
+
+            % --- LIGAÇÃO ---
+            \draw[arrow] (cliente.east) -- (fornecedor.west);
+
+        \end{tikzpicture}
+        \caption{Acoplamento direto entre cliente e um fornecedor de inferência}
+        \label{fig:p1_final}
+    \end{figure}
+
+    \begin{figure}[H]
+        \centering
+        \begin{tikzpicture}[
+            node distance=0.8cm and 3.5cm,
+            box/.style={rectangle, draw, rounded corners, align=center, text width=3.8cm, minimum height=1cm, inner sep=5pt, fill=white, thick},
+            keybox/.style={rectangle, draw, rounded corners=1pt, align=center, text width=1.5cm, minimum height=0.5cm, inner sep=2pt, fill=gray!20, font=\tiny, thick},
+            arrow/.style={-Latex, thick}
+        ]
+            % --- CLIENTE A ---
+            \node[box] (clienteA) {Cliente de API's de Inferência };
+            \node[keybox, anchor=north east] (keyA) at (clienteA.south east) {API Key};
+
+            % --- CLIENTE B ---
+            \node[box, below=of clienteA, yshift=-0.4cm] (clienteB) {Cliente de API's de Inferência};
+            \node[keybox, anchor=north east] (keyB) at (clienteB.south east) {API Key };
+
+            % --- CLIENTE C ---
+            \node[box, below=of clienteB, yshift=-0.4cm] (clienteC) {Cliente de API's de Inferência};
+            \node[keybox, anchor=north east] (keyC) at (clienteC.south east) {API Key};
+
+            % --- FORNECEDOR (API de acesso à inferência) ---
+            % Posicionado ao lado do Cliente B para manter as setas simétricas e centradas
+            \node[box, right=of clienteB] (fornecedor) {API do Gemini de acesso a inferência};
+
+            % Ligações diretas e limpas das caixas dos 3 clientes para o fornecedor
+            \draw[arrow] (clienteA.east) -- (fornecedor.west);
+            \draw[arrow] (clienteB.east) -- (fornecedor.west);
+            \draw[arrow] (clienteC.east) -- (fornecedor.west);
+
+        \end{tikzpicture}
+        \caption{Multiplicação de conexões com chaves de API descentralizadas}
+        \label{fig:p2_v2}
     \end{figure}
     \begin{figure}[H]
         \centering
-        \includegraphics[width=0.9\textwidth]{P2.png}
-        \caption{Multiplicação de integrações diretas com vários fornecedores}
-        \label{fig:p2}
-    \end{figure}
-    \begin{figure}[H]
-        \centering
-        \includegraphics[width=0.9\textwidth]{P3.png}
-        \caption{Cliente trocar de fornecedor}
-        \label{fig:p3}
+        \begin{tikzpicture}[
+            node distance=0.8cm and 3.5cm,
+            box/.style={rectangle, draw, rounded corners, align=center, text width=3.8cm, minimum height=1cm, inner sep=5pt, fill=white, thick},
+            keybox/.style={rectangle, draw, rounded corners=1pt, align=center, text width=1.5cm, minimum height=0.5cm, inner sep=2pt, fill=gray!20, font=\tiny, thick},
+            cross/.style={cross out, draw=red, ultra thick, minimum size=14pt, inner sep=0pt, outer sep=0pt},
+            arrow/.style={-Latex, thick}
+        ]
+            % --- CLIENTES (Esquerda) ---
+            % Cliente A
+            \node[box] (clienteA) {Cliente de API's de Inferência};
+            \node[keybox, anchor=north east] (keyA) at (clienteA.south east) {API Key};
+
+            % Cliente B (Cliente 2)
+            \node[box, below=of clienteA, yshift=-0.4cm] (clienteB) {Cliente de API's de Inferência};
+            \node[keybox, anchor=north east] (keyB) at (clienteB.south east) {API Key};
+
+            % Cliente C
+            \node[box, below=of clienteB, yshift=-0.4cm] (clienteC) {Cliente de API's de Inferência};
+            \node[keybox, anchor=north east] (keyC) at (clienteC.south east) {API Key};
+
+            % --- APIS DE INFERÊNCIA (Direita) ---
+            % API 1 - Alinhada na direção do Cliente A
+            \node[box, right=of clienteA] (apiOpenAI) {API do Gemini de acesso a inferência};
+
+            % API 2 - AGORA ALINHADA COM O CLIENTE 2 (Cliente B)
+            \node[box, right=of clienteB] (apiGemini) {API da OpenAI de acesso a inferência};
+
+
+
+            % Nova ligação (Cliente A aponta para a API 2 alinhada ao meio)
+            \draw[arrow] (clienteA.east) -- (apiGemini.west);
+
+        \end{tikzpicture}
+        \caption{Cliente decide trocar de fornecedor}
+        \label{fig:p3_ajustada}
     \end{figure}
 
     As Figuras \ref{fig:p1}, \ref{fig:p2} e \ref{fig:p3} ilustram o acoplamento direto entre clientes e fornecedores de inferência, bem como a dificuldade que os clientes tem em trocar de fornecedor devido a todo acoplamento que existe
@@ -147,9 +223,34 @@
     \section{Objetivos e Proposta de Solução}
     \begin{figure}[H]
         \centering
-        \includegraphics[width=0.9\textwidth]{P4.png}
+        \begin{tikzpicture}[
+            node distance=0.8cm and 2.5cm,
+            box/.style={rectangle, draw, rounded corners, align=center, text width=3.5cm, minimum height=1cm, inner sep=5pt, fill=white, thick},
+            gateway/.style={rectangle, draw, rounded corners, align=center, text width=3.5cm, minimum height=1.8cm, inner sep=5pt, fill=gray!20, thick},
+            arrow/.style={-Latex, thick}
+        ]
+            % --- CLIENTES ---
+            \node[box] (cliente1) {Clientes de API's};
+            \node[box, below=of cliente1] (cliente2) {Clientes de API's};
+            \node[box, below=of cliente2] (cliente3) {Clientes de API's};
+
+            % --- GATEWAY ---
+            \node[gateway, right=of cliente2] (gateway) {\textbf{OmniAI Gateway}};
+
+            % --- FORNECEDORES ---
+            \node[box, right=of gateway, yshift=1.2cm] (api1) {API de Inferência (Gemini)};
+            \node[box, right=of gateway, yshift=-1.2cm] (api2) {API de Inferência (OpenAI)};
+
+            % --- LIGAÇÕES ---
+            \draw[arrow] (cliente1.east) -- (gateway.west);
+            \draw[arrow] (cliente2.east) -- (gateway.west);
+            \draw[arrow] (cliente3.east) -- (gateway.west);
+
+            \draw[arrow] (gateway.east) -- (api1.west);
+            \draw[arrow] (gateway.east) -- (api2.west);
+        \end{tikzpicture}
         \caption{Centralização com OmniAI Gateway}
-        \label{fig:p4}
+        \label{fig:p4_cinza}
     \end{figure}
 
     A solução proposta evoluiu para a construção de um \textbf{OmniAI SDK}, isto é, uma biblioteca reutilizável que permite instanciar uma \textbf{OmniAI Gateway}. A Gateway funciona como ponto de entrada único para aplicações cliente, centralizando o acesso a APIs de inferência, ferramentas externas e mecanismos transversais de segurança e operação. Esta abordagem aproxima-se do padrão de API Gateway \cite{api_gateway_design} e, no contexto específico de modelos de IA, do padrão de AI Gateway enquanto camada centralizada de acesso a modelos \cite{ai_gateway_pattern,karl_ai_gateway}. Embora existam soluções relacionadas, como LiteLLM e OpenRouter \cite{litellm,openrouter}, o foco deste projeto está na construção de um SDK extensível, configurável e validado por uma Gateway POC própria.
@@ -239,19 +340,24 @@
     \begin{figure}[H]
         \centering
         \begin{tikzpicture}[
-            node distance=1.0cm and 1.0cm,
-            box/.style={rectangle, draw, rounded corners, align=center, text width=3.2cm, minimum height=1.0cm, inner sep=5pt},
-            common/.style={rectangle, draw, rounded corners, align=center, text width=4.0cm, minimum height=1.2cm, inner sep=5pt, fill=gray!10},
+            node distance=0.8cm and 1.5cm,
+        % Estilo dos blocos ajustado para o padrão do relatório
+            box/.style={rectangle, draw, rounded corners, align=center, text width=3.2cm, minimum height=1.0cm, inner sep=5pt, thick},
+            common/.style={rectangle, draw, rounded corners, align=center, text width=4.0cm, minimum height=1.2cm, inner sep=5pt, fill=gray!20, thick},
             arrow/.style={-Latex, thick}
         ]
+            % --- FORNECEDORES ---
             \node[box] (openai) {OpenAI\\ \texttt{messages}\\ \texttt{tool\_calls}\\ \texttt{delta}};
-            \node[box, below=of openai] (anthropic) {Anthropic\\ \texttt{messages}\\ \texttt{tool\_use}\\ eventos nomeados};
-            \node[box, below=of anthropic] (gemini) {Gemini\\ \texttt{contents/parts}\\ \texttt{functionCall}\\ \texttt{generationConfig}};
+            \node[box, below=of openai] (anthropic) {Anthropic\\ \texttt{messages}\\ \texttt{tool\_use}\\ eventos};
+            \node[box, below=of anthropic] (gemini) {Gemini\\ \texttt{contents/parts}\\ \texttt{functionCall}};
 
-            \node[common, right=1.3cm of anthropic] (domain) {Domínio comum\\ \texttt{CommonRequest}\\ \texttt{CommonResponse}\\ \texttt{CommonResponseEvent}};
+            % --- DOMÍNIO COMUM ---
+            \node[common, right=1.5cm of anthropic] (domain) {\textbf{Domínio comum}\\ \texttt{CommonRequest}\\ \texttt{CommonResponse}\\ \texttt{CommonResponseEvent}};
 
-            \node[box, right=1.3cm of domain] (provider) {Adapter de saída\\ contrato do fornecedor\\ transporte HTTP/SSE};
+            % --- ADAPTER DE SAÍDA ---
+            \node[box, right=1.5cm of domain] (provider) {Adapter de saída\\ contrato do fornecedor\\ transporte HTTP/SSE};
 
+            % --- LIGAÇÕES ---
             \draw[arrow] (openai.east) -- (domain.west);
             \draw[arrow] (anthropic.east) -- (domain.west);
             \draw[arrow] (gemini.east) -- (domain.west);
@@ -291,19 +397,23 @@
     \begin{figure}[H]
         \centering
         \begin{tikzpicture}[
-            node distance=0.9cm and 0.9cm,
-            box/.style={rectangle, draw, rounded corners, align=center, text width=3.8cm, minimum height=1.0cm, inner sep=5pt},
-            common/.style={rectangle, draw, rounded corners, align=center, text width=3.8cm, minimum height=1.0cm, inner sep=5pt, fill=gray!10},
+            node distance=0.8cm and 1.2cm,
+        % Estilo uniforme com os outros diagramas
+            box/.style={rectangle, draw, rounded corners, align=center, text width=3.8cm, minimum height=1.0cm, inner sep=5pt, thick},
+            common/.style={rectangle, draw, rounded corners, align=center, text width=3.8cm, minimum height=1.0cm, inner sep=5pt, fill=gray!20, thick},
             arrow/.style={-Latex, thick}
         ]
+            % --- LINHA DE PEDIDO (Cima) ---
             \node[box] (inReq) {Pedido recebido\\OpenAI, Anthropic ou Gemini};
-            \node[common, right=of inReq] (commonReq) {\texttt{CommonRequest}\\pedido interno};
+            \node[common, right=of inReq] (commonReq) {\textbf{CommonRequest}\\pedido interno};
             \node[box, right=of commonReq] (outReq) {Pedido enviado\\ao fornecedor configurado};
 
+            % --- LINHA DE RESPOSTA (Baixo) ---
             \node[box, below=1.0cm of outReq] (providerResp) {Resposta recebida\\JSON ou SSE};
-            \node[common, left=of providerResp] (commonResp) {\texttt{CommonResponse}\\ou \texttt{CommonResponseEvent}};
+            \node[common, left=of providerResp] (commonResp) {\textbf{CommonResponse}\\ou \texttt{CommonResponseEvent}};
             \node[box, left=of commonResp] (clientResp) {Resposta devolvida\\no contrato do cliente};
 
+            % --- LIGAÇÕES ---
             \draw[arrow] (inReq) -- (commonReq);
             \draw[arrow] (commonReq) -- (outReq);
             \draw[arrow] (outReq) -- (providerResp);
@@ -396,29 +506,29 @@
     \begin{figure}[H]
         \centering
         \resizebox{0.9\textwidth}{!}{%
-        \begin{tikzpicture}[
-            node distance=1.1cm and 1.0cm,
-            box/.style={rectangle, draw, rounded corners, align=center, minimum width=3.4cm, minimum height=0.9cm},
-            map/.style={rectangle, draw, rounded corners, align=left, minimum width=5.0cm, minimum height=2.7cm, fill=gray!10},
-            arrow/.style={-Latex, thick}
-        ]
-            \node[box] (auth) {Metadados de autenticação};
-            \node[box, below=of auth] (http) {Cabeçalhos e IP do cliente};
-            \node[box, below=of http] (provider) {Opções específicas do fornecedor};
+            \begin{tikzpicture}[
+                node distance=1.1cm and 1.0cm,
+                box/.style={rectangle, draw, rounded corners, align=center, minimum width=3.4cm, minimum height=0.9cm},
+                map/.style={rectangle, draw, rounded corners, align=left, minimum width=5.0cm, minimum height=2.7cm, fill=gray!10},
+                arrow/.style={-Latex, thick}
+            ]
+                \node[box] (auth) {Metadados de autenticação};
+                \node[box, below=of auth] (http) {Cabeçalhos e IP do cliente};
+                \node[box, below=of http] (provider) {Opções específicas do fornecedor};
 
-            \node[map, right=2.0cm of http] (typedmap) {\texttt{TypedMap}\\[0.2cm]
-            \texttt{AttributeKey<String>}\\
-            \texttt{AttributeKey<AuthResult>}\\
-            \texttt{AttributeKey<Set<String>>}\\
-            \texttt{AttributeKey<Int>}};
+                \node[map, right=2.0cm of http] (typedmap) {\texttt{TypedMap}\\[0.2cm]
+                \texttt{AttributeKey<String>}\\
+                \texttt{AttributeKey<AuthResult>}\\
+                \texttt{AttributeKey<Set<String>>}\\
+                \texttt{AttributeKey<Int>}};
 
-            \node[box, right=2.0cm of typedmap] (consumers) {Componentes do SDK\\ leem atributos tipados};
+                \node[box, right=2.0cm of typedmap] (consumers) {Componentes do SDK\\ leem atributos tipados};
 
-            \draw[arrow] (auth.east) -- (typedmap.west);
-            \draw[arrow] (http.east) -- (typedmap.west);
-            \draw[arrow] (provider.east) -- (typedmap.west);
-            \draw[arrow] (typedmap.east) -- (consumers.west);
-        \end{tikzpicture}}
+                \draw[arrow] (auth.east) -- (typedmap.west);
+                \draw[arrow] (http.east) -- (typedmap.west);
+                \draw[arrow] (provider.east) -- (typedmap.west);
+                \draw[arrow] (typedmap.east) -- (consumers.west);
+            \end{tikzpicture}}
         \caption{Utilização da \texttt{TypedMap} para transportar atributos extensíveis}
         \label{fig:typed-map}
     \end{figure}
@@ -433,25 +543,36 @@
     \begin{figure}[H]
         \centering
         \begin{tikzpicture}[
-            node distance=0.8cm and 0.9cm,
-            box/.style={rectangle, draw, rounded corners, align=center, text width=3.3cm, minimum height=1.0cm, inner sep=5pt},
-            inner/.style={rectangle, draw, rounded corners, align=center, text width=4.2cm, minimum height=0.9cm, fill=white, inner sep=5pt},
-            group/.style={rectangle, draw, rounded corners, inner sep=8pt},
+            node distance=1.2cm and 1.5cm,
+            box/.style={rectangle, draw, rounded corners, align=center, text width=3.8cm, minimum height=1.2cm, inner sep=5pt, thick},
+            inner/.style={rectangle, draw, rounded corners, align=center, text width=4.2cm, minimum height=1.0cm, fill=white, inner sep=5pt, thick},
+            sdk/.style={rectangle, draw, rounded corners, align=center, text width=4.2cm, minimum height=1.0cm, fill=gray!20, inner sep=5pt, thick},
+            group/.style={rectangle, draw, rounded corners, dashed, inner sep=12pt},
             arrow/.style={-Latex, thick}
         ]
-            \node[box] (clients) {Clientes externos\\REST Client\\Claude Code\\SDKs compatíveis};
+            % --- CLIENTES ---
+            \node[box] (clients) {Clientes externos\\REST Client, Claude Code, SDKs};
 
-            \node[inner, right=1.0cm of clients, yshift=1.0cm] (config) {Configuração do POC\\ambiente e \texttt{application.conf}};
-            \node[inner, below=of config] (ktor) {Conectores Ktor\\rotas HTTP compatíveis};
-            \node[inner, below=of ktor] (sdk) {OmniAI SDK\\domínio, contracts, ports, adapters};
+            % --- OMNIAI GATEWAY (Grupo) ---
+            \node[inner, right=1.5cm of clients, yshift=1.2cm] (config) {Configuração do POC\\ambiente e \texttt{application.conf}};
+            \node[inner, below=0.5cm of config] (ktor) {Conectores Ktor\\rotas HTTP compatíveis};
+            \node[sdk, below=0.5cm of ktor] (sdk) {OmniAI SDK\\domínio, contracts, ports, adapters};
+
+            % O grupo "fit" envolve os blocos internos
             \node[group, fit=(config)(ktor)(sdk), label={[align=center]above:\textbf{OmniAI Gateway POC}}] (gatewayGroup) {};
 
-            \node[box, right=1.0cm of ktor] (providers) {Fornecedores de inferência\\Gemini\\Anthropic\\OpenAI-compatible/Groq};
-            \node[box, below=0.9cm of providers] (observability) {Operação local\\Logto\\OTel Collector\\Prometheus/Grafana};
+            % --- LADO DIREITO ---
+            \node[box, right=1.5cm of ktor] (providers) {Fornecedores de inferência\\Gemini, Anthropic, OpenAI/Groq};
+            \node[box, below=0.8cm of providers] (observability) {Operação local\\Logto, OTel, Prometheus/Grafana};
 
-            \draw[arrow] (clients.east) -- node[above]{HTTP/JSON/SSE} (gatewayGroup.west);
-            \draw[arrow] (gatewayGroup.east) -- node[above]{HTTP/JSON/SSE} (providers.west);
+            % --- LIGAÇÕES ---
+            % Entrada do grupo
+            \draw[arrow] (clients.east) -- node[above, font=\footnotesize]{} (gatewayGroup.west);
+
+            % Saída do grupo
+            \draw[arrow] (gatewayGroup.east) -- node[above, font=\footnotesize]{} (providers.west);
             \draw[arrow] (gatewayGroup.east) -- (observability.west);
+
         \end{tikzpicture}
         \caption{Arquitetura top-level: POC OmniAI Gateway a instanciar e demonstrar o OmniAI SDK}
         \label{fig:top-level}
@@ -507,9 +628,10 @@
     \section{Stack Tecnológica e Metodologias}
     O SDK foi desenvolvido em Kotlin Multiplatform com targets JVM e JavaScript/Node.js. A escolha de KMP permite partilhar o domínio, os contratos, as portas, os adapters principais e parte da lógica transversal entre plataformas, mantendo implementações específicas quando o ambiente o exige \cite{kotlin_multiplatform}. A serialização dos contratos é baseada em Kotlinx Serialization, o que facilita a definição explícita dos modelos JSON estudados.
 
-    O Ktor é usado em dois pontos diferentes, que importa distinguir. Primeiro, o SDK fornece uma implementação HTTP baseada em Ktor, através de \texttt{KtorHttpTransportClient}, usada pelos outbounds para executar pedidos HTTP e SSE. Segundo, o SDK fornece o módulo \texttt{gateway-ktor-server}, que disponibiliza conectores Ktor para expor rotas compatíveis com OpenAI, Anthropic e Gemini. O Ktor não é, portanto, o SDK; é uma implementação concreta fornecida pelo SDK e usada nativamente pelo POC OmniAI Gateway.
+    O Ktor é usado em dois pontos diferentes, que importa distinguir. Primeiro, o SDK fornece uma implementação HTTP baseada em Ktor, através de \texttt{KtorHttpTransportClient}, usada pelos outbounds para executar pedidos HTTP e SSE. Segundo, o SDK fornece o módulo \texttt{gateway-ktor-server}, que disponibiliza conectores Ktor para expor rotas compatíveis com OpenAI, Anthropic e Gemini.
+    Logo, importa clarificar que o Ktor não constitui o SDK, representando apenas uma das suas implementações concretas, a qual é adotada de forma nativa pelo POC OmniAI Gateway.
 
-    A OmniAI Gateway, por sua vez, é uma aplicação Ktor separada, construída como prova de conceito para demonstrar o uso do SDK num sistema real. O projeto usa Gradle com estrutura multi-módulo e \textit{composite builds} \cite{gradle_composite_builds}. Durante o desenvolvimento, o POC inclui o SDK localmente com \texttt{includeBuild("../OmniAi-SDK")}, acelerando o ciclo de validação: uma alteração no SDK pode ser compilada e executada imediatamente pela aplicação demonstradora.
+    A OmniAI Gateway, por sua vez, é uma aplicação Ktor separada, construída como prova de conceito para demonstrar o uso do OmniAI SDK num sistema real.
 
     As ferramentas de desenvolvimento incluíram Git, IntelliJ IDEA, o cliente HTTP do IDE para pedidos REST, Docker Compose para Logto, PostgreSQL, OpenTelemetry Collector, Prometheus e Grafana, além de clientes reais como Claude Code e SDKs oficiais. Também foram usados assistentes de apoio, como Gemini no browser e agentes de programação, para pesquisa, comparação de documentação e aceleração de tarefas, mantendo a validação no código, nos testes e nos cenários executados. A pipeline de CI existente executa \texttt{./gradlew clean build}; como evolução natural, prevê-se uma pipeline de CD para publicar versões do SDK em Maven e NPM.
 
@@ -519,9 +641,9 @@
 
     À medida que o sistema cresceu, essa abordagem revelou acoplamento excessivo. A tradução entre contratos, a configuração dos fornecedores, a autenticação, o tratamento de erros e o encaminhamento de pedidos começaram a concentrar-se na própria aplicação. Cada novo fornecedor ou preocupação transversal exigia alterações no mesmo conjunto de componentes, tornando o código difícil de evoluir e testar.
 
-    A reorganização separou o produto principal, o \textbf{OmniAI SDK}, da aplicação demonstradora, a \textbf{OmniAI Gateway}. O SDK passou a concentrar o domínio comum, contratos, adapters, portas, \textit{dispatcher}, \textit{pipeline}, \textit{interceptors}, DSL e abstrações HTTP. A OmniAI Gateway passou a ser um POC executável, usado para demonstrar o consumo do SDK num sistema real: carrega configuração, instancia os componentes necessários, instala os conectores Ktor e expõe endpoints HTTP. Esta aplicação não reimplementa a lógica central da biblioteca; valida que essa lógica pode ser composta, configurada e executada fora dos módulos internos do SDK.
+    A reorganização separou o produto principal, o \textbf{OmniAI SDK}, da aplicação demonstradora, a \textbf{OmniAI Gateway}. O OmniAI SDK passou a concentrar o domínio comum, contratos, adapters, portas, \textit{dispatcher}, \textit{pipeline}, \textit{interceptors}, DSL e abstrações HTTP. A OmniAI Gateway passou a ser um POC executável, usado para demonstrar o consumo do SDK num sistema real: carrega configuração, instancia os componentes necessários, instala os conectores Ktor e expõe endpoints HTTP. Esta aplicação não reimplementa a lógica central da biblioteca; valida que essa lógica pode ser composta, configurada e executada fora dos módulos internos do SDK.
 
-    Esta separação também influenciou o desenho para escalamento horizontal. O SDK foi projetado para manter o estado do pedido dentro de estruturas transitórias, como \texttt{GatewayContext} e \texttt{TypedMap}, e para expor portas onde existe estado partilhável, como caches, rate limiting, circuit breaker, autenticação ou telemetria. Assim, uma primeira execução pode usar stores em memória para simplificar o POC, enquanto uma implantação com várias instâncias pode substituir esses stores por backends partilhados sem alterar inbounds, outbounds ou contratos.
+    Esta separação também influenciou o desenho para escalamento horizontal. O SDK foi projetado para manter o estado do pedido dentro de estruturas transitórias, como \texttt{GatewayContext} e \texttt{TypedMap}, e para expor portas onde existe estado partilhável, como caches, rate limiting, circuit breaker, autenticação ou telemetria. Consequentemente, a arquitetura permite que uma implementação inicial utilize armazenamento em memória para simplificar o POC; por outro lado, num cenário de escalamento horizontal, esses mecanismos podem ser substituídos por backends partilhados, sem implicar qualquer alteração nos inbounds, outbounds ou contratos.
 
     \section{Decisões de Desenho e Alternativas Descartadas}
     A análise de \textit{trade-offs} partiu de três critérios: proteger a estabilidade da versão demonstrável, manter o SDK reutilizável fora do POC e evitar que funcionalidades experimentais contaminassem o domínio comum. As decisões seguintes não representam funcionalidades abandonadas, mas sim escolhas de âmbito para manter a primeira versão estável, testável e alinhada com o domínio principal do projeto:
@@ -614,9 +736,9 @@
 
     A implementação distingue chamadas unárias de \textit{streaming}. Em respostas progressivas, o interceptor não bloqueia a execução; usa operadores de fluxo para observar eventos e emitir métricas no encerramento do \textit{stream}. Assim mede a duração total da interação, e não apenas o tempo até ao primeiro fragmento.
 
-    A arquitetura segue inversão de dependência através da porta \texttt{MetricsPort}. O SDK define instrumentos comuns, como \texttt{counter}, \texttt{histogram} e \texttt{upDownCounter}, enquanto o adapter concreto no target JVM exporta para OpenTelemetry. O uso do OpenTelemetry Protocol (OTLP) foi escolhido porque o OTLP define a codificação, transporte e entrega de dados de telemetria entre fontes, coletores e backends \cite{opentelemetry_otlp}. Esta escolha evita prender o SDK a Prometheus, Grafana, Datadog ou outro backend específico: o SDK emite telemetria num formato aberto, o Collector recebe e processa esses dados, e a infraestrutura decide para onde exportar.
+    A arquitetura segue inversão de dependência através da porta \texttt{MetricsPort}. O OmniAI SDK define instrumentos comuns, como \texttt{counter}, \texttt{histogram} e \texttt{upDownCounter}, enquanto o adapter concreto no target JVM exporta para OpenTelemetry. O uso do OpenTelemetry Protocol (OTLP) foi escolhido porque o OTLP define a codificação, transporte e entrega de dados de telemetria entre fontes, coletores e backends \cite{opentelemetry_otlp}. Esta escolha evita prender o OmniAI SDK a Prometheus, Grafana, Datadog ou outro backend específico: o SDK emite telemetria num formato aberto, o Collector recebe e processa esses dados, e a infraestrutura decide para onde exportar.
 
-    Esta decisão é especialmente importante numa Gateway de IA. O mesmo SDK pode ser usado por uma aplicação simples em desenvolvimento, por um POC local com Prometheus/Grafana ou por uma instalação futura com outro backend de observabilidade. A OpenTelemetry apresenta-se precisamente como especificação aberta e agnóstica de fornecedor \cite{opentelemetry_what_is}; por isso, a instrumentação fica no SDK, mas a escolha operacional do backend permanece fora do domínio.
+    Esta decisão é especialmente importante numa Gateway de IA. O mesmo OmniAI SDK pode ser usado por uma aplicação simples em desenvolvimento, por um POC local com Prometheus/Grafana ou por uma instalação futura com outro backend de observabilidade. A OpenTelemetry apresenta-se precisamente como especificação aberta e agnóstica de fornecedor \cite{opentelemetry_what_is}; por isso, a instrumentação fica no OmniAI SDK, mas a escolha operacional do backend permanece fora do domínio.
 
     \begin{figure}[H]
         \centering
@@ -668,11 +790,11 @@ metrics {
     \subsection{Interceptor de Autenticação}
     A autenticação é realizada pelo \texttt{AuthenticationInterceptor}. A Gateway atua como \textit{Resource Server}: recebe pedidos para recursos protegidos, extrai o \textit{access token} do cabeçalho \texttt{Authorization: Bearer <token>} e valida se esse token foi emitido por um servidor de autorização confiável \cite{rfc6749,rfc6750,oauth_resource_server}. Esta responsabilidade é essencial numa AI Gateway, porque a camada central passa a proteger acesso a modelos, custos, quotas e dados operacionais.
 
-    A Gateway não deve atuar como \textit{Authorization Server}: não emite tokens, não gere credenciais dos clientes e não substitui Logto ou Keycloak. O seu papel é o de API protegida. Por isso, valida tokens recebidos, confirma se foram emitidos para a audiência esperada e só depois permite que o pedido avance para autorização, rate limiting e inferência. Esta separação reduz responsabilidade de segurança dentro do SDK e permite integrar diferentes fornecedores de identidade sem alterar o contrato dos clientes.
+    A Gateway não deve atuar como \textit{Authorization Server}: não emite tokens, não gere credenciais dos clientes e não substitui Logto ou Keycloak. O seu papel é o de API protegida. Por isso, valida tokens recebidos, confirma se foram emitidos para a audiência esperada e só depois permite que o pedido avance na pipeline para os próximos interceptors Esta separação reduz responsabilidade de segurança dentro do SDK e permite integrar diferentes fornecedores de identidade sem alterar o contrato dos clientes.
 
     O fluxo inicia-se no adapter HTTP, que propaga o token para o domínio através de metadados. O interceptor classifica o token: se tiver três segmentos, é tratado como JWT; caso contrário, como token opaco. Esta distinção permite escolher entre validação local por assinatura e validação remota por introspeção.
 
-    No modo \textit{OIDC Discovery} (RFC 8414), a Gateway obtém dinamicamente metadados do \textit{Authorization Server}, como \textit{issuer}, \texttt{jwks\_uri} e endpoint de introspeção \cite{rfc8414}. Para JWTs, valida o \texttt{kid}, obtém a chave pública no JWKS, verifica assinatura e confirma \textit{claims} como \texttt{exp}, \texttt{nbf}, \texttt{iss} e \texttt{aud} \cite{rfc7519,rfc7517,rfc7515}. Para tokens opacos, usa introspeção OAuth2 \cite{rfc7662}.
+    No modo \textit{OIDC Discovery} (RFC 8414), a Gateway obtém dinamicamente metadados do \textit{Authorization Server}, como \textit{issuer}, \texttt{jwks\_uri} e endpoint de introspeção \cite{rfc8414}. Todo este fluxo encontra-se ilustrado na Figura 5.4. Para JWTs, valida o \texttt{kid}, obtém a chave pública no JWKS, verifica assinatura e confirma \textit{claims} como \texttt{exp}, \texttt{nbf}, \texttt{iss} e \texttt{aud} \cite{rfc7519,rfc7517,rfc7515}. Para tokens opacos, usa introspeção OAuth2 \cite{rfc7662}.
 
     \begin{figure}[H]
         \centering
@@ -695,11 +817,11 @@ metrics {
     A Gateway final usa Logto como Authorization Server local \cite{logto_docs}, executado em Docker juntamente com PostgreSQL, OpenTelemetry Collector, Prometheus e Grafana. Foram também realizados testes exploratórios com Keycloak \cite{keycloak_docs}. A escolha final do Logto no POC deveu-se à simplicidade de configuração local, suporte a aplicações Machine-to-Machine e facilidade de gerir API Resources durante a validação.
 
     \subsection{Interceptor de Autorização}
-    A autorização é separada da autenticação porque responder a ``quem é o chamador?'' não é o mesmo que responder a ``o que este chamador pode fazer?''. A autenticação valida identidade; a autorização decide permissões sobre uma ação e um recurso. Esta separação é importante numa Gateway multi-cliente, onde um token válido pode não ter permissão para usar todos os modelos, fornecedores ou operações. A distinção entre autenticação e autorização é também a base dos modelos modernos de identidade: a primeira prova identidade, enquanto a segunda concede permissão sobre dados ou ações protegidas \cite{microsoft_authn_authz}.
+    A autorização é separada da autenticação porque responder a ``quem é o utilizador?'' não é o mesmo que responder a ``o que este utilizador pode fazer?''. A autenticação valida identidade; a autorização decide permissões sobre uma ação e um recurso. Esta separação é importante numa Gateway multi-cliente, onde um token válido pode não ter permissão para usar todos os modelos, fornecedores ou operações. A distinção entre autenticação e autorização é também a base dos modelos modernos de identidade: a primeira prova identidade, enquanto a segunda concede permissão sobre dados ou ações protegidas \cite{microsoft_authn_authz}.
 
-    No contexto do projeto, esta separação evita dois problemas. Primeiro, impede que a validação de token seja confundida com autorização total: um cliente autenticado pode estar limitado a um subconjunto de modelos, fornecedores ou quotas. Segundo, permite trocar a origem das decisões de autorização sem alterar a autenticação. Hoje a decisão pode ser local ou simples; no futuro pode vir de AuthZen, OPA ou outro PDP externo.
+    No contexto do projeto, esta separação evita dois problemas. Primeiro, impede que a validação de token seja confundida com autorização total: um cliente autenticado pode estar limitado a um subconjunto de modelos, fornecedores ou quotas. Segundo, permite trocar a origem das decisões de autorização sem alterar a autenticação. Embora numa fase inicial a decisão possa operar de forma local e simples, o sistema está desenhado para que, numa iteração futura, essa mesma decisão possa ser assegurada por um PDP externo, tal como o AuthZen ou o OPA.
 
-    No OmniAI SDK, a autorização é centralizada no \texttt{PolicyEnforcerInterceptor}. O componente atua como \textit{Policy Enforcement Point} (PEP): interceta o pedido, constrói um \texttt{AuthorizationInput} e delega a decisão a um \textit{Policy Decision Point} (PDP) através da porta \texttt{PolicyDecisionPointPort}.
+    No OmniAI SDK, a autorização é centralizada no \texttt{PolicyEnforcerInterceptor}. O componente atua como \textit{Policy Enforcement Point} (PEP): interceta o pedido, constrói um \texttt{AuthorizationInput} e delega a decisão a um \textit{Policy Decision Point} (PDP) através da porta \texttt{PolicyDecisionPointPort}.Podemos ver todo este fluxo na figura 5.6.
 
     \begin{figure}[H]
         \centering
@@ -729,7 +851,7 @@ metrics {
     Quando a chamada prossegue, o interceptor observa o resultado. Erros incrementam o contador de falhas; ao atingir \texttt{failureThreshold}, o circuito passa para \texttt{OPEN}. Após um período de recuperação, o estado \texttt{HALF\_OPEN} permite testar um número limitado de pedidos antes de voltar ao estado \texttt{CLOSED}, evitando inundar um fornecedor que ainda está a recuperar \cite{microsoft_circuit_breaker}. A configuração inclui \texttt{failureThreshold}, \texttt{resetTimeoutMs} e \texttt{halfOpenTestRequests}. A implementação atual cobre a abertura e fecho básico do circuito; a evolução temporal mais completa do estado \texttt{HALF\_OPEN} é uma melhoria natural.
 
     \subsection{Interceptor de Fallback}
-    O \texttt{FallbackInterceptor} permite tentar alternativas quando a chamada principal falha. Em sistemas de IA, \textit{fallback} ao nível de modelo ou fornecedor é relevante porque falhas de LLMs são frequentes em produção: rate limits, indisponibilidade, quotas, timeouts ou modelos descontinuados podem impedir a resposta do fornecedor principal \cite{ai_fallback_tombas,portkey_fallback}. Um gateway é o ponto certo para esta política, porque conhece os outbounds configurados e consegue trocar de destino sem exigir alterações no cliente.
+    O \texttt{FallbackInterceptor} permite tentar alternativas quando a chamada principal falha. Em sistemas de IA, \textit{fallback} ao nível de modelo ou fornecedor é relevante porque falhas nas APIs de inferência fornecidas pelas LLM's são um cenário frequente em produção: rate limits, indisponibilidade, quotas, timeouts ou modelos descontinuados podem impedir a resposta do fornecedor principal \cite{ai_fallback_tombas,portkey_fallback}. Um gateway é o ponto certo para esta política, porque conhece os outbounds configurados e consegue trocar de destino sem exigir alterações no cliente.
 
     A decisão de colocar fallback na Gateway, e não nos clientes, reduz duplicação e melhora controlo operacional. Se cada aplicação cliente implementasse a sua própria lógica de fallback, seria necessário repetir regras de prioridade, tratamento de erros, mapeamento de contratos e métricas em vários pontos. Ao centralizar a política, o SDK consegue manter o mesmo contrato de entrada e decidir internamente que fornecedor ou modelo alternativo deve ser tentado. Isto é particularmente útil quando o cliente usa um contrato compatível com Anthropic ou OpenAI, mas a Gateway pode executar a chamada noutro provider configurado.
 
@@ -767,16 +889,16 @@ metrics {
 
     Um dos objetivos do OmniAI SDK é permitir que a lógica principal da Gateway seja reutilizada em diferentes ambientes de execução. O Kotlin Multiplatform permite separar código comum de implementações específicas: o domínio, contratos, portas, adapters principais, DSL e parte dos interceptors vivem em source sets comuns; detalhes como cliente HTTP, reflexão de prioridades, servidor Ktor e integrações de plataforma ficam em source sets específicos.
 
-    No target JVM, o SDK pode ser utilizado por aplicações Kotlin ou Java. Este é o target mais consolidado no estado atual do projeto e é o usado pelo POC OmniAI Gateway. A implementação JVM inclui Ktor HTTP client, integração com servidor Ktor, autenticação com descoberta OIDC, telemetria e execução real de outbounds. A distribuição futura via Maven permitirá que uma aplicação adicione o SDK como dependência versionada, sem depender de \textit{composite build}.
+    No target JVM, o OmniAI-SDK pode ser utilizado por aplicações Kotlin ou Java. Este é o target mais consolidado no estado atual do projeto e é o usado pelo POC OmniAI Gateway. A implementação JVM inclui Ktor HTTP client, integração com servidor Ktor, autenticação com descoberta OIDC, telemetria e execução real de outbounds. A distribuição futura via Maven permitirá que uma aplicação adicione o SDK como dependência versionada, sem depender de \textit{composite build}.
 
     No target JavaScript/Node.js, o projeto prepara uma API consumível a partir do ecossistema Node.js e TypeScript. A fachada \texttt{@JsExport} encapsula a configuração em tipos exportáveis e evita expor diretamente estruturas Kotlin que não são adequadas à fronteira JS. Esta camada é uma base para consumo via NPM, mas ainda não tem paridade total com a JVM.
 
-    A nuance principal da distribuição multiplataforma é que nem tudo deve ser comum. O domínio e os contratos devem permanecer partilhados; transporte HTTP, servidor, observabilidade e segurança podem ter implementações diferentes por plataforma. Esta divisão evita duplicação sem forçar uma abstração demasiado rígida. A linha de evolução prevista é consolidar a API pública do SDK, estabilizar versionamento semântico, automatizar publicação Maven/NPM por CD e documentar exemplos mínimos de consumo para JVM e Node.js.
+    A nuance principal da distribuição multiplataforma é que nem tudo deve ser comum. O domínio e os contratos devem permanecer partilhados; transporte HTTP, servidor, observabilidade e segurança podem ter implementações diferentes por plataforma. Esta divisão evita duplicação sem forçar uma abstração demasiado rígida. A linha de evolução prevista é consolidar a API pública do OmniAI-SDK, estabilizar versionamento semântico, automatizar publicação Maven/NPM por CD e documentar exemplos mínimos de consumo para JVM e Node.js.
 
     \chapter{Provas de Conceito (PoCs) e Validação}
 
     \section{Validação do POC OmniAI Gateway}
-    A validação principal foi realizada com a aplicação \texttt{OmniAiGateway}, um POC Ktor que consome o OmniAI SDK através do \textit{composite build}. Esta aplicação carrega o ficheiro \texttt{application.conf}, resolve variáveis de ambiente, instancia o \texttt{KtorHttpTransportClient}, configura outbounds, ativa segurança e telemetria, monta o runtime do SDK e expõe endpoints HTTP compatíveis com OpenAI, Anthropic e Gemini.
+    A validação principal foi realizada com a aplicação \texttt{OmniAiGateway}, um POC que consome o OmniAI SDK através do \textit{composite build}. Esta aplicação carrega o ficheiro \texttt{application.conf}, resolve variáveis de ambiente, instancia o \texttt{KtorHttpTransportClient}, configura outbounds, ativa segurança e telemetria, monta o runtime do SDK e expõe endpoints HTTP compatíveis com OpenAI, Anthropic e Gemini.
 
     O comportamento validado não deve ser descrito como roteamento inteligente. A implementação atual realiza despacho configurado: o pedido contém fornecedor e modelo, e o dispatcher padrão escolhe o outbound que corresponde a essa combinação. Este desenho já permite demonstrar o desacoplamento entre cliente e fornecedor, mas políticas mais avançadas, como seleção por custo, qualidade, latência ou plano do cliente, permanecem como trabalho futuro. O trabalho de \textit{fallback} e \textit{circuit breaker} fornece a base técnica para esse tipo de evolução, mas o POC não afirma executar roteamento semântico ou otimizado.
 
