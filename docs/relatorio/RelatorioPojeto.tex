@@ -12,8 +12,10 @@
 \usepackage{float}
 \usepackage{titlesec}
 \usepackage{array}
+\usepackage{tabularx}
 \usepackage{tikz}
 \usetikzlibrary{arrows.meta,positioning,shapes.geometric,fit}
+\newcolumntype{Y}{>{\raggedright\arraybackslash}X}
 
 \onehalfspacing
 
@@ -68,7 +70,7 @@
 
 % ================= ELEMENTOS PRÉ-TEXTUAIS =================
     \begin{abstract}
-        A ausência de um protocolo comum na comunicação com Modelos de Linguagem de Grande Escala (LLMs) obriga as aplicações a integrarem diferentes interfaces de acesso e implementações particulares para a invocação de ferramentas externas. Para resolver esta fragmentação tecnológica, este projeto propõe o desenvolvimento do \textbf{OmniAI SDK}, um \textit{Software Development Kit} construído em Kotlin Multiplatform (KMP). Baseado nos princípios da Arquitetura Hexagonal (\textit{Ports and Adapters}), o SDK isola a lógica de domínio e suporta a comunicação bidirecional compatível com os padrões das APIs de referência, nomeadamente OpenAI, Anthropic e Gemini. O núcleo do sistema implementa uma \textit{pipeline} extensível e configurável, inspirada no modelo de filtros de Servlets, que executa \textit{interceptors} pré-construídos para autorização, autenticação, métricas, \textit{rate limiting}, \textit{circuit breaker} e \textit{fallback}. Adicionalmente, o SDK integra um MCP Broker, permitindo o registo dinâmico de ferramentas externas através de configuração. Distribuído de forma multiplataforma para ambientes JVM, via Maven, e Node.js/TypeScript, via NPM, o SDK foi validado através da construção da \textbf{OmniAI Gateway}, uma aplicação final que consome a biblioteca para instanciar rapidamente uma Gateway. A avaliação demonstra que a solução minimiza o acoplamento tecnológico e o esforço de integração, garantindo resiliência, escalabilidade e centralização na gestão de modelos de IA.
+        A ausência de um protocolo comum na comunicação com Modelos de Linguagem de Grande Escala (LLMs) obriga as aplicações a integrarem diferentes interfaces de acesso e implementações particulares para a invocação de ferramentas externas. Para resolver esta fragmentação tecnológica, este projeto propõe o desenvolvimento do \textbf{OmniAI SDK}, um \textit{Software Development Kit} construído em Kotlin Multiplatform (KMP). Baseado nos princípios da Arquitetura Hexagonal (\textit{Ports and Adapters}), o SDK isola a lógica de domínio e suporta a comunicação bidirecional compatível com os padrões das APIs de referência, nomeadamente OpenAI, Anthropic e Gemini. O núcleo do sistema implementa uma \textit{pipeline} extensível e configurável, inspirada no modelo de filtros de Servlets, que executa \textit{interceptors} pré-construídos para autorização, autenticação, métricas, \textit{rate limiting}, \textit{circuit breaker} e \textit{fallback}. Adicionalmente, o SDK prepara um módulo MCP Broker para evoluir a gestão de ferramentas externas de forma independente dos adapters de inferência. Distribuído de forma multiplataforma para ambientes JVM, via Maven, e Node.js/TypeScript, via NPM, o SDK foi validado através da construção da \textbf{OmniAI Gateway}, um POC que consome a biblioteca para demonstrar a criação de uma Gateway real. A avaliação demonstra que a solução minimiza o acoplamento tecnológico e o esforço de integração, garantindo resiliência, escalabilidade e centralização na gestão de modelos de IA.
     \end{abstract}
 
     \renewcommand{\abstractname}{Abstract}
@@ -77,16 +79,16 @@
         (LLMs) forces applications to integrate different access interfaces and
         specific implementations for invoking external tools. To address this
         technological fragmentation, this project proposes the development of the OmniAI SDK, a
-        Development Kit built on Kotlin Multiplatform (KMP). Based on the principles of the
+        Software Development Kit built on Kotlin Multiplatform (KMP). Based on the principles of the
         Hexagonal Architecture (Ports and Adapters), the SDK isolates the domain logic and supports
         bidirectional communication compatible with the standards of reference APIs, namely OpenAI,
-        Anthropic, and Gemini. The system’s core implements an extensible and configurable pipeline, inspired
-        by the Servlet filter model, which executes pre-built interceptors for authorization, au-
-        thentication, metrics, rate limiting, circuit breaker, and fallback. Additionally, the SDK integrates an
-        MCP Broker, enabling the dynamic registration of external tools through configuration.
+        Anthropic, and Gemini. The system's core implements an extensible and configurable pipeline, inspired
+        by the Servlet filter model, which executes pre-built interceptors for authorization,
+        authentication, metrics, rate limiting, circuit breaker, and fallback. Additionally, the SDK prepares an
+        MCP Broker module to evolve external tool management independently from inference adapters.
         Distributed across multiple platforms for JVM environments via Maven and Node.js/TypeScript
-        via NPM, the SDK was validated through the development of the OmniAI Gateway, an end-user
-        application that leverages the library to rapidly instantiate a Gateway. The evaluation demonstrates that
+        via NPM, the SDK was validated through the development of the OmniAI Gateway, a proof-of-concept
+        application that leverages the library to instantiate a real Gateway. The evaluation demonstrates that
         the solution minimizes technological coupling and integration effort, ensuring resilience,
         scalability, and centralization in AI model management.
     \end{abstract}
@@ -150,53 +152,308 @@
         \label{fig:p4}
     \end{figure}
 
-    A solução proposta evoluiu para a construção de um \textbf{OmniAI SDK}, isto é, uma biblioteca reutilizável que permite instanciar uma \textbf{OmniAI Gateway}. A Gateway funciona como ponto de entrada único para aplicações cliente, centralizando o acesso a APIs de inferência, ferramentas externas e mecanismos transversais de segurança e operação. Esta abordagem aproxima-se do padrão de API Gateway \cite{api_gateway_design} e, no contexto específico de modelos de IA, do padrão de AI Gateway enquanto camada centralizada de acesso a modelos \cite{ai_gateway_pattern,karl_ai_gateway}. Embora existam soluções relacionadas, como LiteLLM e OpenRouter \cite{litellm,openrouter}, o foco deste projeto está na construção de um SDK extensível, configurável e integrado com uma Gateway final própria.
+    A solução proposta evoluiu para a construção de um \textbf{OmniAI SDK}, isto é, uma biblioteca reutilizável que permite instanciar uma \textbf{OmniAI Gateway}. A Gateway funciona como ponto de entrada único para aplicações cliente, centralizando o acesso a APIs de inferência, ferramentas externas e mecanismos transversais de segurança e operação. Esta abordagem aproxima-se do padrão de API Gateway \cite{api_gateway_design} e, no contexto específico de modelos de IA, do padrão de AI Gateway enquanto camada centralizada de acesso a modelos \cite{ai_gateway_pattern,karl_ai_gateway}. Embora existam soluções relacionadas, como LiteLLM e OpenRouter \cite{litellm,openrouter}, o foco deste projeto está na construção de um SDK extensível, configurável e validado por uma Gateway POC própria.
 
     O SDK foi desenvolvido em Kotlin Multiplatform, permitindo partilhar o núcleo de domínio entre targets diferentes e preparar a distribuição para JVM e JavaScript/Node.js \cite{kotlin_multiplatform}. Esta decisão torna possível disponibilizar a biblioteca em ecossistemas distintos: via Maven para aplicações JVM/Kotlin e via NPM para ambientes Node.js/TypeScript.
 
     A arquitetura do SDK foi organizada segundo os princípios da Arquitetura Hexagonal, também conhecida como \textit{Ports and Adapters} \cite{hexagonal_ports}. O domínio comum fica isolado de contratos externos, enquanto os \textit{inbound adapters} traduzem pedidos de clientes compatíveis com OpenAI, Anthropic ou Gemini para o modelo comum, e os \textit{outbound adapters} traduzem o modelo comum para chamadas reais aos fornecedores.
 
-    Para tornar a solução configurável e escalável, foi criada uma \textit{pipeline} interna de \textit{interceptors}, inspirada no modelo de filtros de Servlets \cite{servlet_filterchain}. Esta \textit{pipeline} permite executar comportamentos transversais antes e depois da chamada ao fornecedor, incluindo autenticação, autorização, métricas, \textit{rate limiting}, \textit{circuit breaker}, \textit{fallback} e \textit{logging}. Por fim, a integração com MCP permite gerir ferramentas externas de forma separada da lógica de inferência.
+    Para tornar a solução configurável e escalável, foi criada uma \textit{pipeline} interna de \textit{interceptors}, inspirada no modelo de filtros de Servlets \cite{servlet_filterchain}. Esta \textit{pipeline} permite executar comportamentos transversais antes e depois da chamada ao fornecedor, incluindo autenticação, autorização, métricas, \textit{rate limiting}, \textit{circuit breaker}, \textit{fallback} e \textit{logging}. Por fim, o estudo do MCP fundamenta a evolução de um broker de ferramentas separado da lógica de inferência.
 
     \section{Estrutura do Documento}
-    Este documento encontra-se estruturado da seguinte forma. O Capítulo 2 apresenta o estudo prévio das APIs de inferência e do MCP, bem como a modelação do domínio comum. O Capítulo 3 descreve a arquitetura do sistema, incluindo a separação em módulos e a aplicação da Arquitetura Hexagonal. O Capítulo 4 detalha a implementação técnica do SDK, da \textit{pipeline}, dos \textit{interceptors}, do MCP Broker e da Gateway final. O Capítulo 5 apresenta provas de conceito e validações realizadas. Por fim, o Capítulo 6 sintetiza as conclusões e identifica trabalho futuro.
+    Este documento encontra-se organizado de forma progressiva, partindo do problema de integração e avançando até à validação da solução construída. O Capítulo 2 apresenta apenas o estudo prévio: primeiro a análise comparativa das APIs de inferência e depois o estudo do \textit{Model Context Protocol}. O Capítulo 3 isola a modelação do domínio comum, explicando como os conceitos observados no estudo foram transformados em estruturas como \texttt{CommonRequest}, \texttt{CommonResponse}, \texttt{CommonResponseEvent}, \texttt{CommonTool} e \texttt{TypedMap}. O Capítulo 4 descreve a arquitetura do SDK e do POC, incluindo a visão top-level, a Arquitetura Hexagonal, os módulos, os \textit{contracts}, os \textit{inbounds}, os \textit{outbounds}, o \textit{dispatcher}, a DSL e o cliente HTTP. O Capítulo 5 detalha a implementação técnica e a evolução do sistema, com foco na separação entre SDK e OmniAI Gateway, na \textit{pipeline} de \textit{interceptors}, nos mecanismos de segurança, observabilidade e resiliência, no MCP Broker e na distribuição multiplataforma. O Capítulo 6 apresenta as provas de conceito efetivamente realizadas no POC OmniAI Gateway. O Capítulo 7 sintetiza as conclusões, limitações e linhas de evolução futura. O Capítulo 8 regista o histórico de planeamento e os principais riscos considerados durante o desenvolvimento.
 
-    \chapter{Estudo Prévio e Modelação de Domínio}
+    \chapter{Estudo Prévio}
 
     \section{Análise das APIs de Inferência}
-    O estudo inicial comparou APIs de inferência compatíveis com os fornecedores OpenAI, Anthropic e Gemini, bem como execuções locais através de ambientes compatíveis, como Ollama. Esta análise teve como objetivo identificar conceitos comuns e divergências estruturais relevantes para a criação de um domínio unificado.
+    O estudo inicial comparou APIs de inferência compatíveis com os fornecedores OpenAI, Anthropic e Gemini, bem como execuções locais e compatíveis através de Ollama e de endpoints OpenAI-like, como Groq. Esta análise não teve apenas um papel descritivo: foi a base empírica para identificar os conceitos que podiam ser normalizados no SDK e os pontos onde a normalização teria de preservar extensões específicas de cada fornecedor. Para esse efeito foram executados e documentados pedidos de geração simples, pedidos com \textit{streaming}, pedidos com \textit{tool calling}, respostas com contabilização de tokens e casos de configuração de geração.
 
-    A API OpenAI organiza o pedido em torno de um campo \texttt{model}, uma lista \texttt{messages}, parâmetros de geração e, opcionalmente, uma lista de \texttt{tools}. A autenticação é feita por \texttt{Authorization: Bearer <token>}. O \textit{tool calling} devolve chamadas em \texttt{tool\_calls}, contendo identificador, nome da função e argumentos serializados em JSON. O \textit{streaming} é baseado em eventos incrementais, onde cada fragmento contém \texttt{delta} com conteúdo textual ou partes da chamada de ferramenta.
+    A comparação mostrou que as APIs partilham um núcleo conceptual comum, mas expõem esse núcleo através de modelos de dados diferentes. A OpenAI organiza a interação em torno de \texttt{chat/completions}, com \texttt{messages}, \texttt{choices}, \texttt{tool\_calls} e eventos incrementais baseados em \texttt{delta} \cite{openai_api}. A Anthropic usa uma API de \texttt{messages}, onde o \texttt{system prompt} está no nível de topo, o campo \texttt{max\_tokens} é obrigatório, e o conteúdo da resposta é uma lista de blocos como \texttt{text}, \texttt{tool\_use} ou \texttt{thinking} \cite{anthropic_api}. A Gemini modela o pedido como \texttt{contents} compostos por \texttt{parts}, agrupa parâmetros em \texttt{generationConfig}, representa ferramentas por \texttt{functionDeclarations} e introduz conceitos próprios como \textit{thought signatures} e \texttt{thinkingConfig} \cite{google_gemini_api}.
 
-    A API Anthropic utiliza a arquitetura de \textit{messages}. O campo \texttt{max\_tokens} é obrigatório, as instruções de sistema são fornecidas num campo próprio e o conteúdo pode ser uma string simples ou uma lista de blocos estruturados. As ferramentas são descritas através de \texttt{name}, \texttt{description} e \texttt{input\_schema}. Quando o modelo decide usar uma ferramenta, a resposta inclui blocos \texttt{tool\_use} e o ciclo continua com a devolução de blocos \texttt{tool\_result}.
+    \begin{table}[H]
+        \centering
+        \footnotesize
+        \renewcommand{\arraystretch}{1.25}
+        \begin{tabularx}{\textwidth}{|>{\raggedright\arraybackslash}p{2.5cm}|Y|Y|Y|}
+            \hline
+            \textbf{Conceito} & \textbf{Semelhança observada} & \textbf{Diferenças relevantes} & \textbf{Modelo comum pretendido} \\
+            \hline
+            Modelo invocado & As três APIs precisam de identificar o modelo a usar. & OpenAI e Anthropic usam \texttt{model} no corpo; Gemini coloca o modelo no URI e, por vezes, também no cliente. & \texttt{provider} + \texttt{model}, permitindo escolher adapter e preservar a identidade do modelo. \\
+            \hline
+            Histórico conversacional & Todas representam uma conversa com papéis e conteúdo. & OpenAI e Anthropic usam \texttt{messages}; Gemini usa \texttt{contents} e \texttt{parts}; Anthropic separa o \texttt{system}. & \texttt{CommonRequestMessage}, com papel comum e lista de partes de conteúdo. \\
+            \hline
+            Instruções de sistema & Todas suportam instruções globais para orientar o modelo. & OpenAI pode usar mensagem \texttt{system}; Anthropic usa campo de topo \texttt{system}; Gemini usa \texttt{system\_instruction}. & \texttt{SystemPrompt}, separado do histórico para permitir tradução correta. \\
+            \hline
+            Parâmetros de geração & Temperatura, limite de tokens e opções de amostragem aparecem nos três ecossistemas. & Nomes e agrupamentos variam: campos soltos em OpenAI/Anthropic, \texttt{generationConfig} em Gemini, e opções exclusivas por fornecedor. & \texttt{CommonGenerationConfig} para o subconjunto comum e \texttt{providerOptions} para extensões. \\
+            \hline
+            Conteúdo multimodal e estruturado & As APIs evoluem para conteúdo composto, não apenas texto simples. & Anthropic e Gemini modelam blocos naturalmente; OpenAI depende do contrato usado; tool calling introduz partes específicas. & \texttt{RequestContentPart} e \texttt{ResponseContentPart}. \\
+            \hline
+            Utilização de tokens & Todas expõem algum tipo de contabilização de utilização. & OpenAI usa \texttt{prompt\_tokens}/\texttt{completion\_tokens}; Anthropic usa \texttt{input\_tokens}/\texttt{output\_tokens}; Gemini usa \texttt{usageMetadata}. & \texttt{CommonUsage}, com tokens de entrada, saída e total quando disponíveis. \\
+            \hline
+        \end{tabularx}
+        \caption{Mapeamento entre conceitos das APIs de inferência e o domínio comum}
+        \label{tab:api-domain-mapping}
+    \end{table}
 
-    A API Gemini utiliza \texttt{contents} compostos por \texttt{parts}. O mesmo modelo de conteúdo suporta texto, multimodalidade, chamadas de função e respostas de função. As ferramentas são disponibilizadas através de \texttt{functionDeclarations}; as configurações de geração são agrupadas em \texttt{generationConfig}; e existem particularidades como \textit{thought signatures}, \texttt{thinkingConfig} e parâmetros de segurança. Esta API evidencia a dificuldade de criar uma normalização completa, porque alguns conceitos não têm correspondência direta nos outros fornecedores.
+    O caso de \textit{tool calling} foi especialmente relevante, porque é onde as APIs mais divergem apesar de exprimirem uma intenção semelhante: permitir que o modelo peça a execução de uma função externa. Na OpenAI, a ferramenta é descrita em \texttt{tools[]} e a resposta devolve \texttt{tool\_calls} com argumentos serializados como JSON em string. Na Anthropic, a ferramenta é descrita com \texttt{name}, \texttt{description} e \texttt{input\_schema}; a resposta inclui blocos \texttt{tool\_use}, e o resultado da execução regressa ao modelo como bloco \texttt{tool\_result}. Na Gemini, as ferramentas são \texttt{functionDeclarations}, a chamada surge em \texttt{functionCall}, e o resultado é enviado como \texttt{functionResponse}.
 
-    Desta análise resultaram três conclusões principais. Primeiro, existe um conjunto mínimo comum que pode ser representado por mensagens, papéis, conteúdo, configuração de geração, ferramentas e respostas. Segundo, cada fornecedor contém extensões que não devem ser descartadas, pelo que o domínio precisa de um mecanismo de opções específicas. Terceiro, o suporte a \textit{streaming} exige eventos comuns que preservem a ordem e o significado dos fragmentos recebidos.
+    \begin{table}[H]
+        \centering
+        \footnotesize
+        \renewcommand{\arraystretch}{1.25}
+        \begin{tabularx}{\textwidth}{|>{\raggedright\arraybackslash}p{2.4cm}|>{\raggedright\arraybackslash}p{1.8cm}|Y|Y|}
+            \hline
+            \textbf{Aspeto} & \textbf{API} & \textbf{Estrutura observada} & \textbf{Impacto no domínio comum} \\
+            \hline
+            Declaração de ferramenta & OpenAI & \texttt{tools[].function.parameters}. & Normalização em \texttt{CommonTool.parametersSchema}. \\
+            \hline
+            Declaração de ferramenta & Anthropic & \texttt{tools[].input\_schema}. & Mesmo conceito, nome de campo diferente. \\
+            \hline
+            Declaração de ferramenta & Gemini & \texttt{functionDeclarations[].parameters}. & Necessidade de traduzir declarações Gemini para a mesma estrutura comum. \\
+            \hline
+            Escolha de ferramenta & OpenAI & \texttt{tool\_choice} com valores como \texttt{auto}, \texttt{none} ou ferramenta específica. & Representação em \texttt{ToolChoice}. \\
+            \hline
+            Escolha de ferramenta & Anthropic & \texttt{tool\_choice} com semântica semelhante, incluindo \texttt{auto}, \texttt{any} e ferramenta específica. & O domínio preserva intenção, não o nome exato do campo. \\
+            \hline
+            Escolha de ferramenta & Gemini & \texttt{functionCallingConfig} dentro de \texttt{toolConfig}. & Conversão para a mesma decisão comum sobre uso de ferramenta. \\
+            \hline
+            Chamada pedida pelo modelo & OpenAI & \texttt{message.tool\_calls[]} com \texttt{id}, \texttt{name} e \texttt{arguments}. & Mapeamento para \texttt{ToolCallPart}. \\
+            \hline
+            Chamada pedida pelo modelo & Anthropic & Bloco \texttt{tool\_use} com \texttt{id}, \texttt{name} e \texttt{input}. & A chamada passa a ser uma parte estruturada da resposta. \\
+            \hline
+            Chamada pedida pelo modelo & Gemini & \texttt{functionCall} com \texttt{name}, \texttt{args} e, quando disponível, \texttt{id}. & O domínio não assume que todos os fornecedores expõem os mesmos identificadores. \\
+            \hline
+            Resultado de ferramenta & OpenAI & Mensagem com \texttt{role=tool} e \texttt{tool\_call\_id}. & Mapeamento para \texttt{ToolResultPart}. \\
+            \hline
+            Resultado de ferramenta & Anthropic & Bloco \texttt{tool\_result}. & Resultado representado como conteúdo estruturado. \\
+            \hline
+            Resultado de ferramenta & Gemini & \texttt{functionResponse}. & Resultado traduzido para o mesmo conceito comum. \\
+            \hline
+            Eventos de \textit{streaming} & Todas & OpenAI usa \texttt{delta}; Anthropic usa eventos nomeados; Gemini envia respostas parciais por SSE. & Representação em \texttt{CommonResponseEvent}, separada de \texttt{CommonResponse}. \\
+            \hline
+        \end{tabularx}
+        \caption{Comparação do ciclo de \textit{tool calling} e \textit{streaming}}
+        \label{tab:tool-stream-mapping}
+    \end{table}
+
+    \begin{figure}[H]
+        \centering
+        \begin{tikzpicture}[
+            node distance=1.0cm and 1.0cm,
+            box/.style={rectangle, draw, rounded corners, align=center, text width=3.2cm, minimum height=1.0cm, inner sep=5pt},
+            common/.style={rectangle, draw, rounded corners, align=center, text width=4.0cm, minimum height=1.2cm, inner sep=5pt, fill=gray!10},
+            arrow/.style={-Latex, thick}
+        ]
+            \node[box] (openai) {OpenAI\\ \texttt{messages}\\ \texttt{tool\_calls}\\ \texttt{delta}};
+            \node[box, below=of openai] (anthropic) {Anthropic\\ \texttt{messages}\\ \texttt{tool\_use}\\ eventos nomeados};
+            \node[box, below=of anthropic] (gemini) {Gemini\\ \texttt{contents/parts}\\ \texttt{functionCall}\\ \texttt{generationConfig}};
+
+            \node[common, right=1.3cm of anthropic] (domain) {Domínio comum\\ \texttt{CommonRequest}\\ \texttt{CommonResponse}\\ \texttt{CommonResponseEvent}};
+
+            \node[box, right=1.3cm of domain] (provider) {Adapter de saída\\ contrato do fornecedor\\ transporte HTTP/SSE};
+
+            \draw[arrow] (openai.east) -- (domain.west);
+            \draw[arrow] (anthropic.east) -- (domain.west);
+            \draw[arrow] (gemini.east) -- (domain.west);
+            \draw[arrow] (domain.east) -- (provider.west);
+        \end{tikzpicture}
+        \caption{Normalização dos contratos de inferência para um domínio comum}
+        \label{fig:api-normalization}
+    \end{figure}
+
+    A conclusão principal deste estudo é que a construção do domínio comum não podia ser feita por intuição nem por uma tradução superficial de nomes de campos. Foi necessário observar pedidos e respostas reais, perceber como cada API representa mensagens, ferramentas, eventos e erros, e decidir que conceitos pertenciam ao núcleo comum e que conceitos deveriam permanecer como extensões específicas. A Tabela~\ref{tab:api-domain-mapping} mostra essa distinção: campos recorrentes como mensagens, modelo, parâmetros de geração e utilização de tokens justificam estruturas comuns; já elementos como \textit{thought signatures}, parâmetros avançados de raciocínio ou metadados específicos exigem um mecanismo extensível para não se perder informação.
 
     \section{Model Context Protocol (MCP)}
-    O \textit{Model Context Protocol} define uma arquitetura cliente-servidor para expor ferramentas, recursos e \textit{prompts} a aplicações baseadas em modelos \cite{mcp_protocol}. No contexto deste projeto, o MCP é relevante porque separa a definição e execução de ferramentas da API de inferência usada em cada pedido.
+    O \textit{Model Context Protocol} define uma arquitetura cliente-servidor para disponibilizar contexto a aplicações baseadas em modelos. Na terminologia do protocolo, um \textit{host} é a aplicação de IA que inicia e coordena ligações, os \textit{clients} mantêm ligações 1:1 com servidores, e os \textit{servers} expõem capacidades como ferramentas, recursos e \textit{prompts} através de mensagens JSON-RPC e transportes normalizados \cite{mcp_protocol,mcp_architecture}. Esta separação é relevante porque transforma integrações externas em unidades descobertas e invocadas através de um protocolo comum, em vez de as embutir diretamente na API de inferência de cada fornecedor.
 
-    A solução proposta integra um \textbf{MCP Broker}, responsável por registar ferramentas externas e disponibilizá-las ao sistema de forma uniforme. A intenção de desenho é permitir que ferramentas sejam adicionadas dinamicamente através de ficheiros de configuração, nomeadamente YAML, evitando a necessidade de recompilar a Gateway sempre que uma nova ferramenta é disponibilizada. A implementação atual do módulo \texttt{mcp-broker} inclui modelos de domínio para ferramentas, recursos e \textit{prompts}, geração de esquemas JSON e um \textit{builder} para configuração de servidores MCP com transporte \texttt{stdio}, SSE ou WebSocket.
+    O estudo do MCP foi realizado em paralelo com a análise das APIs de inferência, mas com um objetivo diferente. Enquanto a análise das APIs procurou compreender pedidos e respostas de modelos, o estudo do MCP procurou compreender como ferramentas externas podem ser descritas, listadas e executadas de forma independente do fornecedor de LLM. Os conceitos centrais observados foram:
 
-    \section{Definição do Domínio}
-    A modelação de domínio do OmniAI SDK foi definida a partir dos conceitos comuns identificados no estudo das APIs. O pedido comum é representado por \texttt{CommonRequest}, contendo fornecedor, modelo, mensagens, \textit{system prompt}, configuração de geração, ferramentas, escolha de ferramenta, indicação de resposta JSON e opções específicas do fornecedor.
+    \begin{itemize}
+        \item \textbf{Tools}: funções ou ações executáveis por um servidor MCP, descritas por nome, descrição e esquema de entrada.
+        \item \textbf{Resources}: dados ou documentos que podem ser descobertos e lidos por clientes MCP, normalmente identificados por URIs estáveis.
+        \item \textbf{Prompts}: modelos reutilizáveis de interação, que podem encapsular instruções, argumentos e mensagens estruturadas.
+        \item \textbf{Transports}: mecanismos de comunicação como \texttt{stdio}, SSE, HTTP com \textit{streaming} e WebSocket, dependendo do ambiente de execução.
+    \end{itemize}
 
-    As mensagens são representadas por \texttt{CommonRequestMessage}, com um papel comum e uma lista de partes de conteúdo. Esta abordagem permite representar mensagens simples, conteúdos multimodais, resultados de ferramentas e argumentos estruturados sem prender o domínio a um formato de API específico.
+    Para ganhar contexto prático, foi criado um projeto experimental de pequena dimensão, usado como ``projeto brinquedo'', onde foram implementados servidores MCP e clientes MCP com a biblioteca Kotlin MCP. Esse protótipo permitiu validar o ciclo básico de criação de um servidor, registo de capacidades, ligação a partir de um cliente e troca de mensagens. A utilização da biblioteca oficial \texttt{io.modelcontextprotocol:kotlin-sdk} também mostrou que a abordagem é compatível com Kotlin Multiplatform e que existem APIs próprias para construir clientes, servidores, ferramentas, recursos, \textit{prompts} e transportes \cite{mcp_kotlin_sdk}.
 
-    A resposta comum é representada por \texttt{CommonResponse} no caso síncrono e por \texttt{CommonResponseEvent} no caso de \textit{streaming}. A separação entre resposta final e eventos incrementais permite suportar APIs que devolvem um objeto completo e APIs que produzem uma sequência de eventos. Os eventos comuns incluem início de resposta, início de escolha, fragmentos de texto, início de chamada de ferramenta, fragmentos de argumentos, utilização de tokens, conclusão e erro.
+    Esta análise ajudou a distinguir dois problemas que, à primeira vista, podiam parecer iguais. O primeiro problema é a normalização de contratos de inferência, resolvido no SDK através de \textit{contracts}, \textit{translators}, \textit{inbounds}, \textit{outbounds} e domínio comum. O segundo problema é a gestão de ferramentas externas, onde o MCP oferece uma forma padronizada de descrever e executar capacidades. No final deste estudo, tornou-se natural desenhar um módulo de MCP Broker: não como ponto de partida do Capítulo 2, mas como consequência da necessidade de intermediar ferramentas externas sem acoplar cada adapter de inferência a cada ferramenta disponível.
 
-    Para preservar extensibilidade, o domínio utiliza estruturas como \texttt{TypedMap} e campos de opções específicas. Assim, dados que não fazem parte do mínimo comum, como parâmetros avançados de Gemini ou Anthropic, podem atravessar a \textit{pipeline} sem contaminar o núcleo do modelo.
+    \chapter{Modelação do Domínio Comum}
+
+    \section{Visão Global do Domínio}
+    A modelação do domínio comum do OmniAI SDK foi definida a partir dos padrões observados no estudo prévio. A ideia central foi criar um modelo de dados suficientemente expressivo para representar pedidos, respostas e eventos dos fornecedores estudados, mas sem copiar diretamente a estrutura de nenhum deles. Assim, o domínio funciona como um ponto intermédio estável: os adapters de entrada convertem contratos externos para o domínio; os adapters de saída convertem o domínio para o contrato do fornecedor real.
+
+    O pedido comum é representado por \texttt{CommonRequest}. Esta estrutura contém o fornecedor pretendido, o modelo, a lista de mensagens, o \textit{system prompt}, a configuração de geração, as ferramentas disponíveis, a escolha de ferramenta, a indicação de resposta JSON e um campo extensível para opções específicas do fornecedor. O campo \texttt{provider} é importante porque o SDK suporta contratos inbound compatíveis com um fornecedor e execução outbound noutro contexto configurado; o campo \texttt{model} permite distinguir múltiplos modelos dentro do mesmo fornecedor.
+
+    A resposta síncrona é representada por \texttt{CommonResponse}. Esta estrutura inclui fornecedor, identificador, modelo, escolhas, mensagem de resposta, razão de terminação e utilização de tokens. Em paralelo, as respostas incrementais são representadas por \texttt{CommonResponseEvent}. Esta separação evita forçar um fluxo de \textit{streaming} a parecer uma resposta final e permite modelar eventos que não existem numa resposta única, como início de escolha, fragmento de texto, início de chamada de ferramenta, fragmento de argumentos, utilização reportada e conclusão.
+
+    \begin{figure}[H]
+        \centering
+        \begin{tikzpicture}[
+            node distance=0.9cm and 0.9cm,
+            box/.style={rectangle, draw, rounded corners, align=center, text width=3.8cm, minimum height=1.0cm, inner sep=5pt},
+            common/.style={rectangle, draw, rounded corners, align=center, text width=3.8cm, minimum height=1.0cm, inner sep=5pt, fill=gray!10},
+            arrow/.style={-Latex, thick}
+        ]
+            \node[box] (inReq) {Pedido recebido\\OpenAI, Anthropic ou Gemini};
+            \node[common, right=of inReq] (commonReq) {\texttt{CommonRequest}\\pedido interno};
+            \node[box, right=of commonReq] (outReq) {Pedido enviado\\ao fornecedor configurado};
+
+            \node[box, below=1.0cm of outReq] (providerResp) {Resposta recebida\\JSON ou SSE};
+            \node[common, left=of providerResp] (commonResp) {\texttt{CommonResponse}\\ou \texttt{CommonResponseEvent}};
+            \node[box, left=of commonResp] (clientResp) {Resposta devolvida\\no contrato do cliente};
+
+            \draw[arrow] (inReq) -- (commonReq);
+            \draw[arrow] (commonReq) -- (outReq);
+            \draw[arrow] (outReq) -- (providerResp);
+            \draw[arrow] (providerResp) -- (commonResp);
+            \draw[arrow] (commonResp) -- (clientResp);
+        \end{tikzpicture}
+        \caption{Fluxo de normalização entre contratos externos e domínio comum}
+        \label{fig:domain-overview}
+    \end{figure}
+
+    \begin{figure}[H]
+        \centering
+        \begin{tikzpicture}[
+            node distance=0.7cm and 0.8cm,
+            root/.style={rectangle, draw, rounded corners, align=center, text width=4.2cm, minimum height=0.9cm, fill=gray!10, inner sep=5pt},
+            part/.style={rectangle, draw, rounded corners, align=left, text width=4.4cm, minimum height=1.1cm, inner sep=5pt},
+            arrow/.style={-Latex, thick}
+        ]
+            \node[root] (request) {\texttt{CommonRequest}};
+            \node[part, below left=of request] (identity) {\textbf{Destino}\\\texttt{provider}\\\texttt{model}};
+            \node[part, below=of request] (conversation) {\textbf{Conversação}\\\texttt{systemPrompt}\\\texttt{messages[]} com \texttt{RequestContentPart}};
+            \node[part, below right=of request] (tools) {\textbf{Ferramentas e opções}\\\texttt{tools[]}\\\texttt{toolChoice}\\\texttt{providerOptions}};
+            \node[part, below=0.8cm of conversation] (generation) {\textbf{Geração}\\\texttt{generationConfig}\\temperatura, limites, \textit{stop} e formato de resposta};
+
+            \draw[arrow] (request) -- (identity);
+            \draw[arrow] (request) -- (conversation);
+            \draw[arrow] (request) -- (tools);
+            \draw[arrow] (request) -- (generation);
+        \end{tikzpicture}
+        \caption{Estrutura interna principal de \texttt{CommonRequest}}
+        \label{fig:common-request-structure}
+    \end{figure}
+
+    \begin{figure}[H]
+        \centering
+        \begin{tikzpicture}[
+            node distance=0.8cm and 1.0cm,
+            root/.style={rectangle, draw, rounded corners, align=center, text width=4.4cm, minimum height=0.9cm, fill=gray!10, inner sep=5pt},
+            part/.style={rectangle, draw, rounded corners, align=left, text width=5.2cm, minimum height=1.2cm, inner sep=5pt},
+            arrow/.style={-Latex, thick}
+        ]
+            \node[root] (response) {\texttt{CommonResponse}};
+            \node[root, right=2.0cm of response] (event) {\texttt{CommonResponseEvent}};
+
+            \node[part, below=of response] (responseParts) {\textbf{Resposta final}\\\texttt{id}, \texttt{model}, \texttt{choices}\\\texttt{CommonResponseMessage}\\\texttt{finishReason}, \texttt{usage}};
+            \node[part, below=of event] (eventParts) {\textbf{Resposta incremental}\\\texttt{ResponseStarted}\\\texttt{TextDeltaEvent}\\\texttt{ToolCallStartedEvent}\\\texttt{UsageReported}\\\texttt{ResponseCompleted}};
+
+            \draw[arrow] (response) -- (responseParts);
+            \draw[arrow] (event) -- (eventParts);
+        \end{tikzpicture}
+        \caption{Estruturas de resposta final e eventos progressivos}
+        \label{fig:common-response-structure}
+    \end{figure}
+
+    \section{Estruturas Internas de Pedido e Resposta}
+    As mensagens do pedido são representadas por \texttt{CommonRequestMessage}, que combina um \texttt{CommonRole} com uma lista de \texttt{RequestContentPart}. Esta decisão evita assumir que uma mensagem é sempre uma string simples. No estudo das APIs, essa suposição mostrou-se insuficiente: a Anthropic e a Gemini trabalham naturalmente com blocos de conteúdo, e o \textit{tool calling} introduz partes que representam chamadas e resultados de ferramentas. Por esse motivo, o domínio contém tipos como \texttt{TextPart}, \texttt{JsonPart}, \texttt{ToolCallPart} e \texttt{ToolResultPart}.
+
+    Na resposta, a estrutura \texttt{CommonChoice} preserva o índice da escolha e a respetiva \texttt{CommonResponseMessage}. Isto permite representar APIs que devolvem várias alternativas, mantendo compatibilidade com fornecedores que devolvem apenas uma resposta. A razão de terminação é normalizada em \texttt{FinishReason}, com valores como \texttt{STOP}, \texttt{LENGTH}, \texttt{TOOL\_CALL}, \texttt{CONTENT\_FILTER} e \texttt{OTHER}. Esta normalização é deliberadamente pequena: cobre os casos que têm significado transversal e deixa detalhes particulares em campos de extensão.
+
+    \begin{table}[H]
+        \centering
+        \scriptsize
+        \renewcommand{\arraystretch}{1.25}
+        \begin{tabularx}{\textwidth}{|>{\raggedright\arraybackslash}p{3.8cm}|Y|Y|}
+            \hline
+            \textbf{Estrutura de domínio} & \textbf{Responsabilidade} & \textbf{Origem no estudo prévio} \\
+            \hline
+            \texttt{CommonRequest} & Representar o pedido de inferência de forma independente do contrato recebido. & Campos recorrentes: modelo, mensagens, parâmetros, ferramentas e formato de resposta. \\
+            \hline
+            \texttt{CommonRequestMessage} & Preservar o papel da mensagem e permitir conteúdo composto. & Diferença entre \texttt{messages}, \texttt{contents} e blocos de conteúdo. \\
+            \hline
+            \texttt{CommonTool} & Descrever uma ferramenta por nome, descrição e esquema de parâmetros. & Mapeamento entre \texttt{tools}, \texttt{input\_schema} e \texttt{functionDeclarations}. \\
+            \hline
+            \texttt{ToolChoice} & Indicar se o modelo pode, não pode, deve ou tem de usar uma ferramenta específica. & Diferenças entre \texttt{tool\_choice} e configurações Gemini de chamada de função. \\
+            \hline
+            \texttt{CommonResponse} & Representar a resposta final e a utilização de tokens. & Diferenças entre \texttt{choices}, blocos \texttt{content} e \texttt{candidates}. \\
+            \hline
+            \texttt{CommonResponseEvent} & Representar respostas progressivas e eventos de ferramenta em \textit{streaming}. & SSE e eventos incrementais observados em OpenAI, Anthropic e Gemini. \\
+            \hline
+        \end{tabularx}
+        \caption{Principais estruturas do domínio comum}
+        \label{tab:domain-structures}
+    \end{table}
+
+    \section{\texttt{TypedMap} e Extensibilidade do Domínio}
+    Nem todos os dados relevantes pertencem ao modelo mínimo de inferência. Algumas informações são específicas do fornecedor, como parâmetros avançados da Gemini; outras pertencem ao contexto operacional, como metadados de autenticação, IP do cliente, cabeçalhos HTTP ou atributos necessários para observabilidade e autorização. Para estes casos, o SDK introduz a estrutura \texttt{TypedMap}.
+
+    A \texttt{TypedMap} funciona como um mapa de atributos tipado por chave. Cada \texttt{AttributeKey<T>} associa um nome lógico a um tipo esperado, permitindo guardar e recuperar valores sem depender de conversões frágeis de strings. Esta abordagem é mais segura do que um \texttt{Map<String, Any?>} puro, porque cada chave transporta também a expectativa de tipo. Ao mesmo tempo, é mais flexível do que adicionar campos ao domínio sempre que surge uma necessidade nova.
+
+    \begin{figure}[H]
+        \centering
+        \resizebox{0.9\textwidth}{!}{%
+        \begin{tikzpicture}[
+            node distance=1.1cm and 1.0cm,
+            box/.style={rectangle, draw, rounded corners, align=center, minimum width=3.4cm, minimum height=0.9cm},
+            map/.style={rectangle, draw, rounded corners, align=left, minimum width=5.0cm, minimum height=2.7cm, fill=gray!10},
+            arrow/.style={-Latex, thick}
+        ]
+            \node[box] (auth) {Metadados de autenticação};
+            \node[box, below=of auth] (http) {Cabeçalhos e IP do cliente};
+            \node[box, below=of http] (provider) {Opções específicas do fornecedor};
+
+            \node[map, right=2.0cm of http] (typedmap) {\texttt{TypedMap}\\[0.2cm]
+            \texttt{AttributeKey<String>}\\
+            \texttt{AttributeKey<AuthResult>}\\
+            \texttt{AttributeKey<Set<String>>}\\
+            \texttt{AttributeKey<Int>}};
+
+            \node[box, right=2.0cm of typedmap] (consumers) {Componentes do SDK\\ leem atributos tipados};
+
+            \draw[arrow] (auth.east) -- (typedmap.west);
+            \draw[arrow] (http.east) -- (typedmap.west);
+            \draw[arrow] (provider.east) -- (typedmap.west);
+            \draw[arrow] (typedmap.east) -- (consumers.west);
+        \end{tikzpicture}}
+        \caption{Utilização da \texttt{TypedMap} para transportar atributos extensíveis}
+        \label{fig:typed-map}
+    \end{figure}
+
+    No domínio de inferência, a \texttt{TypedMap} aparece em \texttt{providerOptions}, permitindo preservar dados que não pertencem ao subconjunto comum mas não devem ser perdidos durante a tradução. Fora da inferência estrita, a mesma estrutura permite transportar metadados entre componentes sem criar dependências diretas entre eles. Esta característica é útil para a evolução futura do SDK, porque permite que mecanismos transversais, como autorização, observabilidade ou políticas de execução, usem atributos adicionais sem forçar alterações constantes nas classes centrais do domínio.
 
     \chapter{Arquitetura e Desenho do Sistema}
 
     \section{Arquitetura Top-Level}
-    A arquitetura top-level organiza o sistema em três zonas principais: clientes externos, OmniAI Gateway/SDK e fornecedores de inferência ou ferramentas. A Gateway expõe endpoints compatíveis com contratos conhecidos, recebe pedidos de aplicações cliente, aplica a \textit{pipeline} de \textit{interceptors} e encaminha a chamada para o fornecedor adequado.
+    A arquitetura top-level distingue claramente o produto principal desenvolvido, o \textbf{OmniAI SDK}, da aplicação de validação, a \textbf{OmniAI Gateway}. O SDK contém o domínio comum, os contratos, os adapters, o \textit{dispatcher}, a \textit{pipeline}, os \textit{interceptors}, a DSL de montagem e as abstrações de transporte. A OmniAI Gateway é um POC construído sobre esse SDK: carrega configuração, cria o grafo de componentes, instala os conectores Ktor e expõe endpoints HTTP compatíveis com os contratos estudados.
 
     \begin{figure}[H]
         \centering
-        \includegraphics[width=0.9\textwidth]{arquiteturaF.png}
-        \caption{Diagrama da Arquitetura Top-Level do Sistema}
+        \begin{tikzpicture}[
+            node distance=0.8cm and 0.9cm,
+            box/.style={rectangle, draw, rounded corners, align=center, text width=3.3cm, minimum height=1.0cm, inner sep=5pt},
+            inner/.style={rectangle, draw, rounded corners, align=center, text width=4.2cm, minimum height=0.9cm, fill=white, inner sep=5pt},
+            group/.style={rectangle, draw, rounded corners, inner sep=8pt},
+            arrow/.style={-Latex, thick}
+        ]
+            \node[box] (clients) {Clientes externos\\REST Client\\Claude Code\\SDKs compatíveis};
+
+            \node[inner, right=1.0cm of clients, yshift=1.0cm] (config) {Configuração do POC\\ambiente e \texttt{application.conf}};
+            \node[inner, below=of config] (ktor) {Conectores Ktor\\rotas HTTP compatíveis};
+            \node[inner, below=of ktor] (sdk) {OmniAI SDK\\domínio, contracts, ports, adapters};
+            \node[group, fit=(config)(ktor)(sdk), label={[align=center]above:\textbf{OmniAI Gateway POC}}] (gatewayGroup) {};
+
+            \node[box, right=1.0cm of ktor] (providers) {Fornecedores de inferência\\Gemini\\Anthropic\\OpenAI-compatible/Groq};
+            \node[box, below=0.9cm of providers] (observability) {Operação local\\Logto\\OTel Collector\\Prometheus/Grafana};
+
+            \draw[arrow] (clients.east) -- node[above]{HTTP/JSON/SSE} (gatewayGroup.west);
+            \draw[arrow] (gatewayGroup.east) -- node[above]{HTTP/JSON/SSE} (providers.west);
+            \draw[arrow] (gatewayGroup.east) -- (observability.west);
+        \end{tikzpicture}
+        \caption{Arquitetura top-level: POC OmniAI Gateway a instanciar e demonstrar o OmniAI SDK}
         \label{fig:top-level}
     \end{figure}
 
@@ -207,99 +464,165 @@
         \label{fig:arquitet-sdk}
     \end{figure}
 
-    Esta organização permite que aplicações já compatíveis com APIs existentes possam ser integradas com esforço reduzido. Por exemplo, uma aplicação preparada para a API Anthropic pode alterar o seu \texttt{baseURL} para apontar para a OmniAI Gateway, mantendo o contrato esperado pelo cliente. O mesmo princípio aplica-se a clientes compatíveis com OpenAI e, parcialmente, a clientes que usam endpoints Gemini.
+    A Figura~\ref{fig:top-level} mostra que o POC não contém a lógica essencial de tradução, despacho ou resiliência. Essa lógica pertence ao SDK e é apenas instanciada pela aplicação final. A Figura~\ref{fig:arquitet-sdk} aproxima a visão interna: um conector HTTP recebe o corpo do pedido, converte-o para um DTO de contrato, invoca um \textit{inbound adapter}, e este chama um \texttt{DispatcherPort}. A partir desse ponto, a execução pode seguir por um dispatcher direto ou por um dispatcher apoiado numa \textit{pipeline}. No final, um \textit{outbound adapter} traduz o pedido comum para o contrato do fornecedor e utiliza um cliente HTTP abstrato para executar a chamada real.
+
+    Esta organização permite que aplicações já compatíveis com APIs existentes possam ser integradas com esforço reduzido. Por exemplo, uma aplicação preparada para a API Anthropic pode alterar o seu \texttt{baseURL} para apontar para a OmniAI Gateway, mantendo o contrato esperado pelo cliente. O mesmo princípio aplica-se a clientes compatíveis com OpenAI e a cenários Gemini suportados pelo POC. A arquitetura foi também pensada para escalamento horizontal: o SDK evita estado global obrigatório, concentra estado transitório no contexto do pedido e define portas para substituir stores em memória por backends partilhados quando a Gateway é executada em múltiplas instâncias.
 
     \section{Arquitetura Hexagonal (Ports \& Adapters)}
-    A Arquitetura Hexagonal foi usada para separar a lógica de domínio dos detalhes de transporte e dos contratos externos. No OmniAI SDK, esta separação aparece através de \textit{ports} internos e \textit{adapters} específicos.
+    A Arquitetura Hexagonal foi escolhida para separar a lógica de domínio dos detalhes de transporte, dos contratos externos e das bibliotecas concretas. A formulação original de Cockburn descreve a aplicação no centro e os mecanismos externos ligados através de portas e adapters \cite{cockburn_hexagonal}. Esta abordagem é particularmente adequada a uma Gateway de IA, porque o sistema é dominado por integrações: clientes externos, APIs de fornecedores, servidores de autorização, telemetria e mecanismos de transporte.
+
+    Uma alternativa seria uma arquitetura em camadas tradicional, com controladores, serviços e repositórios. Essa opção seria simples no início, mas tenderia a concentrar traduções de contratos, chamadas HTTP e regras operacionais no mesmo serviço de aplicação. Outra alternativa seria decompor cedo a solução em vários serviços independentes. Essa abordagem poderia escalar equipas e deploys, mas introduziria complexidade operacional excessiva para um SDK cujo objetivo principal é ser reutilizável dentro de diferentes aplicações. A opção hexagonal oferece um compromisso mais adequado: mantém uma estrutura modular e testável sem obrigar a transformar cada responsabilidade num serviço remoto. No contexto de gateways, esta separação também acompanha o padrão de API Gateway como camada de integração e política transversal \cite{api_gateway_design,ai_gateway_pattern,karl_ai_gateway}.
 
     \subsection{Contracts}
-    Os módulos \texttt{contracts:openai}, \texttt{contracts:anthropic} e \texttt{contracts:gemini} modelam os formatos de pedido, resposta e eventos de cada fornecedor. Estes contratos representam a fronteira entre o mundo externo e o domínio comum. Esta camada evita que os detalhes de JSON de cada API se espalhem pelo núcleo do sistema.
+    Os módulos \texttt{contracts:openai}, \texttt{contracts:anthropic} e \texttt{contracts:gemini} modelam os formatos de pedido, resposta e eventos de cada fornecedor. Estes contratos são DTOs no sentido em que representam dados transportados na fronteira do sistema, mas não são apenas DTOs genéricos. São chamados \textit{contracts} porque codificam uma compatibilidade externa concreta: nomes de campos, estruturas JSON, eventos de \textit{streaming}, campos opcionais, formatos de erro e convenções específicas de cada API.
+
+    Esta distinção é importante. Um DTO interno poderia ser livremente alterado sem impacto externo; um contrato compatível com OpenAI, Anthropic ou Gemini precisa de respeitar o formato que clientes e fornecedores esperam. Ao isolar estes contratos em módulos próprios, o SDK evita que detalhes como \texttt{tool\_calls}, \texttt{content\_block\_delta} ou \texttt{functionDeclarations} se espalhem pelo domínio comum.
 
     \subsection{Inbounds}
-    Os \textit{inbound adapters} recebem pedidos no formato do cliente e traduzem-nos para \texttt{CommonRequest}. Existem adapters para OpenAI, Anthropic e Gemini. Estes adapters permitem que a Gateway exponha APIs compatíveis com diferentes padrões de mercado, mesmo que internamente o processamento seja feito por uma única representação.
+    Os \textit{inbound adapters} recebem pedidos no formato do cliente e traduzem-nos para \texttt{CommonRequest}. Cada inbound implementa a porta \texttt{InboundPort} e recebe um \texttt{DispatcherPort}, não uma implementação concreta de pipeline ou de fornecedor. Além disso, cada inbound usa uma implementação de \texttt{InboundTranslator}, responsável por converter o objeto de entrada para domínio e por converter a resposta comum de volta para o contrato do cliente.
+
+    Esta decisão evita que o inbound exponha diretamente uma Web API. O SDK fornece adapters que trabalham sobre objetos de transferência, e a exposição HTTP fica noutro adapter, como o \texttt{gateway-ktor-server}. Assim, um servidor Ktor, uma função serverless, um handler Express ou outro mecanismo de entrada podem chamar o mesmo inbound desde que consigam construir o DTO esperado. Esta separação reduz a dependência do domínio e dos inbounds face a bibliotecas HTTP externas.
 
     \subsection{Outbounds}
-    Os \textit{outbound adapters} fazem o caminho inverso: recebem um \texttt{CommonRequest} e transformam-no no contrato do fornecedor real. A implementação atual inclui adapters outbound para OpenAI, Anthropic e Gemini. Estes adapters também traduzem as respostas e eventos de \textit{streaming} de volta para o domínio comum.
+    Os \textit{outbound adapters} fazem o caminho inverso: recebem um \texttt{CommonRequest}, traduzem-no para o contrato do fornecedor real e executam a chamada externa. Cada outbound implementa \texttt{OutboundPort}, identifica \texttt{provider}, \texttt{model} e \texttt{key}, e delega a tradução num \texttt{OutboundTranslator}. A implementação atual inclui outbounds para OpenAI, Anthropic e Gemini.
+
+    Ao contrário dos inbounds, os outbounds precisam de comunicar com serviços externos. Por isso recebem uma implementação de \texttt{HttpTransportClient}. A implementação fornecida pelo SDK é baseada em Ktor, mas a porta permite substituir o transporte por outro cliente HTTP, por um mock em testes, por um cliente instrumentado ou por uma implementação específica de plataforma. Esta inversão de dependência é o que permite testar adapters sem depender de chamadas reais e evoluir o runtime sem reescrever o domínio.
 
     \subsection{Dispatcher}
-    O \texttt{DispatcherPort} representa o ponto terminal da \textit{pipeline}. A implementação de despacho pode ser simples, escolhendo um fornecedor configurado, ou evoluir para estratégias mais avançadas, como seleção por custo, latência, disponibilidade, plano do cliente ou política de \textit{fallback}. No projeto, o módulo \texttt{dispatcher} inclui um \textit{router} simples e um \texttt{PipelineBackedDispatcher}.
+    O \texttt{DispatcherPort} é a porta chamada pelos inbounds para executar um \texttt{CommonRequest}. A sua responsabilidade não é, por si só, conter inteligência de roteamento; é despachar o pedido para uma estratégia de execução. No SDK é fornecida uma implementação simples, criada por \texttt{routingDispatcherFactory}, que procura o outbound cujo \texttt{provider} e \texttt{model} correspondem aos campos do pedido e envia a chamada para esse adapter.
+
+    Como se trata de uma interface, a arquitetura permite outras implementações com objetivos diferentes. Um consumidor do SDK pode fornecer um dispatcher direto, um dispatcher com seleção por custo, um dispatcher que consulta políticas externas ou um dispatcher que aplica regras mais complexas. A \textit{pipeline} fornecida pelo SDK é ela própria encaixada através de um adapter, \texttt{PipelineBackedDispatcher}, preservando a ideia de que os inbounds dependem apenas de \texttt{DispatcherPort}.
 
     \section{Ecossistema do SDK}
-    O SDK está organizado como um projeto Gradle multi-módulo. Os módulos principais incluem \texttt{core}, \texttt{contracts}, \texttt{inbound}, \texttt{outbound}, \texttt{interceptors}, \texttt{mcp-broker}, \texttt{dispatcher}, \texttt{gateway-client} e \texttt{gateway-ktor-server}. Esta divisão permite evoluir cada área com responsabilidades claras.
+    O SDK está organizado como um projeto Gradle multi-módulo. Os módulos principais incluem \texttt{core}, \texttt{contracts}, \texttt{inbound}, \texttt{outbound}, \texttt{interceptors}, \texttt{mcp-broker}, \texttt{dispatcher}, \texttt{gateway-client}, \texttt{gateway-ktor-server} e \texttt{contracts:ktor-http}. Esta divisão permite evoluir cada área com responsabilidades claras: domínio e portas em \texttt{core}, contratos externos em \texttt{contracts}, adapters de entrada e saída em módulos próprios, preocupações transversais em \texttt{interceptors}, montagem declarativa em \texttt{gateway-client} e exposição HTTP/Ktor em \texttt{gateway-ktor-server}.
 
-    O módulo \texttt{gateway-client} disponibiliza uma DSL para montar uma Gateway. A aplicação final pode declarar os \textit{inbounds}, os \textit{outbounds}, os \textit{interceptors} e a configuração de segurança. O módulo \texttt{gateway-ktor-server} fornece o adapter HTTP/Ktor que expõe as rotas compatíveis com os contratos externos.
+    O módulo \texttt{contracts:ktor-http} fornece a abstração de transporte \texttt{HttpTransportClient} e a implementação \texttt{KtorHttpTransportClient}. Esta camada encapsula chamadas HTTP, SSE, serialização, metadados de resposta, erros de rede e erros de parsing. Ao colocá-la atrás de uma interface, os outbounds não ficam presos a uma implementação específica de cliente HTTP.
 
-    A aplicação \texttt{OmniAiGateway} foi desenvolvida como validação do SDK. Em vez de reimplementar a lógica de roteamento e tradução, consome o SDK através de um \textit{composite build} do Gradle, usando \texttt{includeBuild("../OmniAi-SDK")}. Esta opção facilita o desenvolvimento local, porque alterações ao SDK podem ser testadas pela Gateway sem publicação intermédia em Maven.
+    O módulo \texttt{gateway-client} disponibiliza uma DSL para montar uma Gateway. A aplicação consumidora pode declarar outbounds, interceptors, autenticação, autorização e modo de execução. A DSL permite escolher entre \texttt{useNativePipeline}, que monta a pipeline e o dispatcher padrão, e \texttt{useCustomDispatcher}, que permite substituir totalmente a estratégia de execução. Esta flexibilidade é essencial para um SDK: o POC usa a montagem nativa, mas outro consumidor pode querer um dispatcher próprio.
+
+    A aplicação \texttt{OmniAiGateway} foi desenvolvida como POC de validação do SDK. O uso de \textit{composite build} do Gradle, através de \texttt{includeBuild("../OmniAi-SDK")}, não pretende simular a forma final de consumo em produção. A sua função foi acelerar o desenvolvimento do projeto final, permitindo compilar SDK e POC em conjunto, testar alterações imediatamente e evitar o ciclo pesado de publicar uma versão do SDK, atualizar dependências do POC e voltar a compilar. Numa distribuição real, a expectativa é que o SDK seja consumido como dependência versionada, nomeadamente via Maven para JVM e via NPM para Node.js/TypeScript.
 
     \chapter{Implementação e Evolução Técnica}
 
     \section{Stack Tecnológica e Metodologias}
-    O SDK foi desenvolvido em Kotlin Multiplatform com targets JVM e JavaScript/Node.js. A escolha de KMP permite partilhar o domínio, contratos e parte da lógica de \textit{pipeline} entre ambientes diferentes, mantendo implementações específicas quando necessário. A camada HTTP utiliza Ktor, e a serialização dos contratos é baseada em Kotlinx Serialization.
+    O SDK foi desenvolvido em Kotlin Multiplatform com targets JVM e JavaScript/Node.js. A escolha de KMP permite partilhar o domínio, os contratos, as portas, os adapters principais e parte da lógica transversal entre plataformas, mantendo implementações específicas quando o ambiente o exige \cite{kotlin_multiplatform}. A serialização dos contratos é baseada em Kotlinx Serialization, o que facilita a definição explícita dos modelos JSON estudados.
 
-    O projeto usa Gradle com estrutura multi-módulo e \textit{composite builds} \cite{gradle_composite_builds}. A Gateway final é um projeto Ktor separado que inclui o SDK localmente durante o desenvolvimento. Esta organização reduz o ciclo de feedback entre alterações à biblioteca e validação numa aplicação real.
+    O Ktor é usado em dois pontos diferentes, que importa distinguir. Primeiro, o SDK fornece uma implementação HTTP baseada em Ktor, através de \texttt{KtorHttpTransportClient}, usada pelos outbounds para executar pedidos HTTP e SSE. Segundo, o SDK fornece o módulo \texttt{gateway-ktor-server}, que disponibiliza conectores Ktor para expor rotas compatíveis com OpenAI, Anthropic e Gemini. O Ktor não é, portanto, o SDK; é uma implementação concreta fornecida pelo SDK e usada nativamente pelo POC OmniAI Gateway.
 
-    As ferramentas de desenvolvimento incluíram Git para controlo de versões, IntelliJ IDEA como ambiente principal de desenvolvimento e agentes de apoio à programação, como Antigravity, para acelerar exploração e geração de código. Estes agentes foram usados como apoio ao desenvolvimento, mantendo a validação no código, nos testes e nos cenários executados.
+    A OmniAI Gateway, por sua vez, é uma aplicação Ktor separada, construída como prova de conceito para demonstrar o uso do SDK num sistema real. O projeto usa Gradle com estrutura multi-módulo e \textit{composite builds} \cite{gradle_composite_builds}. Durante o desenvolvimento, o POC inclui o SDK localmente com \texttt{includeBuild("../OmniAi-SDK")}, acelerando o ciclo de validação: uma alteração no SDK pode ser compilada e executada imediatamente pela aplicação demonstradora.
+
+    As ferramentas de desenvolvimento incluíram Git, IntelliJ IDEA, o cliente HTTP do IDE para pedidos REST, Docker Compose para Logto, PostgreSQL, OpenTelemetry Collector, Prometheus e Grafana, além de clientes reais como Claude Code e SDKs oficiais. Também foram usados assistentes de apoio, como Gemini no browser e agentes de programação, para pesquisa, comparação de documentação e aceleração de tarefas, mantendo a validação no código, nos testes e nos cenários executados. A pipeline de CI existente executa \texttt{./gradlew clean build}; como evolução natural, prevê-se uma pipeline de CD para publicar versões do SDK em Maven e NPM.
 
     \section{A Primeira Iteração da Gateway}
 
-    A primeira iteração do projeto consistiu na construção direta de uma Gateway HTTP responsável por receber pedidos de clientes e encaminhá-los para fornecedores de inferência. Nesta fase inicial, o objetivo principal era validar rapidamente a viabilidade da solução, testar a comunicação com diferentes APIs e compreender as diferenças práticas entre os contratos da OpenAI, Anthropic e Gemini.
+    A primeira iteração do projeto consistiu numa Gateway HTTP construída diretamente, responsável por receber pedidos de clientes e encaminhá-los para fornecedores de inferência. Esta fase foi útil para validar rapidamente a viabilidade da solução, testar chamadas reais e compreender diferenças práticas entre OpenAI, Anthropic e Gemini.
 
-    Esta abordagem permitiu obter resultados rápidos, mas revelou limitações importantes à medida que o sistema cresceu. A lógica de tradução entre formatos, a configuração dos fornecedores, a autenticação, o tratamento de erros e o encaminhamento dos pedidos começaram a ficar concentrados na própria aplicação Gateway. Como consequência, cada novo fornecedor ou funcionalidade transversal exigia alterações diretas no mesmo conjunto de componentes, aumentando o acoplamento e dificultando a evolução do projeto.
+    À medida que o sistema cresceu, essa abordagem revelou acoplamento excessivo. A tradução entre contratos, a configuração dos fornecedores, a autenticação, o tratamento de erros e o encaminhamento de pedidos começaram a concentrar-se na própria aplicação. Cada novo fornecedor ou preocupação transversal exigia alterações no mesmo conjunto de componentes, tornando o código difícil de evoluir e testar.
 
-    Além disso, tornou-se claro que a Gateway não deveria ser apenas uma aplicação final, mas sim uma consequência de uma biblioteca reutilizável. O problema identificado no projeto não era apenas criar uma Gateway específica, mas fornecer uma base extensível para construir gateways de IA com diferentes configurações, fornecedores e políticas operacionais.
+    A reorganização separou o produto principal, o \textbf{OmniAI SDK}, da aplicação demonstradora, a \textbf{OmniAI Gateway}. O SDK passou a concentrar o domínio comum, contratos, adapters, portas, \textit{dispatcher}, \textit{pipeline}, \textit{interceptors}, DSL e abstrações HTTP. A OmniAI Gateway passou a ser um POC executável, usado para demonstrar o consumo do SDK num sistema real: carrega configuração, instancia os componentes necessários, instala os conectores Ktor e expõe endpoints HTTP. Esta aplicação não reimplementa a lógica central da biblioteca; valida que essa lógica pode ser composta, configurada e executada fora dos módulos internos do SDK.
 
-    A partir desta constatação, a arquitetura foi reorganizada. O \textbf{OmniAI SDK} passou a concentrar os elementos reutilizáveis do sistema, incluindo o domínio comum, os contratos, os adapters de entrada e saída, a pipeline de interceptors e os mecanismos de configuração. Por outro lado, a \textbf{OmniAI Gateway} passou a ser uma aplicação concreta construída sobre o SDK, responsável por carregar configuração, instanciar os componentes necessários e expor os endpoints HTTP.
-
-    Esta separação trouxe maior modularidade e reutilização. A Gateway final deixou de conter a lógica principal de integração com fornecedores e passou a consumir o SDK como uma camada de infraestrutura. Desta forma, outras aplicações podem usar o mesmo SDK para criar gateways próprias, com diferentes fornecedores, políticas de autenticação, mecanismos de observabilidade ou estratégias de roteamento.
-
-    A evolução natural foi separar a Gateway final da biblioteca base. O OmniAI SDK passou a concentrar o domínio, os contratos, os adapters e a \textit{pipeline}; a OmniAI Gateway passou a ser uma aplicação que consome essa biblioteca. Esta separação tornou a solução mais reutilizável: outras aplicações podem usar o SDK para criar gateways próprias, com configurações e políticas diferentes.
+    Esta separação também influenciou o desenho para escalamento horizontal. O SDK foi projetado para manter o estado do pedido dentro de estruturas transitórias, como \texttt{GatewayContext} e \texttt{TypedMap}, e para expor portas onde existe estado partilhável, como caches, rate limiting, circuit breaker, autenticação ou telemetria. Assim, uma primeira execução pode usar stores em memória para simplificar o POC, enquanto uma implantação com várias instâncias pode substituir esses stores por backends partilhados sem alterar inbounds, outbounds ou contratos.
 
     \section{Decisões de Desenho e Alternativas Descartadas}
-    Em engenharia de software, a análise de \textit{trade-offs} e a delimitação do âmbito são fundamentais. Durante a fase de desenho arquitetural, foram avaliadas abordagens técnicas que acabaram por ser descartadas de forma consciente, priorizando a estabilidade e o foco no domínio principal da Gateway:
+    A análise de \textit{trade-offs} partiu de três critérios: proteger a estabilidade da versão demonstrável, manter o SDK reutilizável fora do POC e evitar que funcionalidades experimentais contaminassem o domínio comum. As decisões seguintes não representam funcionalidades abandonadas, mas sim escolhas de âmbito para manter a primeira versão estável, testável e alinhada com o domínio principal do projeto:
 
     \begin{itemize}
-        \item \textbf{Geração de Bridges com KSP (Kotlin Symbol Processing):} Inicialmente, ponderou-se a utilização de KSP para gerar automaticamente as \textit{bridges} de comunicação multiplataforma entre o código Kotlin e o ecossistema TypeScript/Node.js. Contudo, após análise, concluiu-se que a complexidade de configuração do KSP e o tempo de desenvolvimento necessário para mapear todos os \textit{edge cases} de tipagem teriam um impacto severo no planeamento. Optou-se por uma exportação manual controlada (usando \texttt{@JsExport}), garantindo a entrega da biblioteca dentro do prazo estipulado.
-        \item \textbf{Injeção Automática de Ferramentas via SSE:} Foi também avaliada a possibilidade de a Gateway intercetar automaticamente os pedidos de \textit{tool calling} durante fluxos de \textit{streaming} (\textit{Server-Sent Events} - SSE) e injetar as respostas das ferramentas sem que o cliente tivesse de gerir esse ciclo. No entanto, a gestão de estado complexa necessária para suspender, intercetar e retomar um \textit{stream} de \textit{tokens} de forma concorrente e segura introduziria uma enorme complexidade na primeira versão do SDK. Esta capacidade foi documentada como trabalho futuro, mantendo o roteamento base resiliente e previsível.
+        \item \textbf{Geração de Bridges com KSP (Kotlin Symbol Processing):} Foi ponderada a utilização de KSP para gerar automaticamente \textit{bridges} entre Kotlin e TypeScript/Node.js. A alternativa foi descartada porque a configuração, a compatibilidade multiplataforma e os casos limite de tipagem consumiriam tempo desproporcional. Optou-se por uma fachada \texttt{@JsExport} controlada, suficiente para preparar o target JavaScript sem comprometer o prazo.
+        \item \textbf{Injeção Automática de Ferramentas via SSE:} Também foi avaliada a possibilidade de a Gateway intercetar \textit{tool calls} durante \textit{streams}, executar ferramentas e injetar resultados automaticamente no fluxo. Esta opção exigiria gerir estado de conversação, suspender e retomar \textit{streams}, lidar com concorrência e manter compatibilidade com fornecedores que emitem eventos diferentes. A capacidade ficou identificada como trabalho futuro, mantendo a primeira versão focada em contratos, adapters, segurança, observabilidade e resiliência.
     \end{itemize}
 
     \section{Evolução Arquitetural: De \textit{Inference Service} a \textit{Dispatcher}}
-    A primeira iteração do sistema consistiu numa Gateway monolítica. A lógica de comunicação, a tradução de contratos e o roteamento estavam fortemente acoplados num único componente designado por \texttt{InferenceService}.
+    A primeira iteração concentrava comunicação, tradução de contratos e roteamento num componente designado por \texttt{InferenceService}. Embora esta abordagem tenha sido eficaz para prototipagem, rapidamente se aproximou de um \textit{God Object}: cada fornecedor, métrica, regra de segurança ou política de erro aumentava a responsabilidade do mesmo serviço.
 
-    Embora esta estratégia tenha permitido validar rapidamente a comunicação com os fornecedores (OpenAI, Anthropic e Gemini), rapidamente se identificou um problema de escalabilidade de código: o serviço estava a tornar-se num \textit{God Object}, violando o Princípio de Responsabilidade Única (SRP). Cada nova API ou funcionalidade transversal (como métricas ou \textit{rate limiting}) exigia alterações diretas neste serviço central.
+    O problema principal não era apenas o tamanho do componente, mas a direção das dependências. Se o serviço conhecesse diretamente contratos HTTP, clientes externos, regras de seleção de fornecedor e políticas transversais, qualquer alteração numa dessas áreas teria impacto no centro do sistema. Isto dificultaria testes unitários, tornaria mais cara a adição de novos adapters e reduziria a utilidade do SDK como biblioteca reutilizável.
 
-    Para resolver este acoplamento, a arquitetura sofreu uma refatorização profunda. O serviço monolítico foi decomposto e substituído por um \textit{Dispatcher} central (\texttt{DispatcherPort}). A responsabilidade deste \textit{Dispatcher} passou a ser única e exclusiva: coordenar o envio do pedido para o \textit{Outbound Adapter} correto. Simultaneamente, toda a lógica transversal que congestionava o sistema foi extraída para uma \textit{pipeline} configurável de \textit{interceptors}.
+    A refatorização substituiu esse serviço por um contrato pequeno, o \texttt{DispatcherPort}. A responsabilidade do dispatcher é receber um \texttt{CommonRequest} e despachá-lo para uma estratégia de execução. A implementação padrão fornecida, criada por \texttt{routingDispatcherFactory}, faz um despacho simples: procura um outbound com o mesmo fornecedor e modelo presentes no pedido. Por se tratar de uma interface, o SDK não força esta estratégia; um consumidor pode substituir o dispatcher por outra implementação sem alterar inbounds ou contratos.
+
+    Esta mudança reduziu o acoplamento e clarificou a arquitetura. Os inbounds passaram a conhecer apenas a porta \texttt{DispatcherPort}; os outbounds passaram a concentrar tradução e comunicação externa; e as preocupações transversais foram deslocadas para uma estrutura própria, a \textit{pipeline} de \textit{interceptors}. O dispatcher passou, portanto, a ser o ponto de decisão da execução, enquanto a pipeline passou a ser apenas uma forma opcional de decorar essa execução com responsabilidades operacionais.
 
     \section{Evolução para a Pipeline de Interceptors}
-    Para evitar que autenticação, autorização, métricas, limites e \textit{fallback} ficassem embutidos nos adapters ou no dispatcher, foi criada uma \textit{pipeline} de \textit{interceptors}. A ideia é semelhante ao modelo de filtros de Servlets: cada interceptor recebe um contexto, decide se continua a cadeia e pode observar ou alterar o resultado.
+    A \textit{pipeline} foi implementada como um adapter de dispatcher. Isto é, os inbounds não recebem uma pipeline; recebem sempre um \texttt{DispatcherPort}. Quando a aplicação escolhe \texttt{useNativePipeline}, o SDK monta uma \texttt{GatewayPipeline} com interceptors e um dispatcher terminal, e depois expõe essa cadeia através de \texttt{PipelineBackedDispatcher}. Se a aplicação não quiser a pipeline, pode fornecer diretamente um dispatcher próprio através de \texttt{useCustomDispatcher}.
+
+    Esta decisão evita que a pipeline se torne uma dependência obrigatória da arquitetura. Um consumidor que pretenda apenas tradução de contratos e despacho direto pode usar um dispatcher simples. Um consumidor que precise de segurança, observabilidade e resiliência pode ativar a pipeline nativa. Um consumidor com necessidades próprias pode implementar outro \texttt{DispatcherPort}, por exemplo com seleção por custo, políticas externas, filas internas ou integração com outro orquestrador.
+
+    \begin{table}[H]
+        \centering
+        \footnotesize
+        \renewcommand{\arraystretch}{1.25}
+        \begin{tabularx}{\textwidth}{|>{\raggedright\arraybackslash}p{3.3cm}|Y|Y|}
+            \hline
+            \textbf{Modo de montagem} & \textbf{Componente visto pelos inbounds} & \textbf{Justificação} \\
+            \hline
+            Dispatcher direto & Uma implementação de \texttt{DispatcherPort}. & Útil quando se pretende uma Gateway mínima, com tradução e envio para outbounds sem lógica transversal. \\
+            \hline
+            Pipeline nativa & \texttt{PipelineBackedDispatcher}, também exposto como \texttt{DispatcherPort}. & Permite aplicar autenticação, autorização, métricas, rate limiting, circuit breaker, fallback e logging sem alterar adapters. \\
+            \hline
+            Dispatcher customizado & Qualquer implementação externa de \texttt{DispatcherPort}. & Mantém o SDK aberto a estratégias futuras, incluindo roteamento por custo, latência, plano de cliente ou políticas de negócio. \\
+            \hline
+        \end{tabularx}
+        \caption{Formas de expor a execução aos inbounds sem os acoplar à pipeline}
+        \label{tab:dispatcher-pipeline-modes}
+    \end{table}
 
     \begin{figure}[H]
         \centering
-        \includegraphics[width=0.9\textwidth]{pipeline.drawio}
+        \includegraphics[width=0.9\textwidth]{pipeline.drawio.png}
         \caption{Visão conceptual da pipeline de interceptors}
         \label{fig:pipeline}
     \end{figure}
 
-    A \textit{pipeline} é composta por \texttt{GatewayPipeline}, \texttt{GatewayPipelineChain}, \texttt{Interceptor} e \texttt{GatewayContext}. O \texttt{GatewayContext} transporta o pedido comum, atributos e modo de execução, podendo representar chamadas síncronas ou \textit{streaming}. A cadeia executa os \textit{interceptors} por ordem e, no fim, invoca o \texttt{DispatcherPort}.
+    Esta forma de encaixe mantém a arquitetura simples. Para um caso mínimo, a Gateway pode operar com um dispatcher direto. Para um caso operacional, a pipeline permite adicionar autenticação, autorização, métricas, limites, \textit{circuit breaker}, \textit{fallback}, logging e tracing sem alterar adapters. O modelo é semelhante ao dos filtros de Servlets \cite{servlet_filterchain}: cada filtro recebe um contexto, decide se continua a cadeia e pode executar lógica antes e depois do próximo elemento. A diferença é que, no OmniAI SDK, o contexto não representa apenas um pedido HTTP; representa uma chamada de inferência já normalizada, incluindo fornecedor, modelo, modo de execução, atributos tipados e eventual fluxo de \textit{streaming}.
 
-    Esta abordagem melhora a extensibilidade. Um novo comportamento transversal pode ser adicionado como interceptor, sem alterar os adapters ou o dispatcher. Também permite configurar interceptors globais ou específicos por fornecedor, de acordo com as necessidades da aplicação final.
+    A \textit{pipeline} é composta por \texttt{GatewayPipeline}, \texttt{GatewayPipelineChain}, \texttt{Interceptor} e \texttt{GatewayContext}. O \texttt{GatewayContext} transporta o pedido comum, atributos tipados e modo de execução, podendo representar chamadas síncronas ou \textit{streaming}. A cadeia executa os \textit{interceptors} por ordem e, no fim, invoca o dispatcher terminal.
+
+    Esta abordagem também prepara o escalamento horizontal. A pipeline não exige estado global obrigatório; cada pedido transporta o seu contexto. Onde existe estado partilhável, como rate limiting ou circuit breaker, o SDK define stores substituíveis. A implementação em memória é adequada para desenvolvimento e instância única, mas pode ser trocada por Redis, base de dados ou outro backend coordenado em implantações distribuídas. Assim, várias instâncias da OmniAI Gateway podem partilhar contadores, estados de circuito e metadados operacionais sem alterar o contrato dos inbounds nem a forma como os clientes chamam a Gateway.
 
     \section{Arquitetura Interna dos Interceptors}
-    O módulo \texttt{interceptors} inclui implementações pré-construídas para preocupações operacionais e de segurança. Todos seguem a mesma ideia base: recebem um \texttt{GatewayContext}, consultam ou acrescentam atributos à \texttt{TypedMap}, decidem se devem chamar \texttt{chain.proceed(context)} e, depois da execução seguinte, podem observar ou transformar o \texttt{PipelineResult}. Esta estrutura permite colocar lógica transversal antes e depois da inferência sem acoplar essa lógica aos adapters de entrada, aos adapters de saída ou ao dispatcher.
+    O módulo \texttt{interceptors} inclui implementações pré-construídas para preocupações operacionais e de segurança. Todos seguem o mesmo contrato: recebem um \texttt{GatewayContext}, consultam ou acrescentam atributos à \texttt{TypedMap}, decidem se chamam \texttt{chain.proceed(context)} e podem observar ou transformar o \texttt{PipelineResult}. Esta estrutura permite colocar lógica transversal antes e depois da inferência sem acoplar essa lógica aos adapters de entrada, aos adapters de saída ou ao dispatcher.
 
-    A ordem de execução é configurável. No target JVM, o SDK suporta a anotação \texttt{InterceptorPriority}, usada para executar primeiro interceptors com prioridade superior. No target JavaScript, onde a reflexão sobre anotações é limitada, a ordem segue a sequência definida pela DSL. Assim, comportamentos como autenticação e autorização podem ocorrer no início da cadeia, enquanto métricas, tracing ou logging podem envolver a execução completa.
+    A ordem de execução é configurável. No target JVM, o SDK suporta a anotação \texttt{InterceptorPriority}, usada para executar primeiro interceptors com prioridade superior. No target JavaScript, onde a reflexão sobre anotações é limitada, a ordem segue a sequência definida pela DSL. Assim, autenticação e autorização podem ocorrer no início da cadeia, enquanto métricas, tracing e logging podem envolver a execução completa.
+
+    A motivação para estes interceptors não foi apenas organizar código, mas tornar explícitas políticas que, numa Gateway de IA, afetam segurança, custo e disponibilidade. A Tabela~\ref{tab:interceptor-rationale} resume essa relação.
+
+    \begin{table}[H]
+        \centering
+        \footnotesize
+        \renewcommand{\arraystretch}{1.25}
+        \begin{tabularx}{\textwidth}{|>{\raggedright\arraybackslash}p{3.2cm}|Y|Y|}
+            \hline
+            \textbf{Interceptor} & \textbf{Problema tratado} & \textbf{Motivo para estar na Gateway} \\
+            \hline
+            Telemetria & Falta de visibilidade sobre latência, erros, tokens e fornecedores. & A Gateway observa todas as chamadas e consegue medir comportamento transversal sem alterar clientes ou adapters. \\
+            \hline
+            Autenticação & Necessidade de validar quem apresenta o token antes de consumir modelos pagos. & A Gateway é o recurso protegido e deve validar tokens antes de encaminhar tráfego para fornecedores. \\
+            \hline
+            Autorização & Um token válido não implica permissão para todos os modelos ou operações. & A decisão por cliente, ação, fornecedor e modelo deve ser centralizada antes da inferência. \\
+            \hline
+            Rate limiting & Risco de abuso, picos de carga e custos inesperados. & A Gateway é o ponto natural para aplicar quotas por cliente, plano, fornecedor ou modelo. \\
+            \hline
+            Circuit breaker & Dependências externas podem ficar lentas ou indisponíveis. & A Gateway evita insistir em fornecedores em falha e protege o restante sistema. \\
+            \hline
+            Fallback & Uma falha de fornecedor não deve, quando existe alternativa, falhar imediatamente a experiência do cliente. & A Gateway conhece os outbounds disponíveis e pode tentar alternativas mantendo o contrato do cliente. \\
+            \hline
+        \end{tabularx}
+        \caption{Justificação dos interceptors fornecidos pelo SDK}
+        \label{tab:interceptor-rationale}
+    \end{table}
 
     \subsection{Interceptor de Telemetria e Observabilidade}
-    O \texttt{MetricsInterceptor} é o componente central para a recolha de dados operacionais, sendo crítico para a gestão de performance e visibilidade em sistemas baseados em LLMs. Este interceptor mede o ciclo de vida completo de cada pedido, capturando métricas de latência, sucesso/erro e metadados de execução.
+    O \texttt{MetricsInterceptor} recolhe dados operacionais essenciais num sistema que intermedeia chamadas a LLMs: latência, sucesso, erro, fornecedor, modelo, cliente e consumo de tokens. Estes dados são importantes porque uma Gateway centraliza tráfego de vários clientes e fornecedores; sem telemetria, não é possível perceber custos, degradação, falhas por modelo ou impacto de políticas como \textit{fallback}.
 
-    A implementação distingue-se pelo suporte nativo a \textit{streaming}. Em respostas progressivas, o interceptor não bloqueia a execução; em vez disso, utiliza operadores de fluxo (\texttt{onEach} e \texttt{onCompletion}) para capturar metadados do fornecedor e do modelo à medida que os eventos atravessam a \textit{pipeline}. As métricas são emitidas apenas quando o fluxo é encerrado, garantindo uma medição precisa da duração total da interação (\textit{End-to-End Latency}), mesmo em cenários de resposta longa.
+    A implementação distingue chamadas unárias de \textit{streaming}. Em respostas progressivas, o interceptor não bloqueia a execução; usa operadores de fluxo para observar eventos e emitir métricas no encerramento do \textit{stream}. Assim mede a duração total da interação, e não apenas o tempo até ao primeiro fragmento.
 
-    A arquitetura segue o princípio de inversão de dependência através da porta \texttt{MetricsPort}. O SDK fornece as definições de instrumentos comuns (\texttt{counter}, \texttt{histogram} e \texttt{upDownCounter}), enquanto o adaptador concreto no target JVM mapeia estas chamadas para o ecossistema \textbf{OpenTelemetry}. Esta separação permite que o SDK permaneça agnóstico a ferramentas específicas de monitorização, facilitando a exportação para \textbf{Prometheus}, \textbf{Grafana} ou outros coletores OTLP através da OmniAI Gateway.
+    A arquitetura segue inversão de dependência através da porta \texttt{MetricsPort}. O SDK define instrumentos comuns, como \texttt{counter}, \texttt{histogram} e \texttt{upDownCounter}, enquanto o adapter concreto no target JVM exporta para OpenTelemetry. O uso do OpenTelemetry Protocol (OTLP) foi escolhido porque o OTLP define a codificação, transporte e entrega de dados de telemetria entre fontes, coletores e backends \cite{opentelemetry_otlp}. Esta escolha evita prender o SDK a Prometheus, Grafana, Datadog ou outro backend específico: o SDK emite telemetria num formato aberto, o Collector recebe e processa esses dados, e a infraestrutura decide para onde exportar.
+
+    Esta decisão é especialmente importante numa Gateway de IA. O mesmo SDK pode ser usado por uma aplicação simples em desenvolvimento, por um POC local com Prometheus/Grafana ou por uma instalação futura com outro backend de observabilidade. A OpenTelemetry apresenta-se precisamente como especificação aberta e agnóstica de fornecedor \cite{opentelemetry_what_is}; por isso, a instrumentação fica no SDK, mas a escolha operacional do backend permanece fora do domínio.
 
     \begin{figure}[H]
         \centering
         \includegraphics[width=0.9\textwidth]{MetricsInterceptorArch.jpeg}
         \caption{Fluxo interno de processamento e lógica de observabilidade para pedidos unários e streaming}
-        \label{fig:p3}
+        \label{fig:metrics-interceptor-arch}
     \end{figure}
 
     Para adicionar uma métrica, a aplicação usa a DSL do \texttt{gateway-client}. O programador pode ativar a latência padrão, acrescentar atributos globais e definir métricas próprias com uma função \texttt{value}, que extrai o valor a partir do contexto e do resultado, e uma função \texttt{tags}, que acrescenta dimensões de análise.
@@ -333,21 +656,23 @@ metrics {
 }
     \end{verbatim}
 
-    Este desenho permite separar três preocupações: a lógica de negócio da métrica, definida na DSL; a recolha no interceptor; e a exportação no adapter de telemetria. Também facilita testes, porque \texttt{NoOpMetricsPort} pode ser usado quando a observabilidade está desligada.
+    Este desenho separa três responsabilidades: a definição da métrica na DSL, a recolha no interceptor e a exportação no adapter de telemetria. Também facilita testes, porque \texttt{NoOpMetricsPort} pode ser usado quando a observabilidade está desligada.
 
     \begin{figure}[H]
         \centering
         \includegraphics[width=0.9\textwidth]{MetricsGateway.jpeg}
-        \caption{observabilidade e métricas operacionais da OmniAI Gateway}
-        \label{fig:p3}
+        \caption{Observabilidade e métricas operacionais da OmniAI Gateway}
+        \label{fig:metrics-gateway}
     \end{figure}
 
     \subsection{Interceptor de Autenticação}
-    A autenticação é realizada pelo \texttt{AuthenticationInterceptor}, que atua como o primeiro guardião da \textit{pipeline} de segurança. A sua responsabilidade é provar a identidade técnica do chamador antes de permitir que o pedido avance para o \textit{dispatcher}.
+    A autenticação é realizada pelo \texttt{AuthenticationInterceptor}. A Gateway atua como \textit{Resource Server}: recebe pedidos para recursos protegidos, extrai o \textit{access token} do cabeçalho \texttt{Authorization: Bearer <token>} e valida se esse token foi emitido por um servidor de autorização confiável \cite{rfc6749,rfc6750,oauth_resource_server}. Esta responsabilidade é essencial numa AI Gateway, porque a camada central passa a proteger acesso a modelos, custos, quotas e dados operacionais.
 
-    O fluxo inicia-se com a extração do \textit{token} no adapter HTTP a partir do cabeçalho \texttt{Authorization: Bearer <token>}, sendo este propagado para o domínio através de metadados. O interceptor utiliza uma heurística baseada no número de segmentos (separados por pontos) para classificar o \textit{token}: se possuir três segmentos, é tratado como um \textit{JSON Web Token} (JWT); caso contrário, é classificado como um \textit{token} opaco. Esta distinção permite ao sistema selecionar a estratégia de validação adequada, delegando a execução para um \texttt{TokenAuthenticator}.
+    A Gateway não deve atuar como \textit{Authorization Server}: não emite tokens, não gere credenciais dos clientes e não substitui Logto ou Keycloak. O seu papel é o de API protegida. Por isso, valida tokens recebidos, confirma se foram emitidos para a audiência esperada e só depois permite que o pedido avance para autorização, rate limiting e inferência. Esta separação reduz responsabilidade de segurança dentro do SDK e permite integrar diferentes fornecedores de identidade sem alterar o contrato dos clientes.
 
-    No modo \textit{OIDC Discovery} (alinhado com o \textbf{RFC 8414} \cite{rfc8414}), a Gateway obtém dinamicamente os metadados do \textit{Authorization Server} (como o Logto ou Keycloak), incluindo o \textit{issuer}, o \texttt{jwks\_uri} e o \textit{endpoint} de introspeção.
+    O fluxo inicia-se no adapter HTTP, que propaga o token para o domínio através de metadados. O interceptor classifica o token: se tiver três segmentos, é tratado como JWT; caso contrário, como token opaco. Esta distinção permite escolher entre validação local por assinatura e validação remota por introspeção.
+
+    No modo \textit{OIDC Discovery} (RFC 8414), a Gateway obtém dinamicamente metadados do \textit{Authorization Server}, como \textit{issuer}, \texttt{jwks\_uri} e endpoint de introspeção \cite{rfc8414}. Para JWTs, valida o \texttt{kid}, obtém a chave pública no JWKS, verifica assinatura e confirma \textit{claims} como \texttt{exp}, \texttt{nbf}, \texttt{iss} e \texttt{aud} \cite{rfc7519,rfc7517,rfc7515}. Para tokens opacos, usa introspeção OAuth2 \cite{rfc7662}.
 
     \begin{figure}[H]
         \centering
@@ -356,23 +681,9 @@ metrics {
         \label{fig:oidc-sequence}
     \end{figure}
 
-    Para a validação de JWTs (\textbf{RFC 7519} \cite{rfc7519}), o sistema implementa as seguintes etapas:
-    \begin{enumerate}
-        \item Extração do identificador de chave (\texttt{kid}) do cabeçalho do \textit{token} (\textbf{RFC 7515} \cite{rfc7515}).
-        \item Recuperação da chave pública correspondente a partir de um \textit{JSON Web Key Set} (JWKS, \textbf{RFC 7517} \cite{rfc7517}).
-        \item Validação da assinatura criptográfica e verificação de \textit{claims} temporais (\texttt{exp}, \texttt{nbf}) e de identidade (\texttt{iss}, \texttt{aud}).
-    \end{enumerate}
+    Para reduzir latência e chamadas repetidas ao servidor de autorização, a implementação inclui \texttt{InMemoryKeyCache}, rotação de chaves em \textit{background} e \textit{cooldown} para evitar consultas excessivas quando uma chave não é encontrada. No caso de tokens opacos, o \texttt{IntrospectionCache} usa \textit{positive caching} para tokens ativos e \textit{negative caching} para tokens inválidos. Os tokens opacos são guardados em cache através de \textit{hash}, evitando manter credenciais em texto limpo em memória.
 
-    Para otimizar este processo e evitar latência excessiva, o \texttt{JwksClient} utiliza uma \textit{cache} de chaves públicas em memória (\texttt{InMemoryKeyCache}). Este componente implementa um mecanismo de rotação de chaves em \textit{background} e um período de \textit{cooldown} (\texttt{minimumTimeToFetchKeys}) que impede o sistema de realizar pedidos repetitivos ao servidor de autorização em caso de chaves não encontradas, mitigando potenciais vetores de negação de serviço (DoS).
-
-    Para \textit{tokens} opacos, a Gateway utiliza o protocolo de \textit{Token Introspection} (\textbf{RFC 7662} \cite{rfc7662}). Dado que este processo exige uma chamada de rede ao \textit{Authorization Server} para cada pedido, a implementação inclui um \texttt{IntrospectionCache} robusto com duas estratégias complementares:
-    \begin{itemize}
-        \item \textbf{Positive Caching}: Resultados de sucesso (token ativo) são guardados por um período configurável, limitado superiormente pelo tempo de vida (\textit{expiration}) do próprio \textit{token}.
-        \item \textbf{Negative Caching}: Resultados de falha (token inválido ou inativo) são guardados por um curto período (\textit{negative TTL}) para prevenir ataques de força bruta.
-    \end{itemize}
-    Por questões de segurança, os \textit{tokens} opacos são transformados através de um \textit{hash} seguro antes de serem armazenados na \textit{cache}, garantindo que credenciais em texto limpo nunca fiquem expostas na memória do sistema.
-
-    O resultado da validação é encapsulado num \texttt{AuthValidationResult} e armazenado nos atributos do contexto sob a chave \texttt{AUTH\_RESULT\_KEY}. Isto permite que os interceptores seguintes (autorização, métricas, etc.) reutilizem a identidade já apurada sem necessidade de novas validações.
+    O resultado é encapsulado em \texttt{AuthValidationResult} e guardado na \texttt{TypedMap} sob a chave \texttt{AUTH\_RESULT\_KEY}. Isto permite que autorização, métricas e logging reutilizem a identidade já validada.
 
     \begin{figure}[H]
         \centering
@@ -381,14 +692,14 @@ metrics {
         \label{fig:auth-interceptor}
     \end{figure}
 
-    A Gateway final usa Logto como Authorization Server local \cite{logto_docs}, executado em Docker juntamente com PostgreSQL, OpenTelemetry Collector, Prometheus e Grafana. A escolha do Logto deveu-se à simplicidade de configuração local, suporte a aplicações Machine-to-Machine e funcionalidades úteis para gerir recursos de API. Também foram realizados testes exploratórios com Keycloak \cite{keycloak_docs}, mas o Logto foi mantido como opção principal por reduzir a complexidade operacional durante o desenvolvimento.
-
-    O script \texttt{run\_claude.py} valida este fluxo num cenário real: abre o browser para autenticação no Logto, usa PKCE para trocar o código por um token e inicia o Claude Code apontando \texttt{ANTHROPIC\_BASE\_URL} para a OmniAI Gateway. Desta forma, um cliente compatível com Anthropic consegue enviar pedidos autenticados através da Gateway.
+    A Gateway final usa Logto como Authorization Server local \cite{logto_docs}, executado em Docker juntamente com PostgreSQL, OpenTelemetry Collector, Prometheus e Grafana. Foram também realizados testes exploratórios com Keycloak \cite{keycloak_docs}. A escolha final do Logto no POC deveu-se à simplicidade de configuração local, suporte a aplicações Machine-to-Machine e facilidade de gerir API Resources durante a validação.
 
     \subsection{Interceptor de Autorização}
-    A autorização é tratada como uma camada distinta e subsequente à autenticação. Enquanto a autenticação estabelece a identidade do chamador, a autorização determina se essa identidade possui permissão para executar uma operação específica sobre um recurso. No OmniAI SDK, esta lógica é centralizada no \texttt{PolicyEnforcerInterceptor}.
+    A autorização é separada da autenticação porque responder a ``quem é o chamador?'' não é o mesmo que responder a ``o que este chamador pode fazer?''. A autenticação valida identidade; a autorização decide permissões sobre uma ação e um recurso. Esta separação é importante numa Gateway multi-cliente, onde um token válido pode não ter permissão para usar todos os modelos, fornecedores ou operações. A distinção entre autenticação e autorização é também a base dos modelos modernos de identidade: a primeira prova identidade, enquanto a segunda concede permissão sobre dados ou ações protegidas \cite{microsoft_authn_authz}.
 
-    Este componente segue o modelo arquitetural de referência para autorização centralizada, atuando como um \textit{Policy Enforcement Point} (PEP). A sua função é intercetar o pedido, recolher os atributos necessários e delegar a decisão a um \textit{Policy Decision Point} (PDP) através da porta \texttt{PolicyDecisionPointPort}.
+    No contexto do projeto, esta separação evita dois problemas. Primeiro, impede que a validação de token seja confundida com autorização total: um cliente autenticado pode estar limitado a um subconjunto de modelos, fornecedores ou quotas. Segundo, permite trocar a origem das decisões de autorização sem alterar a autenticação. Hoje a decisão pode ser local ou simples; no futuro pode vir de AuthZen, OPA ou outro PDP externo.
+
+    No OmniAI SDK, a autorização é centralizada no \texttt{PolicyEnforcerInterceptor}. O componente atua como \textit{Policy Enforcement Point} (PEP): interceta o pedido, constrói um \texttt{AuthorizationInput} e delega a decisão a um \textit{Policy Decision Point} (PDP) através da porta \texttt{PolicyDecisionPointPort}.
 
     \begin{figure}[H]
         \centering
@@ -397,49 +708,51 @@ metrics {
         \label{fig:authorization-architecture}
     \end{figure}
 
-    O processo de autorização baseia-se num modelo de dados estruturado, designado por \texttt{AuthorizationInput}, que segue o padrão \textbf{Subject-Action-Resource (SAR)}:
-    \begin{itemize}
-        \item \textbf{Subject}: Representa o utilizador ou aplicação, incluindo o seu identificador, funções (\textit{roles}) e atributos extraídos do \textit{token} validado (via \textit{claims} de JWT ou introspeção).
-        \item \textbf{Action}: Define a operação pretendida (ex: \texttt{chat\_completion}, \texttt{list\_models}).
-        \item \textbf{Resource}: Identifica o alvo da operação, como o fornecedor (\texttt{openai}, \texttt{anthropic}) ou um modelo específico.
-        \item \textbf{Context}: Contém atributos ambientais ou metadados adicionais do pedido, como o endereço IP ou o \textit{timestamp}, que complementam o modelo SAR para decisões contextuais ricas.
-    \end{itemize}
-
-    A construção deste \textit{input} é responsabilidade do \texttt{AuthorizationInputProvider}. Esta abstração permite que a Gateway seja extremamente flexível, podendo extrair dados de diversas fontes, como o endereço IP do cliente, o plano de subscrição ou metadados específicos do pedido. Esta riqueza de dados permite implementar políticas de controlo de acesso baseado em atributos.
-
-    A porta do PDP permite integrar diferentes motores de política. O SDK já prevê suporte para o padrão emergente \textbf{AuthZen}, facilitando a integração com servidores de autorização externos e motores de políticas como o \textit{Open Policy Agent} (OPA). Esta separação segue o modelo PEP/PDP/PAP/PIP amplamente utilizado em sistemas de autorização escaláveis \cite{authorization_pips}. Caso o PDP devolva uma decisão de \textit{Deny}, o interceptor interrompe imediatamente a \textit{pipeline}, garantindo que pedidos não autorizados nunca cheguem aos fornecedores de inferência.
+    O \texttt{AuthorizationInput} segue o padrão \textbf{Subject-Action-Resource (SAR)}. O \textbf{Subject} representa o utilizador ou aplicação, incluindo identificador, roles e atributos vindos do token. A \textbf{Action} representa a operação, como \texttt{chat\_completion}. O \textbf{Resource} identifica o alvo, como fornecedor ou modelo. O \textbf{Context} acrescenta atributos ambientais, como IP, tempo ou metadados do pedido. A porta do PDP permite integrar motores diferentes, incluindo políticas internas, AuthZen, OPA ou outro serviço externo. Se a decisão for \textit{Deny}, a pipeline é interrompida antes de qualquer chamada ao fornecedor \cite{authorization_pips}.
 
     \subsection{Interceptor de Rate Limiting}
-    O \texttt{RateLimitInterceptor} aplica limites de utilização antes da chamada ao fornecedor. A lógica é orientada por políticas: cada \texttt{RateLimitPolicy} extrai dados do \texttt{GatewayContext} e devolve um conjunto de \texttt{RateLimitTarget}. Cada target contém uma chave, por exemplo cliente/modelo/plano, e uma \texttt{RateLimitDefinition}, composta por limite, tipo e janela temporal.
+    O \texttt{RateLimitInterceptor} aplica limites de utilização antes da chamada ao fornecedor. Numa AI Gateway, este mecanismo tem dois objetivos principais: proteger o sistema contra abuso ou tráfego excessivo e controlar custos associados a chamadas de inferência. A limitação de taxa é uma estratégia comum para impor um teto de ações repetidas num intervalo temporal, reduzindo abuso de APIs, força bruta e carga excessiva \cite{cloudflare_rate_limiting}.
 
-    O store atual em memória usa buckets protegidos por \texttt{Mutex}. Quando um pedido chega, o interceptor consome uma unidade de cada bucket aplicável. Se todos permitirem consumo, a pipeline continua. Se algum limite estiver esgotado, o interceptor devolve \texttt{TooManyRequestsError} com \texttt{retryAfter}. Este modelo é adequado para testes e instâncias únicas; numa implantação distribuída, o mesmo contrato \texttt{RateLimitStore} permite substituir a implementação por Redis ou outro backend partilhado.
+    A importância deste interceptor é maior do que numa API tradicional, porque cada pedido pode representar custo financeiro direto, consumo de quotas externas e ocupação prolongada de ligações em \textit{streaming}. Sem rate limiting, um cliente mal configurado, uma automação em ciclo ou um utilizador abusivo pode saturar a Gateway, esgotar quotas nos fornecedores e degradar o serviço para clientes legítimos. O interceptor permite aplicar justiça operacional: cada cliente, plano, modelo ou fornecedor pode ter limites próprios.
+
+    A lógica é orientada por políticas. Cada \texttt{RateLimitPolicy} extrai dados do \texttt{GatewayContext} e devolve \texttt{RateLimitTarget}. Um target contém uma chave, como cliente/modelo/plano, e uma \texttt{RateLimitDefinition}, composta por limite, tipo e janela temporal. Isto permite políticas diferentes por cliente, plano, modelo ou fornecedor.
+
+    O store atual em memória usa buckets protegidos por \texttt{Mutex}. Quando um pedido chega, o interceptor tenta consumir uma unidade em todos os buckets aplicáveis. Se todos permitirem consumo, a cadeia continua. Se algum limite estiver esgotado, devolve \texttt{TooManyRequestsError} com \texttt{retryAfter}. Esta resposta permite que clientes bem comportados reduzam ritmo em vez de insistirem. Para desenvolvimento e instância única, este modelo é suficiente; em escalamento horizontal, o contrato \texttt{RateLimitStore} permite substituir a implementação por Redis ou outro backend partilhado. Essa substituição é necessária quando várias instâncias da Gateway devem partilhar a mesma visão de quota.
 
     \subsection{Interceptor de Circuit Breaker}
-    O \texttt{CircuitBreakerInterceptor} protege a Gateway contra chamadas repetidas a um outbound em falha. Para cada combinação de fornecedor/modelo, identifica o \texttt{outbound.key} e consulta o estado no \texttt{CircuitBreakerStore}. Se o circuito estiver \texttt{OPEN}, o pedido falha rapidamente com \texttt{ApiDownError} e o outbound é acrescentado ao conjunto de outbounds negados no contexto.
+    O \texttt{CircuitBreakerInterceptor} protege a Gateway contra chamadas repetidas a um outbound em falha. O padrão de \textit{circuit breaker} é usado para lidar com falhas em serviços remotos, evitando insistir numa dependência que está indisponível e dando tempo para recuperação \cite{microsoft_circuit_breaker,itau_circuit_breaker,treinaweb_circuit_breaker}. Numa Gateway de IA, esta proteção é especialmente útil porque fornecedores externos podem falhar por indisponibilidade, timeouts, quotas ou erros 5xx.
 
-    Quando a chamada prossegue, o interceptor observa o resultado. Erros incrementam o contador de falhas; ao atingir \texttt{failureThreshold}, o circuito passa para \texttt{OPEN}. Sucessos reiniciam o contador e, quando aplicável, fecham circuitos em \texttt{HALF\_OPEN}. A configuração inclui \texttt{failureThreshold}, \texttt{resetTimeoutMs} e \texttt{halfOpenTestRequests}; a implementação atual cobre a abertura/fecho básico do circuito e deixa a evolução temporal de \texttt{HALF\_OPEN} como ponto natural de melhoria.
+    A alternativa simples seria repetir pedidos até obter sucesso. Essa abordagem é perigosa quando o fornecedor está realmente indisponível: as tentativas acumulam latência, ocupam threads ou corrotinas, aumentam custos e podem agravar a falha no serviço externo. O circuit breaker foi criado para evitar esse comportamento. Quando a falha ultrapassa um limiar, o circuito abre e a Gateway passa a falhar rapidamente aquele destino, libertando recursos e permitindo que mecanismos como fallback escolham outro outbound.
+
+    Para cada combinação de fornecedor/modelo, o interceptor identifica o \texttt{outbound.key} e consulta o \texttt{CircuitBreakerStore}. Se o circuito estiver \texttt{OPEN}, o pedido falha rapidamente com \texttt{ApiDownError} e o outbound é acrescentado ao conjunto de outbounds negados no contexto. Esta falha rápida reduz latência, evita consumo de recursos e dá ao \textit{fallback} informação para não tentar novamente o mesmo destino.
+
+    Quando a chamada prossegue, o interceptor observa o resultado. Erros incrementam o contador de falhas; ao atingir \texttt{failureThreshold}, o circuito passa para \texttt{OPEN}. Após um período de recuperação, o estado \texttt{HALF\_OPEN} permite testar um número limitado de pedidos antes de voltar ao estado \texttt{CLOSED}, evitando inundar um fornecedor que ainda está a recuperar \cite{microsoft_circuit_breaker}. A configuração inclui \texttt{failureThreshold}, \texttt{resetTimeoutMs} e \texttt{halfOpenTestRequests}. A implementação atual cobre a abertura e fecho básico do circuito; a evolução temporal mais completa do estado \texttt{HALF\_OPEN} é uma melhoria natural.
 
     \subsection{Interceptor de Fallback}
-    O \texttt{FallbackInterceptor} usa a lista de outbounds disponíveis para tentar alternativas quando a chamada principal falha. Primeiro tenta o outbound correspondente ao fornecedor e modelo pedidos; se falhar, acrescenta esse outbound ao conjunto de negados e tenta os restantes. Para cada tentativa, cria um novo \texttt{GatewayContext} com o mesmo conjunto de atributos, mas com \texttt{provider} e \texttt{model} atualizados para o outbound alternativo.
+    O \texttt{FallbackInterceptor} permite tentar alternativas quando a chamada principal falha. Em sistemas de IA, \textit{fallback} ao nível de modelo ou fornecedor é relevante porque falhas de LLMs são frequentes em produção: rate limits, indisponibilidade, quotas, timeouts ou modelos descontinuados podem impedir a resposta do fornecedor principal \cite{ai_fallback_tombas,portkey_fallback}. Um gateway é o ponto certo para esta política, porque conhece os outbounds configurados e consegue trocar de destino sem exigir alterações no cliente.
 
-    A integração com o circuit breaker é feita através do conjunto partilhado de outbounds negados. Assim, se um circuito estiver aberto, o fallback evita esse destino e tenta outro modelo ou fornecedor. Este desenho permite construir políticas de resiliência como ``tentar Gemini, depois OpenAI-compatible via Groq, depois Anthropic'', mantendo a lógica de tentativa fora dos adapters.
+    A decisão de colocar fallback na Gateway, e não nos clientes, reduz duplicação e melhora controlo operacional. Se cada aplicação cliente implementasse a sua própria lógica de fallback, seria necessário repetir regras de prioridade, tratamento de erros, mapeamento de contratos e métricas em vários pontos. Ao centralizar a política, o SDK consegue manter o mesmo contrato de entrada e decidir internamente que fornecedor ou modelo alternativo deve ser tentado. Isto é particularmente útil quando o cliente usa um contrato compatível com Anthropic ou OpenAI, mas a Gateway pode executar a chamada noutro provider configurado.
+
+    A implementação atual usa a lista de outbounds disponíveis. Primeiro tenta o outbound correspondente ao fornecedor e modelo pedidos; se falhar, acrescenta esse outbound ao conjunto de negados e tenta alternativas. Para cada tentativa, cria um novo \texttt{GatewayContext} com os mesmos atributos, mas com \texttt{provider} e \texttt{model} atualizados para o outbound alternativo.
+
+    A integração com o circuit breaker é feita através do conjunto partilhado de outbounds negados. Assim, se um circuito estiver aberto, o fallback evita esse destino e tenta outro modelo ou fornecedor. Este desenho permite construir políticas de resiliência como ``tentar Gemini, depois OpenAI-compatible via Groq, depois Anthropic'', mantendo a lógica de tentativa fora dos adapters. Também permite distinguir degradação controlada de erro total: a resposta pode chegar por um modelo alternativo, enquanto métricas e tracing registam que ocorreu fallback.
+
+    A evolução futura poderá acrescentar prioridades configuráveis, condições por código de erro, orçamentos de tentativa e métricas específicas de fallback. Estas regras são importantes porque nem todo erro justifica fallback: erros de autenticação ou autorização devem falhar imediatamente, enquanto timeouts, 429 e 5xx podem justificar uma alternativa.
 
     \subsection{Interceptor de Logging e Tracing}
-    O \texttt{RequestLoggingInterceptor} regista fornecedor, modelo, sucesso, erro e conclusão de streams através da abstração \texttt{GatewayLogger}. No target JVM, pode ser ligado a SLF4J; no target JS, pode usar consola. O \texttt{TracingInterceptor}, por sua vez, envolve o pedido num span chamado \texttt{gateway.request.process}. Quando combinado com OpenTelemetry, este span permite correlacionar latência, erros, chamadas externas e métricas agregadas.
+    O \texttt{RequestLoggingInterceptor} regista fornecedor, modelo, sucesso, erro e conclusão de streams através da abstração \texttt{GatewayLogger}. No target JVM pode ser ligado a SLF4J; no target JavaScript pode usar consola ou outra integração. O objetivo é garantir visibilidade mínima mesmo quando a telemetria completa não está ativa.
+
+    O logging foi mantido separado das métricas porque responde a perguntas diferentes. Métricas mostram tendências agregadas, como latência média ou número de erros; logs ajudam a explicar um pedido concreto. Numa Gateway de IA, esta distinção também tem impacto de privacidade: o objetivo é registar metadados operacionais, e não despejar prompts, respostas completas ou tokens sensíveis nos logs.
+
+    O \texttt{TracingInterceptor} envolve o pedido num \textit{span} chamado \texttt{gateway.request.process}. Quando combinado com OpenTelemetry, este span permite correlacionar latência, erros, chamadas externas e métricas agregadas. Em cenários de fallback ou circuit breaker, tracing é particularmente útil porque permite observar o percurso real do pedido e distinguir falhas do fornecedor, decisões da Gateway e erros de cliente. Também permite perceber se uma resposta lenta resulta do fornecedor principal, de uma tentativa alternativa, de validação de token ou de uma política interna.
 
     \section{MCP Broker e Ferramentas Externas}
 
-    O MCP Broker foi introduzido para separar a gestão de ferramentas externas da lógica específica das APIs de inferência. Em vez de cada adapter conhecer diretamente as ferramentas disponíveis e a forma como estas são executadas, o Broker fornece uma camada intermédia responsável por representar ferramentas, recursos e \textit{prompts} de forma uniforme.
+    O MCP Broker foi introduzido como consequência do estudo do MCP e do \textit{tool calling}. O objetivo é separar a gestão de ferramentas externas da lógica específica das APIs de inferência. Em vez de cada adapter conhecer diretamente as ferramentas disponíveis e a forma como são executadas, o broker fornece uma camada intermédia para representar ferramentas, recursos e \textit{prompts} de forma uniforme.
 
-    O módulo inclui abstrações para a definição de ferramentas MCP, modelos de recursos, modelos de \textit{prompts}, geração de esquemas JSON e mapeamento entre o domínio interno e os tipos usados pelo SDK MCP. Esta estrutura permite descrever uma ferramenta através do seu nome, descrição, parâmetros esperados e função de execução, mantendo essa definição separada dos contratos específicos de OpenAI, Anthropic ou Gemini.
+    O módulo \texttt{mcp-broker} depende da biblioteca \texttt{io.modelcontextprotocol:kotlin-sdk}. A implementação atual inclui modelos para ferramentas, recursos e \textit{prompts}, geração de esquemas JSON, configuração de transportes \texttt{stdio}, SSE e WebSocket, e mapeamento entre o domínio do projeto e tipos do SDK MCP. A classe \texttt{McpTool} descreve uma ferramenta por nome, descrição, serializer e função \texttt{execute}; \texttt{McpServerBuilder} permite registar ferramentas, recursos e \textit{prompts} de forma declarativa.
 
-    A motivação principal desta abordagem é permitir que o sistema suporte \textit{tool calling} de forma extensível. Embora cada fornecedor represente chamadas de ferramentas de maneira diferente, o domínio comum do OmniAI SDK permite normalizar esses conceitos. Assim, uma ferramenta pode ser descrita uma vez no sistema e posteriormente convertida para o formato esperado por cada fornecedor.
-
-    O desenho do Broker prevê também que, no futuro, as ferramentas possam ser carregadas a partir de ficheiros de configuração, como YAML. Esta capacidade permitiria adicionar, remover ou alterar ferramentas sem recompilar a Gateway, tornando a solução mais flexível para cenários em que diferentes instalações necessitam de conjuntos distintos de ferramentas. No estado atual, o módulo estabelece sobretudo as abstrações e o mapeamento necessários para essa evolução.
-
-    A Figura~\ref{fig:tool-calling} representa o ciclo geral de \textit{tool calling}. Primeiro, o cliente envia um pedido que inclui ou referencia as ferramentas disponíveis. Em seguida, o modelo pode decidir invocar uma dessas ferramentas, devolvendo uma chamada estruturada com o nome da função e os argumentos necessários. A Gateway fica então responsável por executar ou encaminhar essa chamada, recolher o resultado e devolvê-lo ao modelo para que este produza a resposta final.
-
-    Esta separação permite que a execução de ferramentas evolua de forma independente dos adapters de inferência. Dessa forma, novas ferramentas, novos transportes MCP ou novas formas de configuração podem ser integradas sem alterar o núcleo da pipeline nem os contratos principais da Gateway.
+    A Figura~\ref{fig:tool-calling} representa o ciclo geral de \textit{tool calling}. Primeiro, o cliente envia um pedido com ferramentas disponíveis. Em seguida, o modelo pode pedir uma chamada estruturada com nome e argumentos. A aplicação executa ou encaminha a ferramenta, devolve o resultado ao modelo e recebe a resposta final. O MCP Broker foi desenhado para suportar esta separação no futuro, permitindo que ferramentas sejam registadas e disponibilizadas sem acoplar cada adapter de inferência ao conjunto concreto de ferramentas.
 
     \begin{figure}[H]
         \centering
@@ -448,36 +761,76 @@ metrics {
         \label{fig:tool-calling}
     \end{figure}
 
+    No estado atual, o módulo estabelece sobretudo as abstrações, os modelos e o mapeamento necessários para essa evolução. A execução completa de ferramentas via MCP Broker, o carregamento por YAML e a integração no POC OmniAI Gateway permanecem como trabalho futuro. Esta delimitação é importante: o POC valida contratos HTTP, autenticação, telemetria e consumo do SDK, mas ainda não demonstra invocação real via MCP Broker.
+
     \section{Distribuição Multiplataforma}
 
-    Um dos objetivos do OmniAI SDK é permitir que a lógica principal da Gateway possa ser reutilizada em diferentes ambientes de execução. Para isso, o projeto foi desenvolvido em Kotlin Multiplatform, com suporte para os targets JVM e JavaScript/Node.js.
+    Um dos objetivos do OmniAI SDK é permitir que a lógica principal da Gateway seja reutilizada em diferentes ambientes de execução. O Kotlin Multiplatform permite separar código comum de implementações específicas: o domínio, contratos, portas, adapters principais, DSL e parte dos interceptors vivem em source sets comuns; detalhes como cliente HTTP, reflexão de prioridades, servidor Ktor e integrações de plataforma ficam em source sets específicos.
 
-    No target JVM, o SDK pode ser utilizado por aplicações Kotlin ou Java. Este é o target mais consolidado no estado atual do projeto, sendo usado pela aplicação \texttt{OmniAiGateway} através de um \textit{composite build} do Gradle. Esta abordagem permitiu validar o SDK numa aplicação real sem exigir uma publicação intermédia. Numa fase posterior, a distribuição poderá ser feita através de um repositório Maven, permitindo que outras aplicações adicionem o SDK como dependência normal.
+    No target JVM, o SDK pode ser utilizado por aplicações Kotlin ou Java. Este é o target mais consolidado no estado atual do projeto e é o usado pelo POC OmniAI Gateway. A implementação JVM inclui Ktor HTTP client, integração com servidor Ktor, autenticação com descoberta OIDC, telemetria e execução real de outbounds. A distribuição futura via Maven permitirá que uma aplicação adicione o SDK como dependência versionada, sem depender de \textit{composite build}.
 
-    No target JavaScript/Node.js, o projeto prepara a exposição de uma API consumível a partir do ecossistema Node.js e TypeScript. Para esse efeito, foi criada uma fachada exportada com \texttt{@JsExport}, permitindo configurar e instanciar componentes da Gateway a partir de código JavaScript. Esta camada tem como objetivo aproximar o SDK de cenários onde a aplicação cliente ou a própria Gateway sejam desenvolvidas em Node.js.
+    No target JavaScript/Node.js, o projeto prepara uma API consumível a partir do ecossistema Node.js e TypeScript. A fachada \texttt{@JsExport} encapsula a configuração em tipos exportáveis e evita expor diretamente estruturas Kotlin que não são adequadas à fronteira JS. Esta camada é uma base para consumo via NPM, mas ainda não tem paridade total com a JVM.
 
-    Apesar desta preparação multiplataforma, a paridade entre JVM e JavaScript ainda não é total. Algumas partes do runtime, como transporte HTTP, integração com mecanismos de segurança, observabilidade e montagem completa da Gateway, ainda exigem consolidação no target JavaScript. Assim, a distribuição via NPM deve ser entendida como uma linha de evolução preparada pela arquitetura, mas ainda não totalmente finalizada.
-
-    Esta decisão arquitetural permite separar o núcleo comum do SDK dos detalhes específicos de cada plataforma. O domínio, os contratos, a pipeline e parte da lógica de configuração podem ser partilhados, enquanto componentes dependentes do ambiente de execução podem ter implementações próprias em JVM ou JavaScript. Desta forma, o projeto mantém uma base comum reutilizável e abre caminho para futuras distribuições em Maven e NPM.
+    A nuance principal da distribuição multiplataforma é que nem tudo deve ser comum. O domínio e os contratos devem permanecer partilhados; transporte HTTP, servidor, observabilidade e segurança podem ter implementações diferentes por plataforma. Esta divisão evita duplicação sem forçar uma abstração demasiado rígida. A linha de evolução prevista é consolidar a API pública do SDK, estabilizar versionamento semântico, automatizar publicação Maven/NPM por CD e documentar exemplos mínimos de consumo para JVM e Node.js.
 
     \chapter{Provas de Conceito (PoCs) e Validação}
 
-    \section{Demonstração de Roteamento Inteligente}
-    A validação da Gateway foi feita através de uma aplicação Ktor que consome o OmniAI SDK e expõe endpoints compatíveis com OpenAI, Anthropic e Gemini. A configuração permite ativar fornecedores individualmente e definir um ou mais modelos por fornecedor. A resolução de modelos segue precedência entre variáveis de ambiente, listas em ficheiro de configuração e valores simples.
+    \section{Validação do POC OmniAI Gateway}
+    A validação principal foi realizada com a aplicação \texttt{OmniAiGateway}, um POC Ktor que consome o OmniAI SDK através do \textit{composite build}. Esta aplicação carrega o ficheiro \texttt{application.conf}, resolve variáveis de ambiente, instancia o \texttt{KtorHttpTransportClient}, configura outbounds, ativa segurança e telemetria, monta o runtime do SDK e expõe endpoints HTTP compatíveis com OpenAI, Anthropic e Gemini.
 
-    O roteamento atual demonstra a seleção de fornecedores configurados e fornece a base para políticas mais avançadas. O trabalho desenvolvido em \textit{fallback} e \textit{circuit breaker} permite evoluir o roteamento para considerar falhas, indisponibilidade e degradação de modelos.
+    O comportamento validado não deve ser descrito como roteamento inteligente. A implementação atual realiza despacho configurado: o pedido contém fornecedor e modelo, e o dispatcher padrão escolhe o outbound que corresponde a essa combinação. Este desenho já permite demonstrar o desacoplamento entre cliente e fornecedor, mas políticas mais avançadas, como seleção por custo, qualidade, latência ou plano do cliente, permanecem como trabalho futuro. O trabalho de \textit{fallback} e \textit{circuit breaker} fornece a base técnica para esse tipo de evolução, mas o POC não afirma executar roteamento semântico ou otimizado.
 
-    \section{Invocação de Ferramentas via MCP}
-    O estudo das APIs de inferência permitiu mapear as diferenças de \textit{tool calling} entre OpenAI, Anthropic e Gemini. A OpenAI devolve argumentos como strings JSON em \texttt{tool\_calls}; a Anthropic usa blocos \texttt{tool\_use} e \texttt{tool\_result}; a Gemini usa \texttt{functionCall} e \texttt{functionResponse}. O domínio comum do SDK normaliza estes conceitos para \texttt{CommonTool}, \texttt{ToolChoice} e eventos de chamada de ferramenta.
+    \begin{figure}[H]
+        \centering
+        \begin{tikzpicture}[
+            node distance=0.8cm and 1.0cm,
+            box/.style={rectangle, draw, rounded corners, align=center, text width=3.4cm, minimum height=0.9cm, inner sep=5pt},
+            gateway/.style={rectangle, draw, rounded corners, align=center, text width=4.0cm, minimum height=2.0cm, inner sep=6pt, fill=gray!10},
+            arrow/.style={-Latex, thick}
+        ]
+            \node[box] (rest) {REST Client\\ \texttt{gateway-requests.http}};
+            \node[box, below=of rest] (claude) {Claude Code\\ \texttt{ANTHROPIC\_BASE\_URL}};
+            \node[box, below=of claude] (node) {SDK Anthropic\\ Node.js};
 
-    Esta normalização é essencial para o MCP Broker, porque permite que uma ferramenta seja definida uma vez e exposta a diferentes modelos, mesmo quando cada fornecedor espera um formato próprio de descrição e execução.
+            \node[gateway, right=1.4cm of claude] (gateway) {OmniAI Gateway POC\\ Ktor + OmniAI SDK\\ Logto + Telemetria};
+
+            \node[box, right=1.4cm of gateway, yshift=0.8cm] (providers) {Fornecedor configurado\\ Gemini\\OpenAI-like\\Anthropic};
+            \node[box, right=1.4cm of gateway, yshift=-0.8cm] (obs) {Prometheus + Grafana\\ via OpenTelemetry Collector};
+
+            \draw[arrow] (rest.east) -- (gateway.west);
+            \draw[arrow] (claude.east) -- (gateway.west);
+            \draw[arrow] (node.east) -- (gateway.west);
+            \draw[arrow] (gateway.east) -- (providers.west);
+            \draw[arrow] (gateway.east) -- (obs.west);
+        \end{tikzpicture}
+        \caption{Cenários de validação do POC OmniAI Gateway}
+        \label{fig:poc-validation}
+    \end{figure}
+
+    \section{Validação com REST Client}
+    O ficheiro \texttt{gateway-requests.http} foi usado para validar manualmente os endpoints expostos pela Gateway. Este ficheiro contém pedidos para \texttt{/v1/chat/completions}, \texttt{/v1/messages} e \texttt{/v1beta/models/\{model\}:generateContent}, cobrindo respostas unárias, \textit{streaming}, geração com parâmetros e integração com token Bearer.
+
+    Este cenário foi importante por duas razões. Primeiro, permitiu validar a forma exata dos contratos HTTP recebidos pelo POC sem depender de uma aplicação externa complexa. Segundo, permitiu testar rapidamente o fluxo completo: token emitido pelo Logto, pedido autenticado, tradução inbound, despacho para outbound, chamada ao fornecedor configurado e resposta no contrato esperado pelo cliente.
+
+    \section{Validação de Segurança com Logto}
+    A camada de segurança foi validada com Logto como Authorization Server local. O ambiente Docker inclui Logto, PostgreSQL, OpenTelemetry Collector, Prometheus e Grafana. A configuração do POC usa OIDC Discovery para obter metadados do servidor de autorização e validar tokens com audiência configurada para o recurso da API.
+
+    Durante o desenvolvimento foram realizados testes exploratórios com Keycloak, mas a configuração final mudou para Logto por reduzir a complexidade operacional do POC. O Logto facilitou a criação de API Resources, aplicações Machine-to-Machine e fluxos OIDC adequados à validação da Gateway como Resource Server.
+
+    O fluxo também foi validado com \texttt{run\_claude.py}. Este script abre o browser para autenticação no Logto, usa PKCE, troca o código por um token e inicia o Claude Code com \texttt{ANTHROPIC\_BASE\_URL} a apontar para a OmniAI Gateway. O cabeçalho \texttt{Authorization} é injetado através de \texttt{ANTHROPIC\_CUSTOM\_HEADERS}, permitindo testar um cliente real compatível com Anthropic a passar pela Gateway.
+
+    \section{Validação de Observabilidade}
+    A observabilidade foi validada com OpenTelemetry Collector, Prometheus e Grafana. O POC ativa métricas na DSL do SDK, incluindo latência padrão, contagem de tokens e contagem de erros. Também acrescenta atributos como IP do cliente, versão do SDK, audiência e dados derivados do resultado de autenticação, como \texttt{sub}, \texttt{email} ou \texttt{preferred\_username} quando disponíveis.
+
+    O objetivo desta validação foi confirmar que a Gateway consegue produzir telemetria em tempo real enquanto processa pedidos reais. A utilização de Prometheus e Grafana permitiu observar métricas operacionais da aplicação e confirmar que a instrumentação está separada da lógica de inferência, sendo configurada através da DSL e exportada por adapters próprios.
 
     \section{Validação com Aplicações Cliente}
-    Foram estudados cenários de integração com aplicações que permitem alterar o endpoint da API, como ferramentas compatíveis com OpenAI, LibreChat, Dify e Claude Code. O objetivo destes cenários é demonstrar que a Gateway pode ser introduzida entre a aplicação cliente e o fornecedor sem alterar a lógica principal do cliente.
+    Foram estudados e testados cenários com clientes que permitem alterar o endpoint da API. No caso do Claude Code, a variável \texttt{ANTHROPIC\_BASE\_URL} permite redirecionar pedidos para a Gateway. No caso do SDK oficial da Anthropic em Node.js, foi criado um teste em \texttt{node-tests/anthropicSDKTest.js}, configurado com \texttt{baseURL} local e chave fictícia, para validar que um cliente existente consegue falar com a OmniAI Gateway quando esta expõe um contrato compatível.
 
-    No caso do Claude Code, foi criado um \textit{bootstrap} em Python, \texttt{run\_claude.py}, que abre o fluxo de autenticação no browser contra o Logto, usa PKCE para obter um token e inicia o Claude Code com \texttt{ANTHROPIC\_BASE\_URL} a apontar para a Gateway. O script também injeta o cabeçalho \texttt{Authorization} para testar a passagem do JWT pela Gateway.
+    Também foram estudadas aplicações como OpenCode, LibreChat e Dify, por permitirem configurar endpoints compatíveis com fornecedores existentes. Estes estudos demonstram o valor arquitetural da Gateway: quando o cliente já segue um contrato conhecido, a introdução da OmniAI Gateway pode ser feita por configuração de endpoint, sem alterar a lógica principal da aplicação cliente.
 
-    Também foi criado um teste em Node.js com o SDK oficial da Anthropic, configurado com \texttt{baseURL} local e chave fictícia, para validar que clientes existentes conseguem direcionar pedidos para a OmniAI Gateway quando esta expõe um contrato compatível.
+    \section{Limites da Validação}
+    A validação realizada confirma o consumo do SDK pelo POC, a exposição HTTP com Ktor, a integração com Logto, o uso de Prometheus/Grafana e a compatibilidade com clientes reais ou semi-reais. No entanto, existem limites importantes. O POC ainda não demonstra invocação de ferramentas via MCP Broker, nem políticas avançadas de roteamento por custo, latência ou qualidade. Estes pontos dependem de trabalho futuro sobre o módulo \texttt{mcp-broker}, sobre políticas de dispatcher e sobre stores distribuídos para cenários multi-instância.
 
     \chapter{Conclusões e Trabalho Futuro}
 
@@ -486,7 +839,7 @@ metrics {
 
     O OmniAI SDK demonstra que é possível definir um domínio comum para pedidos, respostas, eventos de \textit{streaming} e ferramentas, mantendo adapters específicos para OpenAI, Anthropic e Gemini. A Arquitetura Hexagonal ajudou a manter esta separação, enquanto a \textit{pipeline} de \textit{interceptors} permitiu adicionar comportamentos transversais sem contaminar o domínio.
 
-    A OmniAI Gateway, construída sobre o SDK, valida a proposta através de uma aplicação real em Ktor, configurável por ficheiro e variáveis de ambiente, com suporte para telemetria e integração com um Authorization Server. Esta aplicação mostra que o SDK pode ser usado para criar rapidamente uma API Gateway robusta para cenários de IA.
+    A OmniAI Gateway, construída sobre o SDK, valida a proposta através de um POC real em Ktor, configurável por ficheiro e variáveis de ambiente, com suporte para Logto, telemetria via OpenTelemetry, Prometheus e Grafana, e integração com clientes compatíveis com Anthropic. A validação não cobre ainda invocação completa via MCP Broker nem roteamento otimizado por custo ou qualidade, mas demonstra a base arquitetural necessária para essa evolução.
 
     \section{Melhorias Futuras e Escalabilidade}
     Como trabalho futuro, existem várias linhas de evolução. A primeira é consolidar a distribuição pública do SDK via Maven e NPM, garantindo documentação de instalação, versionamento semântico e exemplos de consumo. A segunda é completar a paridade entre targets JVM e JavaScript, sobretudo na montagem de runtime e transporte HTTP.
@@ -546,12 +899,12 @@ metrics {
             4 & 9 mar -- 15 mar & Configuração inicial da biblioteca, definição da arquitetura base e das interfaces. \\
             5 & 16 mar -- 22 mar & Integração com as APIs de inferência. Foco inicial em dois fornecedores estáveis. \\
             6 & 23 mar -- 29 mar & Integração do MCP no OmniAI Core. Invocação e registo dinâmico de ferramentas, gerindo o ciclo de \textit{tool calling}. \\
-            7 & 30 mar -- 5 abr & Implementação do roteamento inteligente de modelos (otimização de custos) e mecanismos de redundância (\textit{fallback} e \textit{retry}). \\
+            7 & 30 mar -- 5 abr & Implementação de despacho configurável de modelos e mecanismos de redundância (\textit{fallback} e \textit{retry}). \\
             8 & 6 abr -- 12 abr & Implementação dos mecanismos de segurança, como controlo de acesso, preparação do contexto e remoção de dados sensíveis. \\
             9 & 13 abr -- 19 abr & Conclusão das implementações anteriores. \\
             10 & 20 abr -- 26 abr & \textbf{Apresentação de Progresso} \\
             11 & 27 abr -- 3 mai & Início do desenvolvimento da aplicação final OmniAI Gateway. Exposição da WEB API. \\
-            12 & 4 mai -- 10 mai & Continuação da semana anterior e integração do MCP na OmniAI Gateway. \\
+            12 & 4 mai -- 10 mai & Continuação da semana anterior e preparação das abstrações MCP para integração futura. \\
             13 & 11 mai -- 17 mai & Término de todas as APIs de comunicação para o exterior. \\
             14 & 18 mai -- 24 mai & Testes de integração do Core e da Gateway. \\
             15 & 25 mai -- 31 mai & \textbf{Entrega da Versão beta} \\
