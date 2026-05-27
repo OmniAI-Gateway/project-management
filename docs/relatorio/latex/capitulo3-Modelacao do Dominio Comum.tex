@@ -1,11 +1,10 @@
     \chapter{Modelação do Domínio Comum}
 
     \section{Visão Global do Domínio}
-    A modelação do domínio comum do OmniAI SDK foi definida a partir dos padrões observados no estudo prévio. A ideia central foi criar um modelo de dados suficientemente expressivo para representar pedidos, respostas e eventos dos fornecedores estudados, mas sem copiar diretamente a estrutura de nenhum deles. Assim, o domínio funciona como um ponto intermédio estável: os adapters de entrada convertem contratos externos para o domínio; os adapters de saída convertem o domínio para o contrato do fornecedor real.
 
-    O pedido comum é representado por \texttt{CommonRequest}. Esta estrutura contém o fornecedor pretendido, o modelo, a lista de mensagens, o \textit{system prompt}, a configuração de geração, as ferramentas disponíveis, a escolha de ferramenta, a indicação de resposta JSON e um campo extensível para opções específicas do fornecedor. O campo \texttt{provider} é importante porque o SDK suporta contratos inbound compatíveis com um fornecedor e execução outbound noutro contexto configurado; o campo \texttt{model} permite distinguir múltiplos modelos dentro do mesmo fornecedor.
-
-    A resposta síncrona é representada por \texttt{CommonResponse}. Esta estrutura inclui fornecedor, identificador, modelo, escolhas, mensagem de resposta, razão de terminação e utilização de tokens. Em paralelo, as respostas incrementais são representadas por \texttt{CommonResponseEvent}. Esta separação evita forçar um fluxo de \textit{streaming} a parecer uma resposta final e permite modelar eventos que não existem numa resposta única, como início de escolha, fragmento de texto, início de chamada de ferramenta, fragmento de argumentos, utilização reportada e conclusão.
+    
+    A modelação do domínio comum do \textbf{OmniAI SDK} foi definida a partir dos padrões que foram observados no estudo prévio. A ideia central foi criar um modelo de dados suficientemente expressivo para representar pedidos, respostas e eventos dos fornecedores estudados, mas sem copiar diretamente a estrutura de nenhum deles. Assim, o domínio funciona como um ponto intermédio estável. Assim os adapters de entrada convertem contratos externos para o domínio e os adapters de saída convertem o domínio para o contrato do fornecedor real como podemos ver na 
+    Figura \ref{fig:domain-overview}.
 
     \begin{figure}[H]
         \centering
@@ -37,23 +36,30 @@
         \label{fig:domain-overview}
     \end{figure}
 
+    O pedido comum é representado por \texttt{CommonRequest} (Figura \ref{fig:common-request-structure}).Esta estrutura contém o fornecedor de destino (\texttt{provider}), o modelo a utilizar (\texttt{model}), a lista de mensagens da conversação (\texttt{messages}), o \textit{system prompt} (\texttt{systemPrompt}), a configuração de geração (\texttt{config}) com parâmetros como temperatura, número máximo de tokens e sequências de paragem, as ferramentas disponíveis (\texttt{tools}), a política de seleção de ferramentas(\texttt{toolChoice}), a indicação de resposta em formato JSON (\texttt{jsonResponse}) e um campo extensível para opções específicas do fornecedor (\texttt{providerOptions}). O campo \texttt{provider} é importante para garantir o desacoplamento da arquitetura, uma vez que o \textbf{OmniAI SDK} consegue traduzir contratos de entrada (\textit{inbound}) de um fornecedor e encaminhar o pedido (\textit{outbound}) para um fornecedor diferente. Por sua vez, o campo \texttt{model} permite distinguir múltiplos modelos dentro do mesmo fornecedor.
+
     \begin{figure}[H]
         \centering
         \begin{tikzpicture}[
-            node distance=0.8cm and 0.1cm,
+            node distance=0.8cm and 0.2cm,
             root/.style={rectangle, draw, rounded corners, align=center, minimum height=0.7cm, inner sep=4pt, font=\small\bfseries},
-        % Aplicado text width e height uniformes para todas as partes
-            part/.style={rectangle, draw, rounded corners, align=left, text width=3.3cm, minimum height=1.6cm, inner sep=3pt, font=\footnotesize},
+            % Aumentámos a minimum height para 2.2cm para que todas tenham altura idêntica
+            part/.style={rectangle, draw, rounded corners, align=left, text width=3.3cm, minimum height=2.2cm, inner sep=3pt, font=\footnotesize},
             arrow/.style={thick}
         ]
             % Nó Raiz
             \node[root] (request) {\texttt{CommonRequest}};
 
-            % Nós inferiores (alinhados horizontalmente)
-            \node[part, below left=0.8cm and -2.5cm of request] (identity) {\textbf{Destino}\\\texttt{provider}\\\texttt{model}};
-            \node[part, right=0.1cm of identity] (conversation) {\textbf{Conversação}\\\texttt{systemPrompt}\\\texttt{messages[]} com \texttt{RequestContentPart}};
-            \node[part, right=0.1cm of conversation] (tools) {\textbf{Ferramentas}\\\texttt{tools[]}\\\texttt{toolChoice}\\\texttt{providerOptions}};
-            \node[part, right=0.1cm of tools] (generation) {\textbf{Geração}\\\texttt{generationConfig}\\temperatura, limites, \textit{stop} e formato};
+            % Ponto central invisível (descido para 1.9cm para compensar a altura extra das caixas)
+            \node[coordinate, below=1.9cm of request] (center) {};
+
+            % Nós centrais inferiores (posicionados à esquerda e direita do centro)
+            \node[part, left=0.1cm of center] (conversation) {\textbf{Conversação}\\\texttt{systemPrompt}\\\texttt{messages[]}};
+            \node[part, right=0.1cm of center] (tools) {\textbf{Ferramentas}\\\texttt{tools[]}\\\texttt{toolChoice}};
+            
+            % Nós das extremidades
+            \node[part, left=0.2cm of conversation] (identity) {\textbf{Destino}\\\texttt{provider}\\\texttt{model}\\\texttt{providerOptions}};
+            \node[part, right=0.2cm of tools] (generation) {\textbf{Geração}\\\texttt{config}\\\texttt{jsonResponse}};
 
             % Linhas conectoras
             \draw[arrow] (request.south) -- ++(0,-0.4) -| (identity.north);
@@ -61,9 +67,13 @@
             \draw[arrow] (request.south) -- ++(0,-0.4) -| (tools.north);
             \draw[arrow] (request.south) -- ++(0,-0.4) -| (generation.north);
         \end{tikzpicture}
-        \caption{Estrutura interna principal de \texttt{CommonRequest}}
+        \caption{Estrutura interna do \texttt{CommonRequest}}
         \label{fig:common-request-structure}
     \end{figure}
+
+    A resposta síncrona é representada por \texttt{CommonResponse}(Figura \ref{fig:common-response-structure}). Esta estrutura inclui o fornecedor (\texttt{provider}), o identificador (\texttt{id}), o modelo (\texttt{model}), a lista de escolhas (\texttt{choices}) e a utilização de tokens (\texttt{usage}). Cada escolha (\texttt{CommonChoice}) contém a mensagem de resposta e a razão de terminação (\texttt{finishReason}). Em paralelo, as respostas incrementais são representadas por \texttt{CommonResponseEvent}(Figura \ref{fig:common-response-structure}). Esta separação evita forçar um fluxo de \textit{streaming} a parecer uma resposta final e permite modelar eventos que não existem numa resposta única, como início de escolha, fragmento de texto, início de chamada de ferramenta, fragmento de argumentos, utilização reportada e conclusão.
+
+    
 
     \begin{figure}[H]
         \centering
@@ -76,7 +86,7 @@
             \node[root] (response) {\texttt{CommonResponse}};
             \node[root, right=2.0cm of response] (event) {\texttt{CommonResponseEvent}};
 
-            \node[part, below=of response] (responseParts) {\textbf{Resposta final}\\\texttt{id}, \texttt{model}, \texttt{choices}\\\texttt{CommonResponseMessage}\\\texttt{finishReason}, \texttt{usage}};
+            \node[part, below=of response] (responseParts) {\textbf{Resposta final}\\\texttt{provider} \\\texttt{id} \\\texttt{model}\\\texttt{choices}\\\texttt{usage} \\\texttt{providerOptions}};
             \node[part, below=of event] (eventParts) {\textbf{Resposta incremental}\\\texttt{ResponseStarted}\\\texttt{TextDeltaEvent}\\\texttt{ToolCallStartedEvent}\\\texttt{UsageReported}\\\texttt{ResponseCompleted}};
 
             \draw[arrow] (response) -- (responseParts);
@@ -117,9 +127,9 @@
     \end{table}
 
     \section{\texttt{TypedMap} e Extensibilidade do Domínio}
-    Nem todos os dados relevantes pertencem ao modelo mínimo de inferência. Algumas informações são específicas do fornecedor, como parâmetros avançados da Gemini; outras pertencem ao contexto operacional, como metadados de autenticação, IP do cliente, cabeçalhos HTTP ou atributos necessários para observabilidade e autorização. Para estes casos, o SDK introduz a estrutura \texttt{TypedMap}.
+    Nem todos os dados relevantes pertencem ao modelo mínimo de inferência. Algumas informações são específicas do fornecedor, como parâmetros avançados do Gemini e outras pertencem ao contexto operacional, como metadados de autenticação, IP do cliente, cabeçalhos HTTP ou atributos necessários para observabilidade e autorização. Para estes casos, o \textbf{OmniAI SDK} introduz a estrutura \texttt{TypedMap}.
 
-    A \texttt{TypedMap} funciona como um mapa de atributos tipado por chave. Cada \texttt{AttributeKey<T>} associa um nome lógico a um tipo esperado, permitindo guardar e recuperar valores sem depender de conversões frágeis de strings. Esta abordagem é mais segura do que um \texttt{Map<String, Any?>} puro, porque cada chave transporta também a expectativa de tipo. Ao mesmo tempo, é mais flexível do que adicionar campos ao domínio sempre que surge uma necessidade nova.
+    O \texttt{TypedMap} funciona como um mapa de atributos tipado por chave. Cada \texttt{AttributeKey<T>} associa um nome lógico a um tipo esperado, permitindo guardar e recuperar valores sem depender de conversões frágeis de strings. Esta abordagem é mais segura do que um \texttt{Map<String, Any?>} puro, porque cada chave transporta também a expectativa de tipo. Ao mesmo tempo, é mais flexível do que adicionar campos ao domínio sempre que surge uma necessidade nova.
 
     \begin{figure}[H]
         \centering
@@ -151,5 +161,5 @@
         \label{fig:typed-map}
     \end{figure}
 
-    No domínio de inferência, a \texttt{TypedMap} aparece em \texttt{providerOptions}, permitindo preservar dados que não pertencem ao subconjunto comum mas não devem ser perdidos durante a tradução. Fora da inferência estrita, a mesma estrutura permite transportar metadados entre componentes sem criar dependências diretas entre eles. Esta característica é útil para a evolução futura do SDK, porque permite que mecanismos transversais, como autorização, observabilidade ou políticas de execução, usem atributos adicionais sem forçar alterações constantes nas classes centrais do domínio.
+    No domínio de inferência, a \texttt{TypedMap} aparece em \texttt{providerOptions}, permitindo preservar dados que não pertencem ao subconjunto comum mas não devem ser perdidos durante a tradução. Fora da inferência estrita, a mesma estrutura permite transportar metadados entre componentes sem criar dependências diretas entre eles. Esta característica é útil para a evolução futura do \textbf{OmniAI SDK}, porque permite que mecanismos ,como autorização, observabilidade ou políticas de execução, usem atributos adicionais sem forçar alterações constantes nas classes centrais do domínio.
 
