@@ -1,0 +1,165 @@
+    \chapter{Introdução}
+
+    \section{Contexto}
+    Os Modelos de Linguagem de Grande Escala (\textit{Large Language Models -- LLMs}) \cite{ibm_llm_topics} tornaram-se componentes relevantes no desenvolvimento de aplicações baseadas em inteligência artificial. Um LLM é um modelo treinado com grandes volumes de texto, capaz de interpretar linguagem natural, gerar respostas e apoiar tarefas como sumarização, classificação, programação assistida, pesquisa semântica e interação com sistemas externos.
+
+    É possível distinguir duas fases principais no ciclo de vida de um modelo: treino e inferência. O treino corresponde ao processo de aprendizagem a partir de grandes conjuntos de dados, exigindo elevados recursos computacionais. A inferência corresponde à utilização do modelo já treinado para gerar respostas a novos pedidos. Atualmente, a maioria das aplicações integra LLMs através de APIs de inferência disponibilizadas por fornecedores externos.
+
+    A comunicação com estas APIs é normalmente realizada em JSON, tanto nos pedidos como nas respostas. Antes de serem processados pelos modelos, os textos são convertidos em \textit{tokens}, pequenas unidades de informação que permitem ao modelo representar e manipular sequências de entrada e saída \cite{nvidia_tokens}. Como a resposta é gerada de forma incremental, muitas APIs suportam \textit{streaming}, permitindo enviar fragmentos da resposta ao cliente à medida que são produzidos.
+
+    Existem vários fornecedores relevantes, incluindo OpenAI \cite{openai_api}, Anthropic \cite{anthropic_api}, Google Gemini \cite{google_gemini_api} e Groq \cite{groq_api}. Embora todos disponibilizem APIs HTTP e estruturas JSON, cada fornecedor define contratos próprios, campos específicos, regras de autenticação e modelos distintos para \textit{tool calling}. A integração direta com vários fornecedores obriga, por isso, as aplicações a conhecerem detalhes internos de cada API.
+
+    Ao mesmo tempo, o uso de LLMs evoluiu de interações simples para sistemas baseados em agentes (\textit{agentic workflows}) \cite{ibm_agentic_workflows}. Nestes cenários, o modelo não se limita a devolver texto; pode decidir invocar ferramentas externas, interpretar resultados intermédios e produzir uma resposta final com base nesses dados. O \textit{Model Context Protocol} (MCP) surgiu como proposta de normalização para a comunicação entre modelos, aplicações e ferramentas externas \cite{mcp_protocol}.
+
+    \section{Motivação e Definição do Problema}
+
+    \begin{figure}[H]
+        \centering
+        \begin{tikzpicture}[
+            node distance=3.5cm,
+            box/.style={rectangle, draw, rounded corners, align=center, text width=3.8cm, minimum height=1cm, inner sep=5pt, fill=white, thick},
+            keybox/.style={rectangle, draw, rounded corners=1pt, align=center, text width=1.5cm, minimum height=0.5cm, inner sep=2pt, fill=gray!20, font=\tiny, thick},
+            arrow/.style={-Latex, thick}
+        ]
+            % --- CLIENTE ---
+            \node[box] (cliente) {Cliente de API's de Inferência};
+            \node[keybox, anchor=north east] (key) at (cliente.south east) {API Key};
+
+            % --- FORNECEDOR ---
+            \node[box, right=of cliente] (fornecedor) {API do Gemini de acesso a inferência };
+
+            % --- LIGAÇÃO ---
+            \draw[arrow] (cliente.east) -- (fornecedor.west);
+
+        \end{tikzpicture}
+        \caption{Acoplamento direto entre cliente e um fornecedor de inferência}
+        \label{fig:p1}
+    \end{figure}
+
+    \begin{figure}[H]
+        \centering
+        \begin{tikzpicture}[
+            node distance=0.8cm and 3.5cm,
+            box/.style={rectangle, draw, rounded corners, align=center, text width=3.8cm, minimum height=1cm, inner sep=5pt, fill=white, thick},
+            keybox/.style={rectangle, draw, rounded corners=1pt, align=center, text width=1.5cm, minimum height=0.5cm, inner sep=2pt, fill=gray!20, font=\tiny, thick},
+            arrow/.style={-Latex, thick}
+        ]
+            % --- CLIENTE A ---
+            \node[box] (clienteA) {Cliente de API's de Inferência };
+            \node[keybox, anchor=north east] (keyA) at (clienteA.south east) {API Key};
+
+            % --- CLIENTE B ---
+            \node[box, below=of clienteA, yshift=-0.4cm] (clienteB) {Cliente de API's de Inferência};
+            \node[keybox, anchor=north east] (keyB) at (clienteB.south east) {API Key };
+
+            % --- CLIENTE C ---
+            \node[box, below=of clienteB, yshift=-0.4cm] (clienteC) {Cliente de API's de Inferência};
+            \node[keybox, anchor=north east] (keyC) at (clienteC.south east) {API Key};
+
+            % --- FORNECEDOR (API de acesso à inferência) ---
+            % Posicionado ao lado do Cliente B para manter as setas simétricas e centradas
+            \node[box, right=of clienteB] (fornecedor) {API do Gemini de acesso a inferência};
+
+            % Ligações diretas e limpas das caixas dos 3 clientes para o fornecedor
+            \draw[arrow] (clienteA.east) -- (fornecedor.west);
+            \draw[arrow] (clienteB.east) -- (fornecedor.west);
+            \draw[arrow] (clienteC.east) -- (fornecedor.west);
+
+        \end{tikzpicture}
+        \caption{Multiplicação de conexões com chaves de API descentralizadas}
+        \label{fig:p2}
+    \end{figure}
+    \begin{figure}[H]
+        \centering
+        \begin{tikzpicture}[
+            node distance=0.8cm and 3.5cm,
+            box/.style={rectangle, draw, rounded corners, align=center, text width=3.8cm, minimum height=1cm, inner sep=5pt, fill=white, thick},
+            keybox/.style={rectangle, draw, rounded corners=1pt, align=center, text width=1.5cm, minimum height=0.5cm, inner sep=2pt, fill=gray!20, font=\tiny, thick},
+            cross/.style={cross out, draw=red, ultra thick, minimum size=14pt, inner sep=0pt, outer sep=0pt},
+            arrow/.style={-Latex, thick}
+        ]
+            % --- CLIENTES (Esquerda) ---
+            % Cliente A
+            \node[box] (clienteA) {Cliente de API's de Inferência};
+            \node[keybox, anchor=north east] (keyA) at (clienteA.south east) {API Key};
+
+            % Cliente B (Cliente 2)
+            \node[box, below=of clienteA, yshift=-0.4cm] (clienteB) {Cliente de API's de Inferência};
+            \node[keybox, anchor=north east] (keyB) at (clienteB.south east) {API Key};
+
+            % Cliente C
+            \node[box, below=of clienteB, yshift=-0.4cm] (clienteC) {Cliente de API's de Inferência};
+            \node[keybox, anchor=north east] (keyC) at (clienteC.south east) {API Key};
+
+            % --- APIS DE INFERÊNCIA (Direita) ---
+            % API 1 - Alinhada na direção do Cliente A
+            \node[box, right=of clienteA] (apiOpenAI) {API do Gemini de acesso a inferência};
+
+            % API 2 - AGORA ALINHADA COM O CLIENTE 2 (Cliente B)
+            \node[box, right=of clienteB] (apiGemini) {API da OpenAI de acesso a inferência};
+
+
+
+            % Nova ligação (Cliente A aponta para a API 2 alinhada ao meio)
+            \draw[arrow] (clienteA.east) -- (apiGemini.west);
+
+        \end{tikzpicture}
+        \caption{Cliente decide trocar de fornecedor}
+        \label{fig:p3}
+    \end{figure}
+
+    As Figuras \ref{fig:p1}, \ref{fig:p2} e \ref{fig:p3} ilustram o acoplamento direto entre clientes e fornecedores de inferência, bem como a dificuldade que os clientes tem em trocar de fornecedor devido a todo acoplamento que existe
+
+    A existência de múltiplos fornecedores de LLMs e a ausência de um protocolo comum implicam
+    diferentes interfaces de acesso aos modelos, estruturas específicas de pedidos e respostas, modelos distintos de contabilização de tokens, custos variáveis e implementações particulares para invocação de funções externas (ver Figuras \ref{fig:p1}--\ref{fig:p3}). Por exemplo, a API OpenAI organiza a interação em torno de chat completions e tool calls; a Anthropic utiliza uma arquitetura baseada em messages e blocos de conteúdo; e a Gemini estrutura a geração através de contents, parts, function declarations e configurações de geração próprias.
+
+    Estas diferenças criam acoplamento entre as aplicações cliente e os fornecedores. Sempre que uma aplicação pretende trocar de modelo, suportar mais do que um fornecedor, adicionar um mecanismo de \textit{fallback} ou integrar ferramentas externas, torna-se necessário duplicar lógica de tradução, autenticação, tratamento de erros e interpretação de respostas. Esta duplicação aumenta a complexidade e dificulta a evolução do sistema, um problema recorrente em sistemas que combinam lógica de aplicação com integrações externas especializadas \cite{ml_code_smells,ml_code_smells1}.
+
+    Para além da fragmentação dos contratos, existem preocupações operacionais e de segurança. Uma aplicação que comunica diretamente com vários fornecedores precisa de gerir chaves de API, quotas, limites de utilização, métricas, auditoria, políticas de acesso e proteção contra falhas de terceiros. Sem uma camada intermédia, estas preocupações ficam espalhadas por vários pontos do sistema, tornando mais difícil aplicar regras consistentes de autenticação, autorização, observabilidade e resiliência.
+
+    O problema central deste projeto é, assim, a ausência de uma camada de abstração capaz de separar as aplicações cliente das particularidades de cada fornecedor de LLMs, mantendo simultaneamente suporte para segurança, monitorização, \textit{tool calling} e integração dinâmica com ferramentas externas.
+
+    \section{Objetivos e Proposta de Solução}
+    \begin{figure}[H]
+        \centering
+        \begin{tikzpicture}[
+            node distance=0.8cm and 2.5cm,
+            box/.style={rectangle, draw, rounded corners, align=center, text width=3.5cm, minimum height=1cm, inner sep=5pt, fill=white, thick},
+            gateway/.style={rectangle, draw, rounded corners, align=center, text width=3.5cm, minimum height=1.8cm, inner sep=5pt, fill=gray!20, thick},
+            arrow/.style={-Latex, thick}
+        ]
+            % --- CLIENTES ---
+            \node[box] (cliente1) {Clientes de API's};
+            \node[box, below=of cliente1] (cliente2) {Clientes de API's};
+            \node[box, below=of cliente2] (cliente3) {Clientes de API's};
+
+            % --- GATEWAY ---
+            \node[gateway, right=of cliente2] (gateway) {\textbf{OmniAI Gateway}};
+
+            % --- FORNECEDORES ---
+            \node[box, right=of gateway, yshift=1.2cm] (api1) {API de Inferência (Gemini)};
+            \node[box, right=of gateway, yshift=-1.2cm] (api2) {API de Inferência (OpenAI)};
+
+            % --- LIGAÇÕES ---
+            \draw[arrow] (cliente1.east) -- (gateway.west);
+            \draw[arrow] (cliente2.east) -- (gateway.west);
+            \draw[arrow] (cliente3.east) -- (gateway.west);
+
+            \draw[arrow] (gateway.east) -- (api1.west);
+            \draw[arrow] (gateway.east) -- (api2.west);
+        \end{tikzpicture}
+        \caption{Centralização com OmniAI Gateway}
+        \label{fig:p4_cinza}
+    \end{figure}
+
+    A solução proposta evoluiu para a construção de um \textbf{OmniAI SDK}, isto é, uma biblioteca reutilizável que permite instanciar uma \textbf{OmniAI Gateway}. A Gateway funciona como ponto de entrada único para aplicações cliente, centralizando o acesso a APIs de inferência, ferramentas externas e mecanismos transversais de segurança e operação. Esta abordagem aproxima-se do padrão de API Gateway \cite{api_gateway_design} e, no contexto específico de modelos de IA, do padrão de AI Gateway enquanto camada centralizada de acesso a modelos \cite{ai_gateway_pattern,karl_ai_gateway}. Embora existam soluções relacionadas, como LiteLLM e OpenRouter \cite{litellm,openrouter}, o foco deste projeto está na construção de um SDK extensível, configurável e validado por uma Gateway POC própria.
+
+    O SDK foi desenvolvido em Kotlin Multiplatform, permitindo partilhar o núcleo de domínio entre targets diferentes e preparar a distribuição para JVM e JavaScript/Node.js \cite{kotlin_multiplatform}. Esta decisão torna possível disponibilizar a biblioteca em ecossistemas distintos: via Maven para aplicações JVM/Kotlin e via NPM para ambientes Node.js/TypeScript.
+
+    A arquitetura do SDK foi organizada segundo os princípios da Arquitetura Hexagonal, também conhecida como \textit{Ports and Adapters} \cite{hexagonal_ports}. O domínio comum fica isolado de contratos externos, enquanto os \textit{inbound adapters} traduzem pedidos de clientes compatíveis com OpenAI, Anthropic ou Gemini para o modelo comum, e os \textit{outbound adapters} traduzem o modelo comum para chamadas reais aos fornecedores.
+
+    Para tornar a solução configurável e escalável, foi criada uma \textit{pipeline} interna de \textit{interceptors}, inspirada no modelo de filtros de Servlets \cite{servlet_filterchain}. Esta \textit{pipeline} permite executar comportamentos transversais antes e depois da chamada ao fornecedor, incluindo autenticação, autorização, métricas, \textit{rate limiting}, \textit{circuit breaker}, \textit{fallback} e \textit{logging}. Por fim, o estudo do MCP fundamenta a evolução de um broker de ferramentas separado da lógica de inferência.
+
+    \section{Estrutura do Documento}
+    Este documento encontra-se organizado de forma progressiva, partindo do problema de integração e avançando até à validação da solução construída. O Capítulo 2 apresenta apenas o estudo prévio: primeiro a análise comparativa das APIs de inferência e depois o estudo do \textit{Model Context Protocol}. O Capítulo 3 isola a modelação do domínio comum, explicando como os conceitos observados no estudo foram transformados em estruturas como \texttt{CommonRequest}, \texttt{CommonResponse}, \texttt{CommonResponseEvent}, \texttt{CommonTool} e \texttt{TypedMap}. O Capítulo 4 descreve a arquitetura do SDK e do POC, incluindo a visão top-level, a Arquitetura Hexagonal, os módulos, os \textit{contracts}, os \textit{inbounds}, os \textit{outbounds}, o \textit{dispatcher}, a DSL e o cliente HTTP. O Capítulo 5 detalha a implementação técnica e a evolução do sistema, com foco na separação entre SDK e OmniAI Gateway, na \textit{pipeline} de \textit{interceptors}, nos mecanismos de segurança, observabilidade e resiliência, no MCP Broker e na distribuição multiplataforma. O Capítulo 6 apresenta as provas de conceito efetivamente realizadas no POC OmniAI Gateway. O Capítulo 7 sintetiza as conclusões, limitações e linhas de evolução futura. O Capítulo 8 regista o histórico de planeamento e os principais riscos considerados durante o desenvolvimento.
+

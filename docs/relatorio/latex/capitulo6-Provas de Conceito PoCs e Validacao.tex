@@ -1,0 +1,69 @@
+    \chapter{Provas de Conceito (PoCs) e Validação}
+
+    \section{Validação do POC OmniAI Gateway}
+    A validação principal foi realizada com a aplicação \texttt{OmniAiGateway}, um POC que consome o OmniAI SDK através do \textit{composite build}. Esta aplicação carrega o ficheiro \texttt{application.conf}, resolve variáveis de ambiente, instancia o \texttt{KtorHttpTransportClient}, configura outbounds, ativa segurança e telemetria, monta o runtime do SDK e expõe endpoints HTTP compatíveis com OpenAI, Anthropic e Gemini.
+
+    O comportamento validado não deve ser descrito como roteamento inteligente. A implementação atual realiza despacho configurado: o pedido contém fornecedor e modelo, e o dispatcher padrão escolhe o outbound que corresponde a essa combinação. Este desenho já permite demonstrar o desacoplamento entre cliente e fornecedor, mas políticas mais avançadas, como seleção por custo, qualidade, latência ou plano do cliente, permanecem como trabalho futuro. O trabalho de \textit{fallback} e \textit{circuit breaker} fornece a base técnica para esse tipo de evolução, mas o POC não afirma executar roteamento semântico ou otimizado.
+
+    \begin{figure}[H]
+        \centering
+        \begin{tikzpicture}[
+        % node distance: vertical, horizontal
+            node distance=0.8cm and 1.5cm,
+        % Estilo uniforme para as caixas de cliente e fornecedores
+            box/.style={rectangle, draw, rounded corners, align=center, text width=4.0cm, minimum height=1.4cm, inner sep=5pt, thick},
+        % Estilo para a gateway (maior e com preenchimento)
+            gateway/.style={rectangle, draw, rounded corners, align=center, text width=4.5cm, minimum height=2.5cm, inner sep=6pt, fill=gray!15, thick},
+            arrow/.style={-Latex, thick}
+        ]
+            % --- COLUNA ESQUERDA ---
+            \node[box] (rest) {REST Client};
+            \node[box, below=0.8cm of rest] (claude) {Claude Code\\ \texttt{ANTHROPIC\_BASE\_URL}};
+            \node[box, below=0.8cm of claude] (node) {SDK Anthropic\\ Node.js};
+
+            % --- GATEWAY CENTRAL ---
+            \node[gateway, right=of claude] (gateway) {\textbf{OmniAI Gateway POC}};
+
+            % --- COLUNA DIREITA ---
+            % Ajuste de yshift para espaçamento vertical no lado direito
+            \node[box, right=of gateway, yshift=1.2cm] (providers) {Fornecedor configurado\\ Gemini, OpenAI\\ Anthropic};
+            \node[box, right=of gateway, yshift=-1.2cm] (obs) {Prometheus + Grafana\\ via OpenTelemetry Collector};
+
+            % --- LIGAÇÕES ---
+            \draw[arrow] (rest.east) -- (gateway.west);
+            \draw[arrow] (claude.east) -- (gateway.west);
+            \draw[arrow] (node.east) -- (gateway.west);
+
+            \draw[arrow] (gateway.east) -- (providers.west);
+            \draw[arrow] (gateway.east) -- (obs.west);
+        \end{tikzpicture}
+        \caption{Cenários de validação do POC OmniAI Gateway}
+        \label{fig:poc-validation}
+    \end{figure}
+
+    \section{Validação com REST Client}
+    O ficheiro \texttt{gateway-requests.http} foi usado para validar manualmente os endpoints expostos pela Gateway. Este ficheiro contém pedidos para \texttt{/v1/chat/completions}, \texttt{/v1/messages} e \texttt{/v1beta/models/\{model\}:generateContent}, cobrindo respostas unárias, \textit{streaming}, geração com parâmetros e integração com token Bearer.
+
+    Este cenário foi importante por duas razões. Primeiro, permitiu validar a forma exata dos contratos HTTP recebidos pelo POC sem depender de uma aplicação externa complexa. Segundo, permitiu testar rapidamente o fluxo completo: token emitido pelo Logto, pedido autenticado, tradução inbound, despacho para outbound, chamada ao fornecedor configurado e resposta no contrato esperado pelo cliente.
+
+    \section{Validação de Segurança com Logto}
+    A camada de segurança foi validada com Logto como Authorization Server local. O ambiente Docker inclui Logto, PostgreSQL, OpenTelemetry Collector, Prometheus e Grafana. A configuração do POC usa OIDC Discovery para obter metadados do servidor de autorização e validar tokens com audiência configurada para o recurso da API.
+
+    Durante o desenvolvimento foram realizados testes exploratórios com Keycloak, mas a configuração final mudou para Logto por reduzir a complexidade operacional do POC. O Logto facilitou a criação de API Resources, aplicações Machine-to-Machine e fluxos OIDC adequados à validação da Gateway como Resource Server.
+
+    O fluxo também foi validado com \texttt{run\_claude.py}. Este script abre o browser para autenticação no Logto, usa PKCE, troca o código por um token e inicia o Claude Code com \texttt{ANTHROPIC\_BASE\_URL} a apontar para a OmniAI Gateway. O cabeçalho \texttt{Authorization} é injetado através de \texttt{ANTHROPIC\_CUSTOM\_HEADERS}, permitindo testar um cliente real compatível com Anthropic a passar pela Gateway.
+
+    \section{Validação de Observabilidade}
+    A observabilidade foi validada com OpenTelemetry Collector, Prometheus e Grafana. O POC ativa métricas na DSL do SDK, incluindo latência padrão, contagem de tokens e contagem de erros. Também acrescenta atributos como IP do cliente, versão do SDK, audiência e dados derivados do resultado de autenticação, como \texttt{sub}, \texttt{email} ou \texttt{preferred\_username} quando disponíveis.
+
+    O objetivo desta validação foi confirmar que a Gateway consegue produzir telemetria em tempo real enquanto processa pedidos reais. A utilização de Prometheus e Grafana permitiu observar métricas operacionais da aplicação e confirmar que a instrumentação está separada da lógica de inferência, sendo configurada através da DSL e exportada por adapters próprios.
+
+    \section{Validação com Aplicações Cliente}
+    Foram estudados e testados cenários com clientes que permitem alterar o endpoint da API. No caso do Claude Code, a variável \texttt{ANTHROPIC\_BASE\_URL} permite redirecionar pedidos para a Gateway. \\
+    Foi criado um teste com o sdk oficial da anthropic em \texttt{node-tests/anthropicSDKTest.js}, configurado com \texttt{baseURL} local e chave fictícia, para validar que um cliente existente consegue falar com a OmniAI Gateway quando esta expõe um contrato compatível.
+
+    Também foram estudadas aplicações como OpenCode, LibreChat e Dify, por permitirem configurar endpoints compatíveis com fornecedores existentes. Estes estudos demonstram o valor arquitetural da Gateway: quando o cliente já segue um contrato conhecido, a introdução da OmniAI Gateway pode ser feita por configuração de endpoint, sem alterar a lógica principal da aplicação cliente.
+
+    \section{Limites da Validação}
+    A validação realizada confirma o consumo do SDK pelo POC, a exposição HTTP com Ktor, a integração com Logto, o uso de Prometheus/Grafana e a compatibilidade com clientes reais ou semi-reais. No entanto, existem limites importantes. O POC ainda não demonstra invocação de ferramentas via MCP Broker, nem políticas avançadas de roteamento por custo, latência ou qualidade. Estes pontos dependem de trabalho futuro sobre o módulo \texttt{mcp-broker}, sobre políticas de dispatcher e sobre stores distribuídos para cenários multi-instância.
+

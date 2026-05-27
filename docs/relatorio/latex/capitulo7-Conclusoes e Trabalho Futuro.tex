@@ -1,0 +1,17 @@
+    \chapter{Conclusões e Trabalho Futuro}
+
+    \section{Conclusões}
+    O projeto evoluiu de uma Gateway específica para um SDK reutilizável capaz de instanciar gateways de IA configuráveis. Esta evolução tornou a solução mais alinhada com o problema identificado: reduzir acoplamento entre aplicações cliente e fornecedores de LLMs, centralizando contratos, autenticação, autorização, observabilidade, resiliência e integração com ferramentas.
+
+    O OmniAI SDK demonstra que é possível definir um domínio comum para pedidos, respostas, eventos de \textit{streaming} e ferramentas, mantendo adapters específicos para OpenAI, Anthropic e Gemini. A Arquitetura Hexagonal ajudou a manter esta separação, enquanto a \textit{pipeline} de \textit{interceptors} permitiu adicionar comportamentos transversais sem contaminar o domínio.
+
+    A OmniAI Gateway, construída sobre o SDK, valida a proposta através de um POC real em Ktor, configurável por ficheiro e variáveis de ambiente, com suporte para Logto, telemetria via OpenTelemetry, Prometheus e Grafana, e integração com clientes compatíveis com Anthropic. A validação não cobre ainda invocação completa via MCP Broker nem roteamento otimizado por custo ou qualidade, mas demonstra a base arquitetural necessária para essa evolução.
+
+    \section{Melhorias Futuras e Escalabilidade}
+    Como trabalho futuro, existem várias linhas de evolução. A primeira é consolidar a distribuição pública do SDK via Maven e NPM, garantindo documentação de instalação, versionamento semântico e exemplos de consumo. A segunda é completar a paridade entre targets JVM e JavaScript, sobretudo na montagem de runtime e transporte HTTP.
+
+    Outra melhoria importante é aprofundar o MCP Broker, incluindo carregamento efetivo de ferramentas via YAML, execução completa dos handlers MCP e suporte robusto a SSE e WebSocket. Também será relevante melhorar as políticas de roteamento, permitindo decisões com base em custo, latência, disponibilidade, qualidade do modelo, plano do cliente e limites de utilização.
+
+    Por fim, a camada de segurança pode evoluir para políticas de autorização mais expressivas, integração com PDPs externos, introspeção real de tokens opacos e mapeamento mais fino entre claims, planos e quotas. Estas melhorias permitiriam aproximar a OmniAI Gateway de uma solução pronta para ambientes multi-tenant e produção.
+
+

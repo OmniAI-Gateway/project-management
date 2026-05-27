@@ -1,0 +1,46 @@
+% ================= ELEMENTOS PRÉ-TEXTUAIS =================
+    \begin{abstract}
+        A ausência de um protocolo comum na comunicação com Modelos de Linguagem de Grande Escala (LLMs)
+        obriga as aplicações a integrarem diferentes interfaces de acesso e implementações particulares
+        para a invocação de ferramentas externas. Para resolver esta fragmentação tecnológica, este 
+        projeto propõe o desenvolvimento do \textbf{OmniAI SDK}, um \textit{Software Development Kit} 
+        construído em Kotlin Multiplatform (KMP). Baseado nos princípios da Arquitetura Hexagonal (\textit{Ports and Adapters}), 
+        o SDK isola a lógica de domínio e suporta a 
+        comunicação bidirecional compatível com os padrões das APIs de referência, nomeadamente OpenAI, 
+        Anthropic e Gemini. O núcleo do sistema implementa uma \textit{pipeline} extensível e configurável, 
+        inspirada no modelo de filtros de Servlets, que executa \textit{interceptors} pré-construídos para autorização, 
+        autenticação, métricas, \textit{rate limiting}, \textit{circuit breaker} e \textit{fallback}. 
+        Adicionalmente, o SDK prepara um módulo MCP Broker para evoluir a gestão de ferramentas externas de 
+        forma independente dos adapters de inferência. Distribuído de forma multiplataforma para ambientes JVM, 
+        via Maven, e Node.js/TypeScript, via NPM, o SDK foi validado através da construção da \textbf{OmniAI Gateway}, 
+        um POC que consome a biblioteca para demonstrar a criação de uma Gateway real. A avaliação demonstra que a solução 
+        minimiza o acoplamento tecnológico e o esforço de integração, garantindo resiliência, escalabilidade e centralização 
+        na gestão de modelos de IA.
+    \end{abstract}
+
+    \renewcommand{\abstractname}{Abstract}
+    \begin{abstract}
+        The lack of a common protocol for communicating with Large Language Models
+        (LLMs) forces applications to integrate different access interfaces and
+        specific implementations for invoking external tools. To address this
+        technological fragmentation, this project proposes the development of the OmniAI SDK, a
+        Software Development Kit built on Kotlin Multiplatform (KMP). Based on the principles of the
+        Hexagonal Architecture (Ports and Adapters), the SDK isolates the domain logic and supports
+        bidirectional communication compatible with the standards of reference APIs, namely OpenAI,
+        Anthropic, and Gemini. The system's core implements an extensible and configurable pipeline, inspired
+        by the Servlet filter model, which executes pre-built interceptors for authorization,
+        authentication, metrics, rate limiting, circuit breaker, and fallback. Additionally, the SDK prepares an
+        MCP Broker module to evolve external tool management independently from inference adapters.
+        Distributed across multiple platforms for JVM environments via Maven and Node.js/TypeScript
+        via NPM, the SDK was validated through the development of the OmniAI Gateway, a proof-of-concept
+        application that leverages the library to instantiate a real Gateway. The evaluation demonstrates that
+        the solution minimizes technological coupling and integration effort, ensuring resilience,
+        scalability, and centralization in AI model management.
+    \end{abstract}
+
+    \tableofcontents
+    \listoffigures
+    \newpage
+
+% ================= CAPÍTULOS DO RELATÓRIO =================
+

@@ -1,0 +1,124 @@
+    \chapter{Estudo Prévio}
+
+    \section{Análise das APIs de Inferência}
+    O estudo inicial comparou APIs de inferência compatíveis com os fornecedores OpenAI, Anthropic e Gemini, bem como execuções locais e compatíveis através de Ollama e de endpoints OpenAI-like, como Groq. Esta análise não teve apenas um papel descritivo: foi a base empírica para identificar os conceitos que podiam ser normalizados no SDK e os pontos onde a normalização teria de preservar extensões específicas de cada fornecedor. Para esse efeito foram executados e documentados pedidos de geração simples, pedidos com \textit{streaming}, pedidos com \textit{tool calling}, respostas com contabilização de tokens e casos de configuração de geração.
+
+    A comparação mostrou que as APIs partilham um núcleo conceptual comum, mas expõem esse núcleo através de modelos de dados diferentes. A OpenAI organiza a interação em torno de \texttt{chat/completions}, com \texttt{messages}, \texttt{choices}, \texttt{tool\_calls} e eventos incrementais baseados em \texttt{delta} \cite{openai_api}. A Anthropic usa uma API de \texttt{messages}, onde o \texttt{system prompt} está no nível de topo, o campo \texttt{max\_tokens} é obrigatório, e o conteúdo da resposta é uma lista de blocos como \texttt{text}, \texttt{tool\_use} ou \texttt{thinking} \cite{anthropic_api}. A Gemini modela o pedido como \texttt{contents} compostos por \texttt{parts}, agrupa parâmetros em \texttt{generationConfig}, representa ferramentas por \texttt{functionDeclarations} e introduz conceitos próprios como \textit{thought signatures} e \texttt{thinkingConfig} \cite{google_gemini_api}.
+
+    \begin{table}[H]
+        \centering
+        \footnotesize
+        \renewcommand{\arraystretch}{1.25}
+        \begin{tabularx}{\textwidth}{|>{\raggedright\arraybackslash}p{2.5cm}|Y|Y|Y|}
+            \hline
+            \textbf{Conceito} & \textbf{Semelhança observada} & \textbf{Diferenças relevantes} & \textbf{Modelo comum pretendido} \\
+            \hline
+            Modelo invocado & As três APIs precisam de identificar o modelo a usar. & OpenAI e Anthropic usam \texttt{model} no corpo; Gemini coloca o modelo no URI e, por vezes, também no cliente. & \texttt{provider} + \texttt{model}, permitindo escolher adapter e preservar a identidade do modelo. \\
+            \hline
+            Histórico conversacional & Todas representam uma conversa com papéis e conteúdo. & OpenAI e Anthropic usam \texttt{messages}; Gemini usa \texttt{contents} e \texttt{parts}; Anthropic separa o \texttt{system}. & \texttt{CommonRequestMessage}, com papel comum e lista de partes de conteúdo. \\
+            \hline
+            Instruções de sistema & Todas suportam instruções globais para orientar o modelo. & OpenAI pode usar mensagem \texttt{system}; Anthropic usa campo de topo \texttt{system}; Gemini usa \texttt{system\_instruction}. & \texttt{SystemPrompt}, separado do histórico para permitir tradução correta. \\
+            \hline
+            Parâmetros de geração & Temperatura, limite de tokens e opções de amostragem aparecem nos três ecossistemas. & Nomes e agrupamentos variam: campos soltos em OpenAI/Anthropic, \texttt{generationConfig} em Gemini, e opções exclusivas por fornecedor. & \texttt{CommonGenerationConfig} para o subconjunto comum e \texttt{providerOptions} para extensões. \\
+            \hline
+            Conteúdo multimodal e estruturado & As APIs evoluem para conteúdo composto, não apenas texto simples. & Anthropic e Gemini modelam blocos naturalmente; OpenAI depende do contrato usado; tool calling introduz partes específicas. & \texttt{RequestContentPart} e \texttt{ResponseContentPart}. \\
+            \hline
+            Utilização de tokens & Todas expõem algum tipo de contabilização de utilização. & OpenAI usa \texttt{prompt\_tokens}/
+            \texttt{completion\_tokens}; Anthropic usa \texttt{input\_tokens}/
+            \texttt{output\_tokens}; Gemini usa \texttt{usageMetadata}. & \texttt{CommonUsage}, com tokens de entrada, saída e total quando disponíveis. \\
+            \hline
+        \end{tabularx}
+        \caption{Mapeamento entre conceitos das APIs de inferência e o domínio comum}
+        \label{tab:api-domain-mapping}
+    \end{table}
+
+    O caso de \textit{tool calling} foi especialmente relevante, porque é onde as APIs mais divergem apesar de exprimirem uma intenção semelhante: permitir que o modelo peça a execução de uma função externa. Na OpenAI, a ferramenta é descrita em \texttt{tools[]} e a resposta devolve \texttt{tool\_calls} com argumentos serializados como JSON em string. Na Anthropic, a ferramenta é descrita com \texttt{name}, \texttt{description} e \texttt{input\_schema}; a resposta inclui blocos \texttt{tool\_use}, e o resultado da execução regressa ao modelo como bloco \texttt{tool\_result}. Na Gemini, as ferramentas são \texttt{functionDeclarations}, a chamada surge em \texttt{functionCall}, e o resultado é enviado como \texttt{functionResponse}.
+
+    \begin{table}[H]
+        \centering
+        \footnotesize
+        \renewcommand{\arraystretch}{1.25}
+        \begin{tabularx}{\textwidth}{|>{\raggedright\arraybackslash}p{2.4cm}|>{\raggedright\arraybackslash}p{1.8cm}|Y|Y|}
+            \hline
+            \textbf{Aspeto} & \textbf{API} & \textbf{Estrutura observada} & \textbf{Impacto no domínio comum} \\
+            \hline
+            Declaração de ferramenta & OpenAI & \texttt{tools[].function.parameters}. & Normalização em \texttt{CommonTool.parametersSchema}. \\
+            \hline
+            Declaração de ferramenta & Anthropic & \texttt{tools[].input\_schema}. & Mesmo conceito, nome de campo diferente. \\
+            \hline
+            Declaração de ferramenta & Gemini & \texttt{functionDeclarations[]
+                .parameters}. & Necessidade de traduzir declarações Gemini para a mesma estrutura comum. \\
+            \hline
+            Escolha de ferramenta & OpenAI & \texttt{tool\_choice} com valores como \texttt{auto}, \texttt{none} ou ferramenta específica. & Representação em \texttt{ToolChoice}. \\
+            \hline
+            Escolha de ferramenta & Anthropic & \texttt{tool\_choice} com semântica semelhante, incluindo \texttt{auto}, \texttt{any} e ferramenta específica. & O domínio preserva intenção, não o nome exato do campo. \\
+            \hline
+            Escolha de ferramenta & Gemini & \texttt{functionCallingConfig} dentro de \texttt{toolConfig}. & Conversão para a mesma decisão comum sobre uso de ferramenta. \\
+            \hline
+            Chamada pedida pelo modelo & OpenAI & \texttt{message.tool\_calls[]} com \texttt{id}, \texttt{name} e \texttt{arguments}. & Mapeamento para \texttt{ToolCallPart}. \\
+            \hline
+            Chamada pedida pelo modelo & Anthropic & Bloco \texttt{tool\_use} com \texttt{id}, \texttt{name} e \texttt{input}. & A chamada passa a ser uma parte estruturada da resposta. \\
+            \hline
+            Chamada pedida pelo modelo & Gemini & \texttt{functionCall} com \texttt{name}, \texttt{args} e, quando disponível, \texttt{id}. & O domínio não assume que todos os fornecedores expõem os mesmos identificadores. \\
+            \hline
+            Resultado de ferramenta & OpenAI & Mensagem com \texttt{role=tool} e \texttt{tool\_call\_id}. & Mapeamento para \texttt{ToolResultPart}. \\
+            \hline
+            Resultado de ferramenta & Anthropic & Bloco \texttt{tool\_result}. & Resultado representado como conteúdo estruturado. \\
+            \hline
+            Resultado de ferramenta & Gemini & \texttt{functionResponse}. & Resultado traduzido para o mesmo conceito comum. \\
+            \hline
+            Eventos de \textit{streaming} & Todas & OpenAI usa \texttt{delta}; Anthropic usa eventos nomeados; Gemini envia respostas parciais por SSE. & Representação em \texttt{CommonResponseEvent}, separada de \texttt{CommonResponse}. \\
+            \hline
+        \end{tabularx}
+        \caption{Comparação do ciclo de \textit{tool calling} e \textit{streaming}}
+        \label{tab:tool-stream-mapping}
+    \end{table}
+
+    \begin{figure}[H]
+        \centering
+        \begin{tikzpicture}[
+            node distance=0.8cm and 1.5cm,
+        % Estilo dos blocos ajustado para o padrão do relatório
+            box/.style={rectangle, draw, rounded corners, align=center, text width=3.2cm, minimum height=1.0cm, inner sep=5pt, thick},
+            common/.style={rectangle, draw, rounded corners, align=center, text width=4.0cm, minimum height=1.2cm, inner sep=5pt, fill=gray!20, thick},
+            arrow/.style={-Latex, thick}
+        ]
+            % --- FORNECEDORES ---
+            \node[box] (openai) {OpenAI\\ \texttt{messages}\\ \texttt{tool\_calls}\\ \texttt{delta}};
+            \node[box, below=of openai] (anthropic) {Anthropic\\ \texttt{messages}\\ \texttt{tool\_use}\\ eventos};
+            \node[box, below=of anthropic] (gemini) {Gemini\\ \texttt{contents/parts}\\ \texttt{functionCall}};
+
+            % --- DOMÍNIO COMUM ---
+            \node[common, right=1.5cm of anthropic] (domain) {\textbf{Domínio comum}\\ \texttt{CommonRequest}\\ \texttt{CommonResponse}\\ \texttt{CommonResponseEvent}};
+
+            % --- ADAPTER DE SAÍDA ---
+            \node[box, right=1.5cm of domain] (provider) {Adapter de saída\\ contrato do fornecedor\\ transporte HTTP/SSE};
+
+            % --- LIGAÇÕES ---
+            \draw[arrow] (openai.east) -- (domain.west);
+            \draw[arrow] (anthropic.east) -- (domain.west);
+            \draw[arrow] (gemini.east) -- (domain.west);
+            \draw[arrow] (domain.east) -- (provider.west);
+        \end{tikzpicture}
+        \caption{Normalização dos contratos de inferência para um domínio comum}
+        \label{fig:api-normalization}
+    \end{figure}
+
+    A conclusão principal deste estudo é que a construção do domínio comum não podia ser feita por intuição nem por uma tradução superficial de nomes de campos. Foi necessário observar pedidos e respostas reais, perceber como cada API representa mensagens, ferramentas, eventos e erros, e decidir que conceitos pertenciam ao núcleo comum e que conceitos deveriam permanecer como extensões específicas. A Tabela~\ref{tab:api-domain-mapping} mostra essa distinção: campos recorrentes como mensagens, modelo, parâmetros de geração e utilização de tokens justificam estruturas comuns; já elementos como \textit{thought signatures}, parâmetros avançados de raciocínio ou metadados específicos exigem um mecanismo extensível para não se perder informação.
+
+    \section{Model Context Protocol (MCP)}
+    O \textit{Model Context Protocol} define uma arquitetura cliente-servidor para disponibilizar contexto a aplicações baseadas em modelos. Na terminologia do protocolo, um \textit{host} é a aplicação de IA que inicia e coordena ligações, os \textit{clients} mantêm ligações 1:1 com servidores, e os \textit{servers} expõem capacidades como ferramentas, recursos e \textit{prompts} através de mensagens JSON-RPC e transportes normalizados \cite{mcp_protocol,mcp_architecture}. Esta separação é relevante porque transforma integrações externas em unidades descobertas e invocadas através de um protocolo comum, em vez de as embutir diretamente na API de inferência de cada fornecedor.
+
+    O estudo do MCP foi realizado em paralelo com a análise das APIs de inferência, mas com um objetivo diferente. Enquanto a análise das APIs procurou compreender pedidos e respostas de modelos, o estudo do MCP procurou compreender como ferramentas externas podem ser descritas, listadas e executadas de forma independente do fornecedor de LLM. Os conceitos centrais observados foram:
+
+    \begin{itemize}
+        \item \textbf{Tools}: funções ou ações executáveis por um servidor MCP, descritas por nome, descrição e esquema de entrada.
+        \item \textbf{Resources}: dados ou documentos que podem ser descobertos e lidos por clientes MCP, normalmente identificados por URIs estáveis.
+        \item \textbf{Prompts}: modelos reutilizáveis de interação, que podem encapsular instruções, argumentos e mensagens estruturadas.
+        \item \textbf{Transports}: mecanismos de comunicação como \texttt{stdio}, SSE, HTTP com \textit{streaming} e WebSocket, dependendo do ambiente de execução.
+    \end{itemize}
+
+    Para ganhar contexto prático, foi criado um projeto experimental de pequena dimensão, usado como ``projeto brinquedo'', onde foram implementados servidores MCP e clientes MCP com a biblioteca Kotlin MCP. Esse protótipo permitiu validar o ciclo básico de criação de um servidor, registo de capacidades, ligação a partir de um cliente e troca de mensagens. A utilização da biblioteca oficial \texttt{io.modelcontextprotocol:kotlin-sdk} também mostrou que a abordagem é compatível com Kotlin Multiplatform e que existem APIs próprias para construir clientes, servidores, ferramentas, recursos, \textit{prompts} e transportes \cite{mcp_kotlin_sdk}.
+
+    Esta análise ajudou a distinguir dois problemas que, à primeira vista, podiam parecer iguais. O primeiro problema é a normalização de contratos de inferência, resolvido no SDK através de \textit{contracts}, \textit{translators}, \textit{inbounds}, \textit{outbounds} e domínio comum. O segundo problema é a gestão de ferramentas externas, onde o MCP oferece uma forma padronizada de descrever e executar capacidades. No final deste estudo, tornou-se natural desenhar um módulo de MCP Broker: não como ponto de partida do Capítulo 2, mas como consequência da necessidade de intermediar ferramentas externas sem acoplar cada adapter de inferência a cada ferramenta disponível.
+

@@ -1,0 +1,155 @@
+    \chapter{Modelação do Domínio Comum}
+
+    \section{Visão Global do Domínio}
+    A modelação do domínio comum do OmniAI SDK foi definida a partir dos padrões observados no estudo prévio. A ideia central foi criar um modelo de dados suficientemente expressivo para representar pedidos, respostas e eventos dos fornecedores estudados, mas sem copiar diretamente a estrutura de nenhum deles. Assim, o domínio funciona como um ponto intermédio estável: os adapters de entrada convertem contratos externos para o domínio; os adapters de saída convertem o domínio para o contrato do fornecedor real.
+
+    O pedido comum é representado por \texttt{CommonRequest}. Esta estrutura contém o fornecedor pretendido, o modelo, a lista de mensagens, o \textit{system prompt}, a configuração de geração, as ferramentas disponíveis, a escolha de ferramenta, a indicação de resposta JSON e um campo extensível para opções específicas do fornecedor. O campo \texttt{provider} é importante porque o SDK suporta contratos inbound compatíveis com um fornecedor e execução outbound noutro contexto configurado; o campo \texttt{model} permite distinguir múltiplos modelos dentro do mesmo fornecedor.
+
+    A resposta síncrona é representada por \texttt{CommonResponse}. Esta estrutura inclui fornecedor, identificador, modelo, escolhas, mensagem de resposta, razão de terminação e utilização de tokens. Em paralelo, as respostas incrementais são representadas por \texttt{CommonResponseEvent}. Esta separação evita forçar um fluxo de \textit{streaming} a parecer uma resposta final e permite modelar eventos que não existem numa resposta única, como início de escolha, fragmento de texto, início de chamada de ferramenta, fragmento de argumentos, utilização reportada e conclusão.
+
+    \begin{figure}[H]
+        \centering
+        \begin{tikzpicture}[
+            node distance=0.8cm and 1.2cm,
+        % Estilo uniforme com os outros diagramas
+            box/.style={rectangle, draw, rounded corners, align=center, text width=3.8cm, minimum height=1.0cm, inner sep=5pt, thick},
+            common/.style={rectangle, draw, rounded corners, align=center, text width=3.8cm, minimum height=1.0cm, inner sep=5pt, fill=gray!20, thick},
+            arrow/.style={-Latex, thick}
+        ]
+            % --- LINHA DE PEDIDO (Cima) ---
+            \node[box] (inReq) {Pedido recebido\\OpenAI, Anthropic ou Gemini};
+            \node[common, right=of inReq] (commonReq) {\textbf{CommonRequest}\\pedido interno};
+            \node[box, right=of commonReq] (outReq) {Pedido enviado\\ao fornecedor configurado};
+
+            % --- LINHA DE RESPOSTA (Baixo) ---
+            \node[box, below=1.0cm of outReq] (providerResp) {Resposta recebida\\JSON ou SSE};
+            \node[common, left=of providerResp] (commonResp) {\textbf{CommonResponse}\\ou \texttt{CommonResponseEvent}};
+            \node[box, left=of commonResp] (clientResp) {Resposta devolvida\\no contrato do cliente};
+
+            % --- LIGAÇÕES ---
+            \draw[arrow] (inReq) -- (commonReq);
+            \draw[arrow] (commonReq) -- (outReq);
+            \draw[arrow] (outReq) -- (providerResp);
+            \draw[arrow] (providerResp) -- (commonResp);
+            \draw[arrow] (commonResp) -- (clientResp);
+        \end{tikzpicture}
+        \caption{Fluxo de normalização entre contratos externos e domínio comum}
+        \label{fig:domain-overview}
+    \end{figure}
+
+    \begin{figure}[H]
+        \centering
+        \begin{tikzpicture}[
+            node distance=0.8cm and 0.1cm,
+            root/.style={rectangle, draw, rounded corners, align=center, minimum height=0.7cm, inner sep=4pt, font=\small\bfseries},
+        % Aplicado text width e height uniformes para todas as partes
+            part/.style={rectangle, draw, rounded corners, align=left, text width=3.3cm, minimum height=1.6cm, inner sep=3pt, font=\footnotesize},
+            arrow/.style={thick}
+        ]
+            % Nó Raiz
+            \node[root] (request) {\texttt{CommonRequest}};
+
+            % Nós inferiores (alinhados horizontalmente)
+            \node[part, below left=0.8cm and -2.5cm of request] (identity) {\textbf{Destino}\\\texttt{provider}\\\texttt{model}};
+            \node[part, right=0.1cm of identity] (conversation) {\textbf{Conversação}\\\texttt{systemPrompt}\\\texttt{messages[]} com \texttt{RequestContentPart}};
+            \node[part, right=0.1cm of conversation] (tools) {\textbf{Ferramentas}\\\texttt{tools[]}\\\texttt{toolChoice}\\\texttt{providerOptions}};
+            \node[part, right=0.1cm of tools] (generation) {\textbf{Geração}\\\texttt{generationConfig}\\temperatura, limites, \textit{stop} e formato};
+
+            % Linhas conectoras
+            \draw[arrow] (request.south) -- ++(0,-0.4) -| (identity.north);
+            \draw[arrow] (request.south) -- ++(0,-0.4) -| (conversation.north);
+            \draw[arrow] (request.south) -- ++(0,-0.4) -| (tools.north);
+            \draw[arrow] (request.south) -- ++(0,-0.4) -| (generation.north);
+        \end{tikzpicture}
+        \caption{Estrutura interna principal de \texttt{CommonRequest}}
+        \label{fig:common-request-structure}
+    \end{figure}
+
+    \begin{figure}[H]
+        \centering
+        \begin{tikzpicture}[
+            node distance=0.8cm and 1.0cm,
+            root/.style={rectangle, draw, rounded corners, align=center, text width=4.4cm, minimum height=0.9cm, fill=gray!10, inner sep=5pt},
+            part/.style={rectangle, draw, rounded corners, align=left, text width=5.2cm, minimum height=1.2cm, inner sep=5pt},
+            arrow/.style={-Latex, thick}
+        ]
+            \node[root] (response) {\texttt{CommonResponse}};
+            \node[root, right=2.0cm of response] (event) {\texttt{CommonResponseEvent}};
+
+            \node[part, below=of response] (responseParts) {\textbf{Resposta final}\\\texttt{id}, \texttt{model}, \texttt{choices}\\\texttt{CommonResponseMessage}\\\texttt{finishReason}, \texttt{usage}};
+            \node[part, below=of event] (eventParts) {\textbf{Resposta incremental}\\\texttt{ResponseStarted}\\\texttt{TextDeltaEvent}\\\texttt{ToolCallStartedEvent}\\\texttt{UsageReported}\\\texttt{ResponseCompleted}};
+
+            \draw[arrow] (response) -- (responseParts);
+            \draw[arrow] (event) -- (eventParts);
+        \end{tikzpicture}
+        \caption{Estruturas de resposta final e eventos progressivos}
+        \label{fig:common-response-structure}
+    \end{figure}
+
+    \section{Estruturas Internas de Pedido e Resposta}
+    As mensagens do pedido são representadas por \texttt{CommonRequestMessage}, que combina um \texttt{CommonRole} com uma lista de \texttt{RequestContentPart}. Esta decisão evita assumir que uma mensagem é sempre uma string simples. No estudo das APIs, essa suposição mostrou-se insuficiente: a Anthropic e a Gemini trabalham naturalmente com blocos de conteúdo, e o \textit{tool calling} introduz partes que representam chamadas e resultados de ferramentas. Por esse motivo, o domínio contém tipos como \texttt{TextPart}, \texttt{JsonPart}, \texttt{ToolCallPart} e \texttt{ToolResultPart}.
+
+    Na resposta, a estrutura \texttt{CommonChoice} preserva o índice da escolha e a respetiva \texttt{CommonResponseMessage}. Isto permite representar APIs que devolvem várias alternativas, mantendo compatibilidade com fornecedores que devolvem apenas uma resposta. A razão de terminação é normalizada em \texttt{FinishReason}, com valores como \texttt{STOP}, \texttt{LENGTH}, \texttt{TOOL\_CALL}, \texttt{CONTENT\_FILTER} e \texttt{OTHER}. Esta normalização é deliberadamente pequena: cobre os casos que têm significado transversal e deixa detalhes particulares em campos de extensão.
+
+    \begin{table}[H]
+        \centering
+        \scriptsize
+        \renewcommand{\arraystretch}{1.25}
+        \begin{tabularx}{\textwidth}{|>{\raggedright\arraybackslash}p{3.8cm}|Y|Y|}
+            \hline
+            \textbf{Estrutura de domínio} & \textbf{Responsabilidade} & \textbf{Origem no estudo prévio} \\
+            \hline
+            \texttt{CommonRequest} & Representar o pedido de inferência de forma independente do contrato recebido. & Campos recorrentes: modelo, mensagens, parâmetros, ferramentas e formato de resposta. \\
+            \hline
+            \texttt{CommonRequestMessage} & Preservar o papel da mensagem e permitir conteúdo composto. & Diferença entre \texttt{messages}, \texttt{contents} e blocos de conteúdo. \\
+            \hline
+            \texttt{CommonTool} & Descrever uma ferramenta por nome, descrição e esquema de parâmetros. & Mapeamento entre \texttt{tools}, \texttt{input\_schema} e \texttt{functionDeclarations}. \\
+            \hline
+            \texttt{ToolChoice} & Indicar se o modelo pode, não pode, deve ou tem de usar uma ferramenta específica. & Diferenças entre \texttt{tool\_choice} e configurações Gemini de chamada de função. \\
+            \hline
+            \texttt{CommonResponse} & Representar a resposta final e a utilização de tokens. & Diferenças entre \texttt{choices}, blocos \texttt{content} e \texttt{candidates}. \\
+            \hline
+            \texttt{CommonResponseEvent} & Representar respostas progressivas e eventos de ferramenta em \textit{streaming}. & SSE e eventos incrementais observados em OpenAI, Anthropic e Gemini. \\
+            \hline
+        \end{tabularx}
+        \caption{Principais estruturas do domínio comum}
+        \label{tab:domain-structures}
+    \end{table}
+
+    \section{\texttt{TypedMap} e Extensibilidade do Domínio}
+    Nem todos os dados relevantes pertencem ao modelo mínimo de inferência. Algumas informações são específicas do fornecedor, como parâmetros avançados da Gemini; outras pertencem ao contexto operacional, como metadados de autenticação, IP do cliente, cabeçalhos HTTP ou atributos necessários para observabilidade e autorização. Para estes casos, o SDK introduz a estrutura \texttt{TypedMap}.
+
+    A \texttt{TypedMap} funciona como um mapa de atributos tipado por chave. Cada \texttt{AttributeKey<T>} associa um nome lógico a um tipo esperado, permitindo guardar e recuperar valores sem depender de conversões frágeis de strings. Esta abordagem é mais segura do que um \texttt{Map<String, Any?>} puro, porque cada chave transporta também a expectativa de tipo. Ao mesmo tempo, é mais flexível do que adicionar campos ao domínio sempre que surge uma necessidade nova.
+
+    \begin{figure}[H]
+        \centering
+        \resizebox{0.9\textwidth}{!}{%
+            \begin{tikzpicture}[
+                node distance=1.1cm and 1.0cm,
+                box/.style={rectangle, draw, rounded corners, align=center, minimum width=3.4cm, minimum height=0.9cm},
+                map/.style={rectangle, draw, rounded corners, align=left, minimum width=5.0cm, minimum height=2.7cm, fill=gray!10},
+                arrow/.style={-Latex, thick}
+            ]
+                \node[box] (auth) {Metadados de autenticação};
+                \node[box, below=of auth] (http) {Cabeçalhos e IP do cliente};
+                \node[box, below=of http] (provider) {Opções específicas do fornecedor};
+
+                \node[map, right=2.0cm of http] (typedmap) {\texttt{TypedMap}\\[0.2cm]
+                \texttt{AttributeKey<String>}\\
+                \texttt{AttributeKey<AuthResult>}\\
+                \texttt{AttributeKey<Set<String>>}\\
+                \texttt{AttributeKey<Int>}};
+
+                \node[box, right=2.0cm of typedmap] (consumers) {Componentes do SDK\\ leem atributos tipados};
+
+                \draw[arrow] (auth.east) -- (typedmap.west);
+                \draw[arrow] (http.east) -- (typedmap.west);
+                \draw[arrow] (provider.east) -- (typedmap.west);
+                \draw[arrow] (typedmap.east) -- (consumers.west);
+            \end{tikzpicture}}
+        \caption{Utilização da \texttt{TypedMap} para transportar atributos extensíveis}
+        \label{fig:typed-map}
+    \end{figure}
+
+    No domínio de inferência, a \texttt{TypedMap} aparece em \texttt{providerOptions}, permitindo preservar dados que não pertencem ao subconjunto comum mas não devem ser perdidos durante a tradução. Fora da inferência estrita, a mesma estrutura permite transportar metadados entre componentes sem criar dependências diretas entre eles. Esta característica é útil para a evolução futura do SDK, porque permite que mecanismos transversais, como autorização, observabilidade ou políticas de execução, usem atributos adicionais sem forçar alterações constantes nas classes centrais do domínio.
+

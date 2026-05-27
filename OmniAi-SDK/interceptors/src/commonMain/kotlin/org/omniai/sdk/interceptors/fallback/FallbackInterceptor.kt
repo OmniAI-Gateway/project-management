@@ -16,11 +16,9 @@ class FallbackInterceptor(
         var lastResult: PipelineResult? = null
         val attributes = context.attributes
 
-        // Get the initial set of denied outbounds (e.g. from CircuitBreaker or previous steps)
         val initiallyDenied = attributes[deniedOutboundsKey] ?: emptySet()
         val denied = initiallyDenied.toMutableSet()
 
-        // Find primary and alternatives based on request
         val primary = outbounds.find { it.provider.value == context.request.provider.value && it.model.model == context.request.model }
         
         val alternatives = outbounds.filterNot { it === primary }
@@ -29,7 +27,7 @@ class FallbackInterceptor(
 
         for (outbound in sequenceToTry) {
             if (denied.contains(outbound.key)) {
-                continue // Skip denied outbounds (could be OPEN circuit)
+                continue
             }
 
             val newRequest = context.request.copy(
@@ -37,7 +35,6 @@ class FallbackInterceptor(
                 model = outbound.model.model
             )
             
-            // update attributes with current denied
             attributes[deniedOutboundsKey] = denied.toSet()
 
             val newContext = GatewayContext(
@@ -54,7 +51,6 @@ class FallbackInterceptor(
                 is PipelineResult.NoResult -> return result
                 is PipelineResult.Error -> {
                     lastResult = result
-                    // Add this outbound to denied and try next
                     denied.add(outbound.key)
                 }
             }

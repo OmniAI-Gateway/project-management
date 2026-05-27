@@ -1,0 +1,39 @@
+\documentclass[11pt,a4paper]{report}
+
+% --- Pacotes ---
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[portuguese]{babel}
+\usepackage{graphicx}
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{hyperref}
+\usepackage{setspace}
+\usepackage{float}
+\usepackage{titlesec}
+\usepackage{array}
+\usepackage{tabularx}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,shapes.geometric,fit}
+\newcolumntype{Y}{>{\raggedright\arraybackslash}X}
+
+\onehalfspacing
+
+\begin{document}
+
+\input{capa.tex}
+\input{abstract.tex}
+\input{capitulo1-Introducao.tex}
+\input{capitulo2-Estudo Previo.tex}
+\input{capitulo3-Modelacao do Dominio Comum.tex}
+\input{capitulo4-Arquitetura e Desenho do Sistema.tex}
+\input{capitulo5-Implementacao e Evolucao Tecnica.tex}
+\input{capitulo6-Provas de Conceito PoCs e Validacao.tex}
+\input{capitulo7-Conclusoes e Trabalho Futuro.tex}
+\input{apendices.tex}
+% ================= BIBLIOGRAFIA =================
+    \renewcommand{\bibname}{Referências}
+    \bibliographystyle{IEEEtran}
+    \bibliography{references}
+
+\end{document}
