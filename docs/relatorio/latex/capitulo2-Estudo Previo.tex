@@ -1,9 +1,264 @@
-    \chapter{Estudo Prévio}
+﻿    \chapter{Estudo Prévio}
 
-    \section{Análise das APIs de Inferência}
-    O estudo inicial comparou APIs de inferência compatíveis com os fornecedores OpenAI, Anthropic e Gemini, bem como execuções locais e compatíveis através de Ollama e de endpoints OpenAI-like, como Groq. Esta análise não teve apenas um papel descritivo: foi a base empírica para identificar os conceitos que podiam ser normalizados no SDK e os pontos onde a normalização teria de preservar extensões específicas de cada fornecedor. Para esse efeito foram executados e documentados pedidos de geração simples, pedidos com \textit{streaming}, pedidos com \textit{tool calling}, respostas com contabilização de tokens e casos de configuração de geração.
+\section{Análise das APIs de Inferência}
+    O estudo inicial comparou APIs de inferência compatíveis com os fornecedores OpenAI, Anthropic e Gemini, bem como execuções locais e compatíveis através de Ollama e de APIs que cumprem o padrão OpenAI, como Groq. Esta análise não teve apenas um papel descritivo, mas foi a base para identificar os conceitos que podiam ser normalizados no OmniAI SDK e os pontos onde a normalização teria de preservar extensões específicas de cada fornecedor. Para esse efeito, foram executados e documentados pedidos de geração simples, pedidos com \textit{streaming}, pedidos com \textit{tool calling}, respostas com contabilização de tokens e casos de configuração de geração. É de notar que o uso de vídeos, imagens e outros formatos suportados por estas APIs seria interessante, mas aumentaria demasiado o escopo do estudo.
 
-    A comparação mostrou que as APIs partilham um núcleo conceptual comum, mas expõem esse núcleo através de modelos de dados diferentes. A OpenAI organiza a interação em torno de \texttt{chat/completions}, com \texttt{messages}, \texttt{choices}, \texttt{tool\_calls} e eventos incrementais baseados em \texttt{delta} \cite{openai_api}. A Anthropic usa uma API de \texttt{messages}, onde o \texttt{system prompt} está no nível de topo, o campo \texttt{max\_tokens} é obrigatório, e o conteúdo da resposta é uma lista de blocos como \texttt{text}, \texttt{tool\_use} ou \texttt{thinking} \cite{anthropic_api}. A Gemini modela o pedido como \texttt{contents} compostos por \texttt{parts}, agrupa parâmetros em \texttt{generationConfig}, representa ferramentas por \texttt{functionDeclarations} e introduz conceitos próprios como \textit{thought signatures} e \texttt{thinkingConfig} \cite{google_gemini_api}.
+    O estudo das APIs de inferência mostrou que estas partilham de diversos conceitos semelhantes, mas permitem a utilização dos mesmos de maneira diferente. A OpenAI organiza a interação em torno de \texttt{chat/completions}, com \texttt{messages}, \texttt{choices}, \texttt{tool\_calls} e eventos incrementais baseados em \texttt{delta} \cite{openai_api}. A Anthropic usa uma API de \texttt{messages}, onde o \texttt{system prompt} está no nível de topo, o campo \texttt{max\_tokens} é obrigatório, e o conteúdo da resposta é uma lista de blocos como \texttt{text}, \texttt{tool\_use} ou \texttt{thinking} \cite{anthropic_api}. A Gemini modela o pedido como \texttt{contents} compostos por \texttt{parts}, agrupa parâmetros em \texttt{generationConfig}, representa ferramentas por \texttt{functionDeclarations} e introduz conceitos próprios como \textit{thought signatures} e \texttt{thinkingConfig} \cite{google_gemini_api}. Na tabela seguinte, poderemos observar melhor essas diferenças.
+    
+\begin{table}[H]
+    \centering
+    \footnotesize
+    \renewcommand{\arraystretch}{1.4}
+    \begin{tabularx}{\textwidth}{|>{\raggedright\arraybackslash}p{2.8cm}|Y|Y|Y|}
+        \hline
+        \textbf{Construção do Pedido} & \textbf{OpenAI} & \textbf{Anthropic} & \textbf{Gemini} \\
+        \hline
+        \textbf{Autenticação} & Cabeçalho \texttt{Authorization: Bearer <TOKEN>}. & Cabeçalho \texttt{x-api-key} e obrigatoriedade de \texttt{anthropic-}\allowbreak\texttt{version}. & Cabeçalho \texttt{x-goog-api-key} ou parâmetro \texttt{?key=} no URI. \\
+        \hline
+        \textbf{URI (\textit{Endpoint})} & Fixo por tarefa (e.g., \texttt{.../v1/chat/}\allowbreak\texttt{completions}). & Fixo para mensagens (\texttt{.../v1/messages}). & Dinâmico, acoplando modelo e método (\texttt{.../models/}\allowbreak\texttt{\{model\}:\{method\}}). \\
+        \hline
+        \textbf{Identificação do Modelo} & Definido via propriedade \texttt{"model"} na raiz do \textit{payload} JSON. & Definido via propriedade \texttt{"model"} na raiz do \textit{payload} JSON. & Injetado dinamicamente no próprio URI de chamada HTTP. \\
+        \hline
+        \textbf{Estrutura do Histórico} & \textit{Array} \texttt{messages} contendo objetos com \texttt{role} e \texttt{content}. & \textit{Array} \texttt{messages} contendo objetos com \texttt{role} e \texttt{content}. & \textit{Array} \texttt{contents} contendo objetos com \texttt{role} e \textit{array} \texttt{parts}. \\
+        \hline
+        \textbf{Conteúdo da Mensagem} & O \texttt{content} pode ser \textit{string} simples ou \textit{array} polimórfico. & O \texttt{content} exige estritamente um \textit{array} de blocos estruturados. & O conteúdo divide-se num \textit{array} \texttt{parts} de objetos tipados. \\
+        \hline
+        \textbf{Instruções de Sistema} & Tratadas como mensagem inicial com \texttt{role: "system"}. & Declaradas na propriedade isolada \texttt{"system"} na raiz do \textit{payload}. & Declaradas no objeto isolado \texttt{"system\_}\allowbreak\texttt{instruction"} na raiz. \\
+        \hline
+        \textbf{Parâmetros de Geração} & Propriedades soltas na raiz (e.g., \texttt{temperature}, \texttt{max\_tokens}). & Propriedades soltas na raiz (\texttt{"max\_tokens"} é obrigatório). & Agrupados num único objeto configuracional (\texttt{"generation}\allowbreak\texttt{Config"}). \\
+        \hline
+        \textbf{Declaração de Ferramentas} & Propriedade \texttt{tools[].function} contendo \texttt{parameters}. & Propriedade \texttt{tools[]} contendo \texttt{input\_schema}. & Propriedade \texttt{tools[].}\allowbreak\texttt{functionDeclarations} contendo \texttt{parameters}. \\
+        \hline
+    \end{tabularx}
+    \caption{Mapeamento técnico da estrutura de pedidos e configuração (\textit{Requests}).}
+    \label{tab:api-request-comparison}
+\end{table}
+
+\begin{lstlisting}[language=json, caption={Pedido à API da OpenAI (com ferramentas)}]
+{
+  "model": "llama3.2:1b",
+  "messages": [{ "role": "user", "content": "Como está a ação da Apple?" }],
+  "tools": [
+    {
+      "type": "function",
+      "function": {
+        "name": "get_stock_price",
+        "parameters": {
+          "type": "object",
+          "properties": { "symbol": { "type": "string" } },
+          "required": ["symbol"]
+        }
+      }
+    }
+  ],
+  "tool_choice": "auto"
+}
+\end{lstlisting}
+
+\begin{lstlisting}[language=json, caption={Pedido Stream à API da OpenAI}]
+{
+  "model": "llama3.2:1b",
+  "messages": [{ "role": "user", "content": "O que é Kubernetes?" }],
+  "stream": true
+}
+\end{lstlisting}
+
+\begin{lstlisting}[language=json, caption={Pedido à API da Anthropic (com ferramentas)}]
+{
+  "model": "claude-3-5-haiku-20241022",
+  "max_tokens": 1024,
+  "messages": [{ "role": "user", "content": "What is the weather like in Lisbon?" }],
+  "tools": [
+    {
+      "name": "get_weather",
+      "input_schema": {
+        "type": "object",
+        "properties": { "location": { "type": "string" } },
+        "required": ["location"]
+      }
+    }
+  ]
+}
+\end{lstlisting}
+
+\begin{lstlisting}[language=json, caption={Pedido Stream à API da Anthropic}]
+{
+  "model": "claude-3-5-haiku-20241022",
+  "max_tokens": 200,
+  "messages": [{ "role": "user", "content": "Explain AI." }],
+  "stream": true
+}
+\end{lstlisting}
+
+\begin{lstlisting}[language=json, caption={Pedido à API do Google Gemini (com ferramentas)}]
+{
+  "contents": [
+    {
+      "role": "user",
+      "parts": [{ "text": "Schedule a meeting with Bob for tomorrow." }]
+    }
+  ],
+  "tools": [
+    {
+      "functionDeclarations": [
+        {
+          "name": "schedule_meeting",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "attendees": { "type": "array", "items": { "type": "string" } },
+              "date": { "type": "string" }
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
+\end{lstlisting}
+
+\begin{lstlisting}[language=json, caption={Pedido Stream à API do Google Gemini (?alt=sse no URI)}]
+{
+  "contents": [
+    {
+      "role": "user",
+      "parts": [{ "text": "Explain how AI works" }]
+    }
+  ]
+}
+\end{lstlisting}
+
+\begin{table}[H]
+    \centering
+    \footnotesize
+    \renewcommand{\arraystretch}{1.4}
+    \begin{tabularx}{\textwidth}{|>{\raggedright\arraybackslash}p{2.8cm}|Y|Y|Y|}
+        \hline
+        \textbf{Processamento da Resposta} & \textbf{OpenAI} & \textbf{Anthropic} & \textbf{Gemini} \\
+        \hline
+        \textbf{Invocação pelo Modelo (\textit{Tool Call})} & Retorna \texttt{tool\_calls[]} com \texttt{arguments} em \textit{string} JSON. & Retorna um bloco \texttt{type: "tool\_use"} com \texttt{input} em JSON nativo. & Retorna uma \texttt{part} contendo \texttt{functionCall} com \texttt{args} (JSON). \\
+        \hline
+        \textbf{Resposta da Ferramenta} & Adicionada como nova mensagem com \texttt{role: "tool"}. & Adicionada sob \texttt{role: "user"} num bloco \texttt{type: "tool\_result"}. & Adicionada como nova mensagem contendo \texttt{functionResponse}. \\
+        \hline
+        \textbf{Saídas Estruturadas} & Controladas via propriedade \texttt{"response\_format"} na raiz. & Implementadas forçando uma ferramenta dedicada via \texttt{tool\_choice}. & Definidas via \texttt{response}\allowbreak\texttt{MimeType} e \texttt{response}\allowbreak\texttt{JsonSchema}. \\
+        \hline
+        \textbf{Comportamento \textit{Streaming}} & Ativado via \texttt{stream: true}; eventos SSE com formato \texttt{delta}. & Ativado via \texttt{stream: true}; eventos SSE fortemente tipados. & Consumido através de um \textit{endpoint} distinto com parâmetro \texttt{?alt=sse}. \\
+        \hline
+        \textbf{Metadados de Raciocínio} & Suporte nativo e automático na família de modelos \texttt{o1}/\texttt{o3}. & Ativado via \texttt{"thinking"}; devolvido num bloco \texttt{"thinking"}. & Ativado via \texttt{thinking}\allowbreak\texttt{Config}; suporta entrega de \texttt{thought}\allowbreak\texttt{Signature}. \\
+        \hline
+        \textbf{Contabilidade de \textit{Tokens}} & Objeto \texttt{usage} (\texttt{prompt\_tokens}, \texttt{completion\_}\allowbreak\texttt{tokens}). & Objeto \texttt{usage} (\texttt{input\_tokens}, \texttt{output\_tokens}). & Objeto \texttt{usageMetadata} (\texttt{prompt}\allowbreak\texttt{TokenCount}, \texttt{candidates}\allowbreak\texttt{TokenCount}). \\
+        \hline
+    \end{tabularx}
+    \caption{Mapeamento técnico do processamento de respostas, execução e telemetria (\textit{Responses}).}
+    \label{tab:api-response-comparison}
+\end{table}
+
+\begin{lstlisting}[language=json, caption={Resposta da API OpenAI (Chamada de Ferramenta)}]
+{
+  "choices": [
+    {
+      "message": {
+        "role": "assistant",
+        "content": null,
+        "tool_calls": [
+          {
+            "id": "call_9fasug2c",
+            "type": "function",
+            "function": {
+              "name": "get_stock_price",
+              "arguments": "{\"symbol\":\"AAPL\"}"
+            }
+          }
+        ]
+      },
+      "finish_reason": "tool_calls"
+    }
+  ],
+  "usage": { "prompt_tokens": 171, "completion_tokens": 19, "total_tokens": 190 }
+}
+\end{lstlisting}
+
+\begin{lstlisting}[language=json, caption={Resposta Stream da OpenAI (Eventos SSE)}]
+data: {"choices": [
+    {"delta": {"role": "assistant", "content": "K"}, "finish_reason": null}
+]}
+
+data: {"choices": [
+    {"delta": {"content": "ubernetes "}, "finish_reason": null}
+]}
+
+data: {"choices": [
+    {"delta": {}, "finish_reason": "stop"}
+]}
+\end{lstlisting}
+
+\begin{lstlisting}[language=json, caption={Resposta da API da Anthropic (Chamada de Ferramenta)}]
+{
+  "role": "assistant",
+  "content": [
+    { "type": "text", "text": "I can help you check the weather in Lisbon." },
+    {
+      "type": "tool_use",
+      "id": "toolu_01",
+      "name": "get_weather",
+      "input": { "location": "Lisbon, Portugal" }
+    }
+  ],
+  "stop_reason": "tool_use"
+}
+\end{lstlisting}
+
+\begin{lstlisting}[language=json, caption={Resposta Stream da Anthropic (Eventos SSE)}]
+event: message_start
+data: {"type": "message_start", "message": {"role": "assistant"}}
+
+event: content_block_delta
+data: {"type": "content_block_delta", "delta": {
+    "type": "text_delta", "text": "Artificial"
+}}
+
+event: message_stop
+data: {"type": "message_stop"}
+\end{lstlisting}
+
+\begin{lstlisting}[language=json, caption={Resposta da API do Google Gemini (Chamada de Ferramenta)}]
+{
+  "candidates": [
+    {
+      "content": {
+        "role": "model",
+        "parts": [
+          {
+            "functionCall": {
+              "name": "schedule_meeting",
+              "args": {
+                "attendees": ["Bob"],
+                "date": "2025-03-27"
+              }
+            }
+          }
+        ]
+      },
+      "finishReason": "STOP"
+    }
+  ],
+  "usageMetadata": {
+    "promptTokenCount": 203,
+    "candidatesTokenCount": 54,
+    "totalTokenCount": 257
+  }
+}
+\end{lstlisting}
+
+\begin{lstlisting}[language=json, caption={Resposta Stream do Google Gemini (Padrão SSE)}]
+data: {"candidates": [
+    {"content": {"parts": [{"text": "AI works by "}]}}
+]}
+
+data: {"candidates": [
+    {"content": {"parts": [{"text": "processing data."}]}}
+]}
+\end{lstlisting}
 
     \begin{table}[H]
         \centering
@@ -13,7 +268,7 @@
             \hline
             \textbf{Conceito} & \textbf{Semelhança observada} & \textbf{Diferenças relevantes} & \textbf{Modelo comum pretendido} \\
             \hline
-            Modelo invocado & As três APIs precisam de identificar o modelo a usar. & OpenAI e Anthropic usam \texttt{model} no corpo; Gemini coloca o modelo no URI e, por vezes, também no cliente. & \texttt{provider} + \texttt{model}, permitindo escolher adapter e preservar a identidade do modelo. \\
+            Modelo invocado & As três APIs precisam de identificar o modelo a usar. & OpenAI e Anthropic usam \texttt{model} no corpo; Gemini coloca o modelo no URI e, por vezes, também no cliente (SDK oficial). & \texttt{provider} + \texttt{model}, permitindo escolher adapter e preservar a identidade do modelo. \\
             \hline
             Histórico conversacional & Todas representam uma conversa com papéis e conteúdo. & OpenAI e Anthropic usam \texttt{messages}; Gemini usa \texttt{contents} e \texttt{parts}; Anthropic separa o \texttt{system}. & \texttt{CommonRequestMessage}, com papel comum e lista de partes de conteúdo. \\
             \hline
