@@ -2,9 +2,11 @@
 
     \section{Visão Global do Domínio}
 
-    
-    A modelação do domínio comum do \textbf{OmniAI SDK} foi definida a partir dos padrões que foram observados no estudo prévio. A ideia central foi criar um modelo de dados suficientemente expressivo para representar pedidos, respostas e eventos dos fornecedores estudados, mas sem copiar diretamente a estrutura de nenhum deles. Assim, o domínio funciona como um ponto intermédio estável. Assim os adapters de entrada convertem contratos externos para o domínio e os adapters de saída convertem o domínio para o contrato do fornecedor real como podemos ver na 
-    Figura \ref{fig:domain-overview}.
+    No final do estudo prévio realizado no capítulo anterior, verificou-se uma acentuada fragmentação contratual entre os principais fornecedores de Modelos de Linguagem de Grande Escala (LLMs) [13]. A ausência de uma padronização leva à falta de consistência entre as APIs da OpenAI [1], Anthropic [2] e Gemini [3], as quais têm campos distintos, diferentes ciclos de vida para o fluxo de dados e estruturas de objetos incompatíveis entre as várias APIs.
+
+    Para garantir a interoperabilidade, a arquitetura do OmniAI SDK assenta na criação de um modelo de domínio comum. A ideia foi criar um modelo de dados suficientemente expressivo para representar pedidos, respostas e eventos dos fornecedores estudados, mas sem copiar diretamente a estrutura de nenhum deles.
+
+   Assim, o domínio funciona como um ponto intermédio estável que centraliza qualquer interação no OmniAI SDK. Isto significa que, independentemente de o cliente estruturar o seu pedido original no formato de um fornecedor específico (como por exemplo a Anthropic), esse contrato é imediatamente convertido para o domínio unificado e em seguida, para efetuar a chamada à API, o modelo comum é novamente traduzido para o formato nativo do fornecedor de destino. O mesmo processo inverso ocorre na receção da resposta, os dados que são devolvidos pela API externa são normalizados no nosso domínio comum antes de serem entregues ao cliente na estrutura esperada. Este fluxo completo de transformações está representado visualmente na Figura 3.1.
 
     \begin{figure}[H]
         \centering
@@ -16,14 +18,14 @@
             arrow/.style={-Latex, thick}
         ]
             % --- LINHA DE PEDIDO (Cima) ---
-            \node[box] (inReq) {Pedido recebido\\OpenAI, Anthropic ou Gemini};
-            \node[common, right=of inReq] (commonReq) {\textbf{CommonRequest}\\pedido interno};
-            \node[box, right=of commonReq] (outReq) {Pedido enviado\\ao fornecedor configurado};
+            \node[box] (inReq) {Pedido recebido\\Formato OpenAI, Anthropic ou Gemini};
+            \node[common, right=of inReq] (commonReq) {\textbf{CommonRequest}};
+            \node[box, right=of commonReq] (outReq) {Pedido enviado\\a API do fornecedor};
 
             % --- LINHA DE RESPOSTA (Baixo) ---
-            \node[box, below=1.0cm of outReq] (providerResp) {Resposta recebida\\JSON ou SSE};
+            \node[box, below=1.0cm of outReq] (providerResp) {Resposta da API};
             \node[common, left=of providerResp] (commonResp) {\textbf{CommonResponse}\\ou \texttt{CommonResponseEvent}};
-            \node[box, left=of commonResp] (clientResp) {Resposta devolvida\\no contrato do cliente};
+            \node[box, left=of commonResp] (clientResp) {Resposta Cliente \\no formato que o pedido foi enviado};
 
             % --- LIGAÇÕES ---
             \draw[arrow] (inReq) -- (commonReq);
