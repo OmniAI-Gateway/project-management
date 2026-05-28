@@ -1,0 +1,592 @@
+% ================= APÊNDICE: JSONs das APIs de Inferência =================
+\chapter{Exemplos JSON das APIs de Inferência}
+\label{apx:json-apis}
+
+Este apêndice reúne os exemplos completos dos corpos JSON utilizados durante o estudo das APIs de inferência. Os exemplos incluem pedidos e respostas de geração de texto, chamadas de ferramentas (\textit{tool calling}), \textit{streaming} e configuração de raciocínio (\textit{thinking}), permitindo ao leitor consultar as estruturas integrais que foram analisadas e comparadas no Capítulo~2.
+
+% ---------------------------------------------------------------
+\section{Pedidos (\textit{Requests})}
+\label{apx:json-requests}
+% ---------------------------------------------------------------
+
+\subsection{OpenAI (formato compatível)}
+
+\begin{lstlisting}[language=json, caption={Pedido básico à API da OpenAI (geração com \textit{system prompt})}]
+{
+  "model": "llama3.2:1b",
+  "messages": [
+    {
+      "role": "system",
+      "content": "Es um assistente local a correr em Docker."
+    },
+    {
+      "role": "user",
+      "content": "Ola! Estas a funcionar?"
+    }
+  ],
+  "temperature": 0.7
+}
+\end{lstlisting}
+
+\begin{lstlisting}[language=json, caption={Pedido à API da OpenAI com ferramentas (\textit{tool calling})}]
+{
+  "model": "llama3.2:1b",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Como esta o preco das acoes da Apple (AAPL)?"
+    }
+  ],
+  "tools": [
+    {
+      "type": "function",
+      "function": {
+        "name": "get_stock_price",
+        "description": "Obtem o preco atual de uma acao",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "symbol": {
+              "type": "string",
+              "description": "O ticker da empresa, ex: AAPL"
+            }
+          },
+          "required": ["symbol"]
+        }
+      }
+    }
+  ],
+  "tool_choice": "auto"
+}
+\end{lstlisting}
+
+\begin{lstlisting}[language=json, caption={Pedido à API da OpenAI com todos os parametros de geracao}]
+{
+  "model": "llama-3.3-70b-versatile",
+  "messages": [
+    {
+      "role": "system",
+      "content": "Es um assistente tecnico que responde apenas em topicos."
+    },
+    {
+      "role": "user",
+      "content": "Explica a diferenca entre CPU e GPU."
+    }
+  ],
+  "temperature": 0.5,
+  "max_tokens": 1024,
+  "top_p": 1,
+  "stream": false,
+  "stop": ["FIM", "TERMINAR"],
+  "presence_penalty": 0.0,
+  "frequency_penalty": 0.0,
+  "seed": 42,
+  "user": "utilizador_123",
+  "response_format": { "type": "text" },
+  "logit_bias": null
+}
+\end{lstlisting}
+
+\begin{lstlisting}[language=json, caption={Pedido \textit{stream} à API da OpenAI}]
+{
+  "model": "llama3.2:1b",
+  "messages": [
+    {
+      "role": "user",
+      "content": "O que e Kubernetes?"
+    }
+  ],
+  "stream": true
+}
+\end{lstlisting}
+
+\subsection{Anthropic}
+
+\begin{lstlisting}[language=json, caption={Pedido basico à API da Anthropic (geracao com \textit{system prompt})}]
+{
+  "model": "claude-3-5-haiku-20241022",
+  "max_tokens": 1024,
+  "system": "You are a cat. Your name is Neko.",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Hello there"
+    }
+  ]
+}
+\end{lstlisting}
+
+\begin{lstlisting}[language=json, caption={Pedido à API da Anthropic com ferramentas (\textit{tool calling})}]
+{
+  "model": "claude-3-5-haiku-20241022",
+  "max_tokens": 1024,
+  "messages": [
+    {
+      "role": "user",
+      "content": "What is the weather like in Lisbon?"
+    }
+  ],
+  "tools": [
+    {
+      "name": "get_weather",
+      "description": "Get the current weather in a given location",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "location": {
+            "type": "string",
+            "description": "The city and country, e.g. Lisbon, Portugal"
+          }
+        },
+        "required": ["location"]
+      }
+    }
+  ]
+}
+\end{lstlisting}
+
+\begin{lstlisting}[language=json, caption={Pedido à API da Anthropic com parametros de amostragem}]
+{
+  "model": "claude-3-5-haiku-20241022",
+  "max_tokens": 1024,
+  "temperature": 1.0,
+  "top_p": 0.8,
+  "top_k": 10,
+  "stop_sequences": ["Title"],
+  "messages": [
+    {
+      "role": "user",
+      "content": "Explain how AI works"
+    }
+  ]
+}
+\end{lstlisting}
+
+\begin{lstlisting}[language=json, caption={Pedido à API da Anthropic com raciocinio (\textit{thinking})}]
+{
+  "model": "claude-3-7-sonnet-20250219",
+  "max_tokens": 4096,
+  "thinking": {
+    "type": "enabled",
+    "budget_tokens": 2048
+  },
+  "messages": [
+    {
+      "role": "user",
+      "content": "How does AI work?"
+    }
+  ]
+}
+\end{lstlisting}
+
+\begin{lstlisting}[language=json, caption={Pedido \textit{stream} à API da Anthropic}]
+{
+  "model": "claude-3-5-haiku-20241022",
+  "max_tokens": 200,
+  "messages": [
+    {
+      "role": "user",
+      "content": "Explain AI."
+    }
+  ],
+  "stream": true
+}
+\end{lstlisting}
+
+\subsection{Google Gemini}
+
+\begin{lstlisting}[language=json, caption={Pedido basico à API do Gemini (geracao com \textit{system instruction})}]
+{
+  "system_instruction": {
+    "parts": [
+      { "text": "You are a cat. Your name is Neko." }
+    ]
+  },
+  "contents": [
+    {
+      "parts": [
+        { "text": "Hello there" }
+      ]
+    }
+  ]
+}
+\end{lstlisting}
+
+\begin{lstlisting}[language=json, caption={Pedido à API do Gemini com ferramentas (\textit{tool calling})}]
+{
+  "contents": [
+    {
+      "role": "user",
+      "parts": [
+        {
+          "text": "Schedule a meeting with Bob for tomorrow."
+        }
+      ]
+    }
+  ],
+  "tools": [
+    {
+      "functionDeclarations": [
+        {
+          "name": "schedule_meeting",
+          "description": "Schedules a meeting with attendees.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "attendees": {
+                "type": "array",
+                "items": { "type": "string" }
+              },
+              "date": { "type": "string" },
+              "time": { "type": "string" },
+              "topic": { "type": "string" }
+            },
+            "required": ["attendees", "date", "time", "topic"]
+          }
+        }
+      ]
+    }
+  ]
+}
+\end{lstlisting}
+
+\begin{lstlisting}[language=json, caption={Pedido à API do Gemini com configuracao de geracao e \textit{thinking}}]
+{
+  "contents": [
+    {
+      "parts": [
+        { "text": "Explain how AI works" }
+      ]
+    }
+  ],
+  "generationConfig": {
+    "stopSequences": ["Title"],
+    "temperature": 1.0,
+    "topP": 0.8,
+    "topK": 10,
+    "thinkingConfig": {
+      "include_thoughts": true,
+      "thinkingLevel": "low"
+    }
+  }
+}
+\end{lstlisting}
+
+\begin{lstlisting}[language=json, caption={Pedido \textit{stream} à API do Gemini (URI com \texttt{?alt=sse})}]
+{
+  "contents": [
+    {
+      "parts": [
+        { "text": "Explain how AI works" }
+      ]
+    }
+  ]
+}
+\end{lstlisting}
+
+% ---------------------------------------------------------------
+\section{Respostas (\textit{Responses})}
+\label{apx:json-responses}
+% ---------------------------------------------------------------
+
+\subsection{OpenAI (formato compatível)}
+
+\begin{lstlisting}[language=json, caption={Resposta completa da API da OpenAI (geracao basica)}]
+{
+  "id": "chatcmpl-31",
+  "object": "chat.completion",
+  "created": 1773531116,
+  "model": "llama3.2:1b",
+  "system_fingerprint": "fp_ollama",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "Desculpe, mas posso tentar ajuda-lo!"
+      },
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 46,
+    "completion_tokens": 40,
+    "total_tokens": 86
+  }
+}
+\end{lstlisting}
+
+\begin{lstlisting}[language=json, caption={Resposta da API da OpenAI (chamada de ferramenta)}]
+{
+  "id": "chatcmpl-53",
+  "object": "chat.completion",
+  "created": 1773531604,
+  "model": "llama3.2:1b",
+  "system_fingerprint": "fp_ollama",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "",
+        "tool_calls": [
+          {
+            "id": "call_9fasug2c",
+            "index": 0,
+            "type": "function",
+            "function": {
+              "name": "get_stock_price",
+              "arguments": "{\"symbol\":\"AAPL\"}"
+            }
+          }
+        ]
+      },
+      "finish_reason": "tool_calls"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 171,
+    "completion_tokens": 19,
+    "total_tokens": 190
+  }
+}
+\end{lstlisting}
+
+\begin{lstlisting}[language=json, caption={Resposta \textit{stream} da OpenAI (eventos SSE)}]
+data: {"id":"chatcmpl-308","object":"chat.completion.chunk",
+  "created":1773532270,"model":"llama3.2:1b",
+  "choices":[{"index":0,
+    "delta":{"role":"assistant","content":"K"},
+    "finish_reason":null}]}
+
+data: {"id":"chatcmpl-308","object":"chat.completion.chunk",
+  "created":1773532270,"model":"llama3.2:1b",
+  "choices":[{"index":0,
+    "delta":{"content":"ubernetes "},
+    "finish_reason":null}]}
+
+data: {"id":"chatcmpl-308","object":"chat.completion.chunk",
+  "created":1773532272,"model":"llama3.2:1b",
+  "choices":[{"index":0,
+    "delta":{},
+    "finish_reason":"stop"}]}
+
+data: [DONE]
+\end{lstlisting}
+
+\subsection{Anthropic}
+
+\begin{lstlisting}[language=json, caption={Resposta completa da API da Anthropic (geracao basica)}]
+{
+  "id": "msg_01Xf...",
+  "type": "message",
+  "role": "assistant",
+  "model": "claude-3-5-haiku-20241022",
+  "content": [
+    {
+      "type": "text",
+      "text": "Artificial intelligence (AI) is a complex field..."
+    }
+  ],
+  "stop_reason": "end_turn",
+  "usage": {
+    "input_tokens": 14,
+    "output_tokens": 350
+  }
+}
+\end{lstlisting}
+
+\begin{lstlisting}[language=json, caption={Resposta da API da Anthropic (chamada de ferramenta)}]
+{
+  "id": "msg_01Cd...",
+  "type": "message",
+  "role": "assistant",
+  "content": [
+    {
+      "type": "text",
+      "text": "I can help you check the weather in Lisbon."
+    },
+    {
+      "type": "tool_use",
+      "id": "toolu_01A02B03C",
+      "name": "get_weather",
+      "input": { "location": "Lisbon, Portugal" }
+    }
+  ],
+  "stop_reason": "tool_use"
+}
+\end{lstlisting}
+
+\begin{lstlisting}[language=json, caption={Resposta da API da Anthropic (raciocinio \textit{thinking})}]
+{
+  "id": "msg_01xyz...",
+  "type": "message",
+  "role": "assistant",
+  "model": "claude-3-7-sonnet-20250219",
+  "content": [
+    {
+      "type": "thinking",
+      "thinking": "Here I need to explain how AI works...",
+      "signature": "zxcvbnm1234567890..."
+    },
+    {
+      "type": "text",
+      "text": "Artificial Intelligence (AI) works fundamentally by..."
+    }
+  ],
+  "stop_reason": "end_turn",
+  "stop_sequence": null,
+  "usage": {
+    "input_tokens": 13,
+    "output_tokens": 850
+  }
+}
+\end{lstlisting}
+
+\begin{lstlisting}[language=json, caption={Resposta \textit{stream} da Anthropic (eventos SSE)}]
+event: message_start
+data: {"type": "message_start",
+  "message": {"id": "msg_d6d...", "role": "assistant",
+    "model": "claude-3-5-haiku-20241022"}}
+
+event: content_block_start
+data: {"type": "content_block_start", "index": 0,
+  "content_block": {"type": "text"}}
+
+event: content_block_delta
+data: {"type": "content_block_delta", "index": 0,
+  "delta": {"type": "text_delta", "text": "Artificial"}}
+
+event: content_block_delta
+data: {"type": "content_block_delta", "index": 0,
+  "delta": {"type": "text_delta", "text": " intelligence"}}
+
+event: content_block_stop
+data: {"type": "content_block_stop", "index": 0}
+
+event: message_stop
+data: {"type": "message_stop"}
+\end{lstlisting}
+
+\begin{lstlisting}[language=json, caption={Devolucao de resultado de ferramenta na API da Anthropic}]
+{
+  "role": "user",
+  "content": [
+    {
+      "type": "tool_result",
+      "tool_use_id": "toolu_01A02B03C",
+      "content": "The weather is 18C and sunny."
+    }
+  ]
+}
+\end{lstlisting}
+
+\subsection{Google Gemini}
+
+\begin{lstlisting}[language=json, caption={Resposta completa da API do Gemini (geracao basica)}]
+{
+  "candidates": [
+    {
+      "content": {
+        "parts": [
+          {
+            "text": "At its simplest level, AI works by...",
+            "thoughtSignature": "..."
+          }
+        ],
+        "role": "model"
+      },
+      "finishReason": "STOP",
+      "index": 0
+    }
+  ],
+  "usageMetadata": {
+    "promptTokenCount": 5,
+    "candidatesTokenCount": 969,
+    "totalTokenCount": 1480,
+    "promptTokensDetails": [
+      { "modality": "TEXT", "tokenCount": 5 }
+    ],
+    "thoughtsTokenCount": 506
+  },
+  "modelVersion": "gemini-3-flash-preview",
+  "responseId": "feKyafqAEJ_VvdIP5s7TSA"
+}
+\end{lstlisting}
+
+\begin{lstlisting}[language=json, caption={Resposta da API do Gemini (chamada de ferramenta)}]
+{
+  "candidates": [
+    {
+      "content": {
+        "parts": [
+          {
+            "functionCall": {
+              "name": "schedule_meeting",
+              "args": {
+                "time": "10:00",
+                "date": "2025-03-27",
+                "attendees": ["Bob", "Alice"],
+                "topic": "Q3 planning"
+              },
+              "id": "fcaog9xf"
+            },
+            "thoughtSignature": "..."
+          }
+        ],
+        "role": "model"
+      },
+      "finishReason": "STOP",
+      "index": 0,
+      "finishMessage": "Model generated function call(s)."
+    }
+  ],
+  "usageMetadata": {
+    "promptTokenCount": 203,
+    "candidatesTokenCount": 54,
+    "totalTokenCount": 423,
+    "promptTokensDetails": [
+      { "modality": "TEXT", "tokenCount": 203 }
+    ],
+    "thoughtsTokenCount": 166
+  },
+  "modelVersion": "gemini-3-flash-preview",
+  "responseId": "AueyadTFGvKlvdIPrv74QA"
+}
+\end{lstlisting}
+
+\begin{lstlisting}[language=json, caption={Resposta \textit{stream} do Gemini (padrao SSE)}]
+data: {"candidates": [
+  {"content": {"parts": [
+    {"text": "AI works by "}
+  ], "role": "model"}, "index": 0}
+], "usageMetadata": {
+  "promptTokenCount": 4,
+  "candidatesTokenCount": 25,
+  "totalTokenCount": 608,
+  "thoughtsTokenCount": 579
+}, "modelVersion": "gemini-3-flash-preview"}
+
+data: {"candidates": [
+  {"content": {"parts": [
+    {"text": "processing data."}
+  ], "role": "model"}, "index": 0}
+], "usageMetadata": {
+  "promptTokenCount": 4,
+  "candidatesTokenCount": 51,
+  "totalTokenCount": 634,
+  "thoughtsTokenCount": 579
+}, "modelVersion": "gemini-3-flash-preview"}
+
+data: {"candidates": [
+  {"content": {"parts": [
+    {"text": "", "thoughtSignature": "..."}
+  ], "role": "model"},
+  "finishReason": "STOP", "index": 0}
+], "usageMetadata": {
+  "promptTokenCount": 4,
+  "candidatesTokenCount": 853,
+  "totalTokenCount": 1436,
+  "thoughtsTokenCount": 579
+}, "modelVersion": "gemini-3-flash-preview"}
+\end{lstlisting}
