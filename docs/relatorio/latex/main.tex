@@ -1,6 +1,8 @@
 \documentclass[11pt,a4paper]{report}
 
 % --- Pacotes ---
+\usepackage{inconsolata}
+\usepackage[dvipsnames]{xcolor}
 \usepackage[utf8]{inputenc}
 \usepackage[T1]{fontenc}
 \usepackage{lmodern}
@@ -25,13 +27,21 @@
 \colorlet{punct}{red!60!black}
 \definecolor{delim}{RGB}{20,105,176}
 \colorlet{numb}{magenta!60!black}
+\definecolor{jsonbrace}{RGB}{100,100,100}
+\definecolor{jsonbg}{RGB}{245,245,245}
+\colorlet{jsonstring}{blue!60!black}
 
-% --- Configuração da Linguagem JSON ---
 \lstdefinelanguage{json}{
     basicstyle=\normalfont\ttfamily\footnotesize,
+    backgroundcolor=\color{jsonbg},
+    frame=single,
+    framerule=0.3pt,
+    rulecolor=\color{gray!25},
     showstringspaces=false,
     breaklines=true,
-    frame=lines,
+    columns=fullflexible,
+    keepspaces=true,
+    stringstyle=\color{jsonstring},
     literate=
      *{0}{{{\color{numb}0}}}{1}
       {1}{{{\color{numb}1}}}{1}
@@ -45,13 +55,10 @@
       {9}{{{\color{numb}9}}}{1}
       {:}{{{\color{punct}{:}}}}{1}
       {,}{{{\color{punct}{,}}}}{1}
-      {\{}{{{\color{delim}{\{}}}}{1}
-      {\}}{{{\color{delim}{\}}}}}{1}
-      {[}{{{\color{delim}{[}}}}{1}
-      {]}{{{\color{delim}{]}}}}{1}
-      {á}{{\'a}}1 {é}{{\'e}}1 {í}{{\'i}}1 {ó}{{\'o}}1 {ú}{{\'u}}1
-      {Á}{{\'A}}1 {É}{{\'E}}1 {Í}{{\'I}}1 {Ó}{{\'O}}1 {Ú}{{\'U}}1
-      {ã}{{\~a}}1 {õ}{{\~o}}1 {ç}{{\c{c}}}1
+      {\{}{{{\color{jsonbrace}{\{}}}}{1}
+      {\}}{{{\color{jsonbrace}{\}}}}}{1}
+      {[}{{{\color{jsonbrace}{[}}}}{1}
+      {]}{{{\color{jsonbrace}{]}}}}{1}
 }
 
 \onehalfspacing
