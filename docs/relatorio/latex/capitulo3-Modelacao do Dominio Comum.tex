@@ -65,58 +65,198 @@
 
     \begin{figure}[H]
         \centering
-        \includegraphics[width=0.95\textwidth]{../images/CommonRequestClasses}
+        \includegraphics[width=0.95\textwidth]{../images/DiagramaClassesCommonRequest}
         \caption{Estrutura de classes do \texttt{CommonRequest}.}
         \label{fig:commonrequest-classes}
     \end{figure}
 
     Para sistematizar a estrutura apresentada na Figura 3.2, a Tabela~\ref{tab:request-parametros} agrega todos os parâmetros relevantes do domínio de \textit{Request}, incluindo o objeto principal e os tipos diretamente associados. O objetivo é apresentar o significado funcional de cada campo no fluxo de construção do pedido.
 
+
     \begin{table}[H]
     \centering
-    \footnotesize
-    \setlength{\tabcolsep}{4pt}
+    \scriptsize % Fonte ligeiramente mais pequena para evitar overflow no rodapé
+    \setlength{\tabcolsep}{3.5pt} % Menos espaço nas laterais para aproveitar melhor a largura
     \renewcommand{\arraystretch}{1.15}
-    \begin{tabularx}{\textwidth}{|>{\raggedright\arraybackslash}p{2.6cm}|>{\raggedright\arraybackslash}p{3.0cm}|>{\raggedright\arraybackslash}p{2.9cm}|>{\raggedright\arraybackslash}X|}
+    \begin{tabularx}{\textwidth}{|>{\raggedright\arraybackslash}p{2.9cm}|>{\raggedright\arraybackslash}p{2.6cm}|>{\raggedright\arraybackslash}p{2.6cm}|>{\raggedright\arraybackslash}X|}
     \hline
     \textbf{Elemento} & \textbf{Campo} & \textbf{Tipo} & \textbf{Descrição} \\ \hline
 
     CommonRequest & provider & Provider & Fornecedor alvo da chamada. \\ \hline
     CommonRequest & model & String & Identificador do modelo a utilizar. \\ \hline
-    CommonRequest & messages & \texttt{List\textless\allowbreak Common\allowbreak Request\allowbreak Message\textgreater} & Histórico de mensagens enviado ao modelo. \\ \hline
+    CommonRequest & messages & List<Common\-RequestMessage> & Histórico de mensagens enviado ao modelo. \\ \hline
     CommonRequest & systemPrompt & SystemPrompt? & Prompt de sistema global (opcional). \\ \hline
-    CommonRequest & config & CommonGenerationConfig? & Parâmetros de geração (opcional). \\ \hline
-    CommonRequest & tools & \texttt{List\textless\allowbreak Common\allowbreak Tool\textgreater} & Ferramentas disponíveis para chamadas de função. \\ \hline
+    CommonRequest & config & Common\-GenerationConfig? & Parâmetros de geração (opcional). \\ \hline
+    CommonRequest & tools & List<CommonTool> & Ferramentas disponíveis para chamadas de função. \\ \hline
     CommonRequest & toolChoice & ToolChoice? & Política de seleção de ferramentas. \\ \hline
     CommonRequest & jsonResponse & Boolean & Indica se a resposta deve ser forçada a JSON. \\ \hline
     CommonRequest & providerOptions & TypedMap & Opções específicas do fornecedor. \\ \hline
 
-    \texttt{Common\allowbreak Request\allowbreak Message} & role & CommonRole & Papel da mensagem (SYSTEM, USER, ASSISTANT, TOOL). \\ \hline
-    \texttt{Common\allowbreak Request\allowbreak Message} & content & \texttt{List\textless\allowbreak Request\allowbreak Content\allowbreak Part\textgreater} & Conteúdo segmentado da mensagem. \\ \hline
+    CommonRequest\-Message & role & CommonRole & Papel da mensagem (SYSTEM, USER, ASSISTANT, TOOL). \\ \hline
+    CommonRequest\-Message & content & List<Request\-ContentPart> & Conteúdo segmentado da mensagem. \\ \hline
 
     SystemPrompt & text & String & Conteúdo do prompt de sistema. \\ \hline
 
-    \texttt{Common\allowbreak Generation\allowbreak Config} & temperature & Double? & Grau de aleatoriedade da geração. \\ \hline
-    \texttt{Common\allowbreak Generation\allowbreak Config} & maxTokens & Int? & Limite máximo de tokens de saída. \\ \hline
-    \texttt{Common\allowbreak Generation\allowbreak Config} & topP & Double? & Probabilidade cumulativa (nucleus sampling). \\ \hline
-    \texttt{Common\allowbreak Generation\allowbreak Config} & stopSequences & \texttt{List\textless\allowbreak String\textgreater}? & Sequências que interrompem a geração. \\ \hline
+    Common\-GenerationConfig & temperature & Double? & Grau de aleatoriedade da geração. \\ \hline
+    Common\-GenerationConfig & maxTokens & Int? & Limite máximo de tokens de saída. \\ \hline
+    Common\-GenerationConfig & topP & Double? & Probabilidade cumulativa (nucleus sampling). \\ \hline
+    Common\-GenerationConfig & stopSequences & List<String>? & Sequências que interrompem a geração. \\ \hline
 
     CommonTool & name & String & Nome da ferramenta. \\ \hline
     CommonTool & description & String & Descrição funcional da ferramenta. \\ \hline
     CommonTool & parametersSchema & JsonObjectMap & Esquema JSON dos parâmetros. \\ \hline
 
-    ToolChoice & Auto/None/Required/Specific & -- & Estratégia de uso de ferramentas (auto, nenhuma, obrigatório ou lista específica). \\ \hline
+    ToolChoice & Auto / None / Required / Specific & -- & Estratégia de uso de ferramentas (auto, nenhuma, obrigatório ou lista específica). \\ \hline
+    ToolChoiceAuto & -- & -- & Subtipo sem campos (seleção automática). \\ \hline
+    ToolChoiceNone & -- & -- & Subtipo sem campos (sem ferramentas). \\ \hline
+    ToolChoiceRequired & -- & -- & Subtipo sem campos (uso obrigatório). \\ \hline
+    ToolChoiceSpecific & toolNames & List<String> & Lista de ferramentas permitidas. \\ \hline
 
-    \texttt{Request\allowbreak Content\allowbreak Part} & TextPart & \texttt{text: String} & Conteúdo textual. \\ \hline
-    \texttt{Request\allowbreak Content\allowbreak Part} & JsonPart & \texttt{json: JsonValue} & Conteúdo JSON estruturado. \\ \hline
-    \texttt{Request\allowbreak Content\allowbreak Part} & ToolCallPart & \texttt{toolCallId, functionName, argumentsJson} & Chamada a ferramenta com argumentos. \\ \hline
-    \texttt{Request\allowbreak Content\allowbreak Part} & ToolResultPart & \texttt{toolCallId, content} & Resultado de execução de ferramenta. \\ \hline
+    Provider & value & String & Identificador textual do fornecedor. \\ \hline
+    TypedMap & data & Map<String, Any?> & Mapa genérico de opções específicas do fornecedor. \\ \hline
+
+    RequestContentPart & TextPart & text: String & Conteúdo textual. \\ \hline
+    RequestContentPart & JsonPart & json: JsonValue & Conteúdo JSON estruturado. \\ \hline
+    RequestContentPart & ToolCallPart & toolCallId,\newline functionName,\newline argumentsJson & Chamada a ferramenta com argumentos. \\ \hline
+    RequestContentPart & ToolResultPart & toolCallId,\newline content & Resultado de execução de ferramenta. \\ \hline
 
     \end{tabularx}
     \caption{Parâmetros do domínio de \textit{Request}.}
     \label{tab:request-parametros}
-    \end{table}
+\end{table}
 
 
+    \subsection{{Response}}
 
-    \subsection{{CommonResponse e CommonResponseEvent}}
+    O \texttt{CommonResponse} é o modelo base que normaliza as respostas devolvidas pelos diferentes fornecedores, garantindo um contrato único e consistente para o cliente. A estrutura foi desenhada para representar o resultado final da geração, mantendo as escolhas (\texttt{CommonChoice}) com o respetivo índice e a razão de término (\texttt{FinishReason}). Cada escolha contém uma mensagem (\texttt{CommonResponseMessage}) com o papel (\texttt{CommonRole}) e o conteúdo em partes (\texttt{ResponseContentPart}), permitindo combinar texto, JSON, chamadas a ferramentas ou recusas. A informação de uso (\texttt{CommonUsage}) isola o consumo de tokens e facilita métricas e contabilização. Por fim, \texttt{providerOptions} preserva metadados específicos do fornecedor, mantendo o núcleo do domínio estável e extensível.
+
+    
+
+    A Tabela~\ref{tab:response-parametros} reúne os campos do domínio de \textit{Response}, incluindo o objeto base, as escolhas e os eventos de streaming.
+
+        \begin{table}[H]
+    \centering
+    \scriptsize
+    \setlength{\tabcolsep}{4pt}
+    \renewcommand{\arraystretch}{1.2}
+    \begin{tabularx}{\textwidth}{|>{\raggedright\arraybackslash}p{3.4cm}|>{\raggedright\arraybackslash}p{2.2cm}|>{\raggedright\arraybackslash}p{3.8cm}|>{\raggedright\arraybackslash}X|}
+        \hline
+        \textbf{Elemento} & \textbf{Campo} & \textbf{Tipo} & \textbf{Descrição} \\ \hline
+
+        CommonResponse & provider & Provider & Fornecedor que produziu a resposta. \\ \hline
+        CommonResponse & id & String & Identificador do pedido/execução. \\ \hline
+        CommonResponse & model & String & Identificador do modelo utilizado. \\ \hline
+        CommonResponse & choices & List<CommonChoice> & Lista de escolhas geradas. \\ \hline
+        CommonResponse & usage & CommonUsage? & Contabilização de tokens (opcional). \\ \hline
+        CommonResponse & providerOptions & Map<String, Any?> & Metadados específicos do fornecedor. \\ \hline
+
+        CommonChoice & index & Int & Índice da escolha. \\ \hline
+        CommonChoice & message & CommonResponseMessage & Mensagem com papel e conteúdo. \\ \hline
+        CommonChoice & finishReason & FinishReason? & Razão de término da escolha (opcional). \\ \hline
+
+        CommonResponseMessage & role & CommonRole & Papel da mensagem. \\ \hline
+        CommonResponseMessage & content & List<ResponseContentPart> & Conteúdo segmentado da resposta. \\ \hline
+
+        CommonUsage & inputTokens & Int? & Tokens de entrada. \\ \hline
+        CommonUsage & outputTokens & Int? & Tokens de saída. \\ \hline
+        CommonUsage & totalTokens & Int? & Total de tokens. \\ \hline
+
+        % Correção solicitada: O enum foi para a coluna 'Tipo' e formatado com quebras limpas
+        FinishReason & -- & STOP / LENGTH / \newline TOOL\_CALL / \newline CONTENT\_FILTER / \newline OTHER & Motivo de conclusão da geração. \\ \hline
+
+        ResponseContentPart & TextPart & text: String & Segmento textual. \\ \hline
+        ResponseContentPart & JsonPart & json: JsonValue & Segmento JSON estruturado. \\ \hline
+        ResponseContentPart & ToolCallPart & toolCallId, \newline functionName, \newline argumentsJson & Chamada a ferramenta. \\ \hline
+        ResponseContentPart & RefusalPart & reason: String & Recusa do modelo com justificação. \\ \hline
+
+    \end{tabularx}
+    \caption{Parâmetros do domínio de \textit{Response} (CommonResponse).}
+    \label{tab:response-parametros}
+\end{table}
+
+    O \texttt{CommonResponseEvent} complementa o \texttt{CommonResponse} ao representar respostas em streaming como uma sequência ordenada de eventos. Esta abordagem permite construir a saída de forma incremental: primeiro sinaliza o início da resposta, depois o arranque de cada escolha, segue com deltas de texto ou de argumentos de ferramentas e, por fim, reporta o fecho da escolha, o uso de tokens e a conclusão (ou erro) do stream. Cada evento partilha um conjunto mínimo de metadados (fornecedor, identificador, modelo e sequência) que asseguram consistência e reordenação determinística.
+
+    \begin{table}[H]
+    \centering
+    \scriptsize
+    \setlength{\tabcolsep}{4pt}
+    \renewcommand{\arraystretch}{1.2}
+    \begin{tabularx}{\textwidth}{|>{\raggedright\arraybackslash}p{3.5cm}|>{\raggedright\arraybackslash}p{2.5cm}|>{\raggedright\arraybackslash}p{2.0cm}|>{\raggedright\arraybackslash}X|}
+        \hline
+        \textbf{Elemento} & \textbf{Campo} & \textbf{Tipo} & \textbf{Descrição} \\ \hline
+
+        CommonResponse\newline Event & provider & Provider & Fornecedor associado ao evento. \\ \hline
+        CommonResponse\newline Event & id & String & Identificador do pedido/execução. \\ \hline
+        CommonResponse\newline Event & model & Model & Modelo utilizado no evento. \\ \hline
+        CommonResponse\newline Event & sequence & Long & Ordem do evento no stream. \\ \hline
+        CommonResponse\newline Event & provider\newline EventType & String? & Tipo bruto do evento do fornecedor (opcional). \\ \hline
+
+        ResponseStarted & -- & -- & Início do streaming da resposta. \\ \hline
+
+        ChoiceStarted & choiceIndex & Int & Índice da escolha iniciada. \\ \hline
+        ChoiceStarted & role & CommonRole? & Papel associado à escolha (opcional). \\ \hline
+
+        TextDeltaEvent & choiceIndex & Int & Índice da escolha que recebe o delta. \\ \hline
+        TextDeltaEvent & text & String & Fragmento incremental de texto. \\ \hline
+
+        ToolCall\newline StartedEvent & choiceIndex & Int & Índice da escolha. \\ \hline
+        ToolCall\newline StartedEvent & toolCallIndex & Int & Índice da chamada a ferramenta. \\ \hline
+        ToolCall\newline StartedEvent & toolCallId & String & Identificador da chamada a ferramenta. \\ \hline
+        ToolCall\newline StartedEvent & functionName & String & Nome da função invocada. \\ \hline
+
+        ToolCallArguments\newline DeltaEvent & choiceIndex & Int & Índice da escolha. \\ \hline
+        ToolCallArguments\newline DeltaEvent & toolCallIndex & Int & Índice da chamada a ferramenta. \\ \hline
+        ToolCallArguments\newline DeltaEvent & arguments\newline Fragment & String & Fragmento incremental de argumentos. \\ \hline
+
+        ChoiceFinished & choiceIndex & Int & Índice da escolha terminada. \\ \hline
+        ChoiceFinished & finishReason & FinishReason? & Razão de término (opcional). \\ \hline
+
+        UsageReported & usage & CommonUsage & Contabilização de tokens reportada. \\ \hline
+
+        ResponseCompleted & -- & -- & Conclusão do streaming da resposta. \\ \hline
+
+        ResponseErrored & message & String & Mensagem de erro. \\ \hline
+        ResponseErrored & retryable & Boolean & Indica se o erro é recuperável. \\ \hline
+
+    \end{tabularx}
+    \caption{Parâmetros do domínio de \textit{Response} (CommonResponseEvent).}
+    \label{tab:response-events-parametros}
+\end{table}
+
+    \section{{TypedMap e Extensibilidade do Domínio}}
+    Nem todos os dados relevantes pertencem ao modelo mínimo de inferência. Algumas informações são específicas do fornecedor, como parâmetros avançados do Gemini e outras pertencem ao contexto operacional, como metadados de autenticação, IP do cliente, cabeçalhos HTTP ou atributos necessários para observabilidade e autorização. Para estes casos, o \textbf{OmniAI SDK} introduz a estrutura \texttt{TypedMap}.
+
+O \texttt{TypedMap} funciona como um mapa de atributos tipado por chave. Cada \texttt{AttributeKey<T>} associa um nome lógico a um tipo esperado, permitindo guardar e recuperar valores sem depender de conversões frágeis de strings. Esta abordagem é mais segura do que um \texttt{Map<String, Any?>} puro, porque cada chave transporta também a expectativa de tipo. Ao mesmo tempo, é mais flexível do que adicionar campos ao domínio sempre que surge uma necessidade nova.
+
+\begin{figure}[H]
+    \centering
+    \resizebox{0.9\textwidth}{!}{%
+        \begin{tikzpicture}[
+            node distance=1.1cm and 1.0cm,
+            box/.style={rectangle, draw, rounded corners, align=center, minimum width=3.4cm, minimum height=0.9cm},
+            map/.style={rectangle, draw, rounded corners, align=left, minimum width=5.0cm, minimum height=2.7cm, fill=gray!10},
+            arrow/.style={-Latex, thick}
+        ]
+            \node[box] (auth) {Metadados de autenticação};
+            \node[box, below=of auth] (http) {Cabeçalhos e IP do cliente};
+            \node[box, below=of http] (provider) {Opções específicas do fornecedor};
+
+            \node[map, right=2.0cm of http] (typedmap) {\texttt{TypedMap}\\[0.2cm]
+            \texttt{AttributeKey<String>}\\
+            \texttt{AttributeKey<AuthResult>}\\
+            \texttt{AttributeKey<Set<String>>}\\
+            \texttt{AttributeKey<Int>}};
+
+            \node[box, right=2.0cm of typedmap] (consumers) {Componentes do SDK\\ leem atributos tipados};
+
+            \draw[arrow] (auth.east) -- (typedmap.west);
+            \draw[arrow] (http.east) -- (typedmap.west);
+            \draw[arrow] (provider.east) -- (typedmap.west);
+            \draw[arrow] (typedmap.east) -- (consumers.west);
+        \end{tikzpicture}}
+    \caption{Utilização da \texttt{TypedMap} para transportar atributos extensíveis}
+    \label{fig:typed-map}
+\end{figure}
+
+No domínio de inferência, a \texttt{TypedMap} aparece em \texttt{providerOptions}, permitindo preservar dados que não pertencem ao subconjunto comum mas não devem ser perdidos durante a tradução. Fora da inferência estrita, a mesma estrutura permite transportar metadados entre componentes sem criar dependências diretas entre eles. Esta característica é útil para a evolução futura do \textbf{OmniAI SDK}, porque permite que mecanismos ,como autorização, observabilidade ou políticas de execução, usem atributos adicionais sem forçar alterações constantes nas classes centrais do domínio.
+    
