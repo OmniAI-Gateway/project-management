@@ -7,7 +7,8 @@
     Para garantir a interoperabilidade, a arquitetura do OmniAI SDK assenta na criação de um modelo de domínio comum. A ideia foi criar um modelo de dados suficientemente expressivo para representar pedidos, respostas e eventos dos fornecedores estudados, mas sem copiar diretamente a estrutura de nenhum deles.
 
    Assim, o domínio funciona como um ponto intermédio estável que centraliza qualquer interação no OmniAI SDK. Isto significa que, independentemente de o cliente estruturar o seu pedido original no formato de um fornecedor específico (como por exemplo a Anthropic), esse contrato é imediatamente convertido para o domínio unificado e em seguida, para efetuar a chamada à API, o modelo comum é novamente traduzido para o formato nativo do fornecedor de destino. O mesmo processo inverso ocorre na receção da resposta, os dados que são devolvidos pela API externa são normalizados no nosso domínio comum antes de serem entregues ao cliente na estrutura esperada. Este fluxo completo de transformações está representado visualmente na Figura 3.1.
-
+   
+   
     \begin{figure}[H]
         \centering
         \begin{tikzpicture}[
@@ -38,130 +39,74 @@
         \label{fig:domain-overview}
     \end{figure}
 
-    O pedido comum é representado por \texttt{CommonRequest} (Figura \ref{fig:common-request-structure}).Esta estrutura contém o fornecedor de destino (\texttt{provider}), o modelo a utilizar (\texttt{model}), a lista de mensagens da conversação (\texttt{messages}), o \textit{system prompt} (\texttt{systemPrompt}), a configuração de geração (\texttt{config}) com parâmetros como temperatura, número máximo de tokens e sequências de paragem, as ferramentas disponíveis (\texttt{tools}), a política de seleção de ferramentas(\texttt{toolChoice}), a indicação de resposta em formato JSON (\texttt{jsonResponse}) e um campo extensível para opções específicas do fornecedor (\texttt{providerOptions}). O campo \texttt{provider} é importante para garantir o desacoplamento da arquitetura, uma vez que o \textbf{OmniAI SDK} consegue traduzir contratos de entrada (\textit{inbound}) de um fornecedor e encaminhar o pedido (\textit{outbound}) para um fornecedor diferente. Por sua vez, o campo \texttt{model} permite distinguir múltiplos modelos dentro do mesmo fornecedor.
+    \section{{Estrutura do Domínio Comum}}
+    O domínio comum do \textbf{OmniAI SDK} que consite no conjunto de classes e relações que padroniza as interações com os diferentes fornecedores divide-se em dois blocos principais: \textbf{Request} e \textbf{Response}.
+
+    \begin{itemize}
+        \item O \textbf{Request} define a estrutura dos pedidos enviados ao modelo.
+        \item O \textbf{Response} descreve as respostas devolvidas, quer no formato (\texttt{CommonResponse}), quer em formato incremental atraves de eventos (\texttt{CommonResponseEvent}).
+    \end{itemize}
+
+    \subsection{{Request}}
+
+    O \texttt{CommonRequest} é o modelo base que normaliza qualquer pedido a LLMs, garantindo um contrato único e consistente, independentemente do fornecedor. A estrutura foi desenhada para manter os elementos essenciais de geração (fornecedor, modelo e mensagens) e, ao mesmo tempo, permitir extensões controladas via configuração e opções específicas do provider.
+    Como se observa na Figura 3.2, o \texttt{CommonRequest} agrega diretamente o \texttt{provider}, o \texttt{model} e a lista de \texttt{messages}, que representam o histórico conversacional. Cada \texttt{CommonRequestMessage} contém o papel (\texttt{CommonRole}) e o conteúdo em partes (\texttt{RequestContentPart}), permitindo combinar texto, JSON ou chamadas a ferramentas. A configuração de geração é isolada em \texttt{CommonGenerationConfig}, enquanto as ferramentas disponíveis são descritas por \texttt{CommonTool} e controladas por \texttt{ToolChoice}. Por fim, \texttt{SystemPrompt} e \texttt{providerOptions} suportam personalizações globais e específicas do fornecedor, mantendo o núcleo estável e extensível.
+
 
     \begin{figure}[H]
         \centering
-        \begin{tikzpicture}[
-            node distance=0.8cm and 0.2cm,
-            root/.style={rectangle, draw, rounded corners, align=center, minimum height=0.7cm, inner sep=4pt, font=\small\bfseries},
-            % Aumentámos a minimum height para 2.2cm para que todas tenham altura idêntica
-            part/.style={rectangle, draw, rounded corners, align=left, text width=3.3cm, minimum height=2.2cm, inner sep=3pt, font=\footnotesize},
-            arrow/.style={thick}
-        ]
-            % Nó Raiz
-            \node[root] (request) {\texttt{CommonRequest}};
-
-            % Ponto central invisível (descido para 1.9cm para compensar a altura extra das caixas)
-            \node[coordinate, below=1.9cm of request] (center) {};
-
-            % Nós centrais inferiores (posicionados à esquerda e direita do centro)
-            \node[part, left=0.1cm of center] (conversation) {\textbf{Conversação}\\\texttt{systemPrompt}\\\texttt{messages[]}};
-            \node[part, right=0.1cm of center] (tools) {\textbf{Ferramentas}\\\texttt{tools[]}\\\texttt{toolChoice}};
-            
-            % Nós das extremidades
-            \node[part, left=0.2cm of conversation] (identity) {\textbf{Destino}\\\texttt{provider}\\\texttt{model}\\\texttt{providerOptions}};
-            \node[part, right=0.2cm of tools] (generation) {\textbf{Geração}\\\texttt{config}\\\texttt{jsonResponse}};
-
-            % Linhas conectoras
-            \draw[arrow] (request.south) -- ++(0,-0.4) -| (identity.north);
-            \draw[arrow] (request.south) -- ++(0,-0.4) -| (conversation.north);
-            \draw[arrow] (request.south) -- ++(0,-0.4) -| (tools.north);
-            \draw[arrow] (request.south) -- ++(0,-0.4) -| (generation.north);
-        \end{tikzpicture}
-        \caption{Estrutura interna do \texttt{CommonRequest}}
-        \label{fig:common-request-structure}
+        \includegraphics[width=0.95\textwidth]{../images/CommonRequestClasses}
+        \caption{Estrutura de classes do \texttt{CommonRequest}.}
+        \label{fig:commonrequest-classes}
     \end{figure}
 
-    A resposta síncrona é representada por \texttt{CommonResponse}(Figura \ref{fig:common-response-structure}). Esta estrutura inclui o fornecedor (\texttt{provider}), o identificador (\texttt{id}), o modelo (\texttt{model}), a lista de escolhas (\texttt{choices}) e a utilização de tokens (\texttt{usage}). Cada escolha (\texttt{CommonChoice}) contém a mensagem de resposta e a razão de terminação (\texttt{finishReason}). Em paralelo, as respostas incrementais são representadas por \texttt{CommonResponseEvent}(Figura \ref{fig:common-response-structure}). Esta separação evita forçar um fluxo de \textit{streaming} a parecer uma resposta final e permite modelar eventos que não existem numa resposta única, como início de escolha, fragmento de texto, início de chamada de ferramenta, fragmento de argumentos, utilização reportada e conclusão.
-
-    
-
-    \begin{figure}[H]
-        \centering
-        \begin{tikzpicture}[
-            node distance=0.8cm and 1.0cm,
-            root/.style={rectangle, draw, rounded corners, align=center, text width=4.4cm, minimum height=0.9cm, fill=gray!10, inner sep=5pt},
-            part/.style={rectangle, draw, rounded corners, align=left, text width=5.2cm, minimum height=1.2cm, inner sep=5pt},
-            arrow/.style={-Latex, thick}
-        ]
-            \node[root] (response) {\texttt{CommonResponse}};
-            \node[root, right=2.0cm of response] (event) {\texttt{CommonResponseEvent}};
-
-            \node[part, below=of response] (responseParts) {\textbf{Resposta final}\\\texttt{provider} \\\texttt{id} \\\texttt{model}\\\texttt{choices}\\\texttt{usage} \\\texttt{providerOptions}};
-            \node[part, below=of event] (eventParts) {\textbf{Resposta incremental}\\\texttt{ResponseStarted}\\\texttt{TextDeltaEvent}\\\texttt{ToolCallStartedEvent}\\\texttt{UsageReported}\\\texttt{ResponseCompleted}};
-
-            \draw[arrow] (response) -- (responseParts);
-            \draw[arrow] (event) -- (eventParts);
-        \end{tikzpicture}
-        \caption{Estruturas de resposta final e eventos progressivos}
-        \label{fig:common-response-structure}
-    \end{figure}
-
-    \section{Estruturas Internas de Pedido e Resposta}
-    As mensagens do pedido são representadas por \texttt{CommonRequestMessage}, que combina um \texttt{CommonRole} com uma lista de \texttt{RequestContentPart}. Esta decisão evita assumir que uma mensagem é sempre uma string simples. No estudo das APIs, essa suposição mostrou-se insuficiente: a Anthropic e a Gemini trabalham naturalmente com blocos de conteúdo, e o \textit{tool calling} introduz partes que representam chamadas e resultados de ferramentas. Por esse motivo, o domínio contém tipos como \texttt{TextPart}, \texttt{JsonPart}, \texttt{ToolCallPart} e \texttt{ToolResultPart}.
-
-    Na resposta, a estrutura \texttt{CommonChoice} preserva o índice da escolha e a respetiva \texttt{CommonResponseMessage}. Isto permite representar APIs que devolvem várias alternativas, mantendo compatibilidade com fornecedores que devolvem apenas uma resposta. A razão de terminação é normalizada em \texttt{FinishReason}, com valores como \texttt{STOP}, \texttt{LENGTH}, \texttt{TOOL\_CALL}, \texttt{CONTENT\_FILTER} e \texttt{OTHER}. Esta normalização é deliberadamente pequena: cobre os casos que têm significado transversal e deixa detalhes particulares em campos de extensão.
+    Para sistematizar a estrutura apresentada na Figura 3.2, a Tabela~\ref{tab:request-parametros} agrega todos os parâmetros relevantes do domínio de \textit{Request}, incluindo o objeto principal e os tipos diretamente associados. O objetivo é apresentar o significado funcional de cada campo no fluxo de construção do pedido.
 
     \begin{table}[H]
-        \centering
-        \scriptsize
-        \renewcommand{\arraystretch}{1.25}
-        \begin{tabularx}{\textwidth}{|>{\raggedright\arraybackslash}p{3.8cm}|Y|Y|}
-            \hline
-            \textbf{Estrutura de domínio} & \textbf{Responsabilidade} & \textbf{Origem no estudo prévio} \\
-            \hline
-            \texttt{CommonRequest} & Representar o pedido de inferência de forma independente do contrato recebido. & Campos recorrentes: modelo, mensagens, parâmetros, ferramentas e formato de resposta. \\
-            \hline
-            \texttt{CommonRequestMessage} & Preservar o papel da mensagem e permitir conteúdo composto. & Diferença entre \texttt{messages}, \texttt{contents} e blocos de conteúdo. \\
-            \hline
-            \texttt{CommonTool} & Descrever uma ferramenta por nome, descrição e esquema de parâmetros. & Mapeamento entre \texttt{tools}, \texttt{input\_schema} e \texttt{functionDeclarations}. \\
-            \hline
-            \texttt{ToolChoice} & Indicar se o modelo pode, não pode, deve ou tem de usar uma ferramenta específica. & Diferenças entre \texttt{tool\_choice} e configurações Gemini de chamada de função. \\
-            \hline
-            \texttt{CommonResponse} & Representar a resposta final e a utilização de tokens. & Diferenças entre \texttt{choices}, blocos \texttt{content} e \texttt{candidates}. \\
-            \hline
-            \texttt{CommonResponseEvent} & Representar respostas progressivas e eventos de ferramenta em \textit{streaming}. & SSE e eventos incrementais observados em OpenAI, Anthropic e Gemini. \\
-            \hline
-        \end{tabularx}
-        \caption{Principais estruturas do domínio comum}
-        \label{tab:domain-structures}
+    \centering
+    \footnotesize
+    \setlength{\tabcolsep}{4pt}
+    \renewcommand{\arraystretch}{1.15}
+    \begin{tabularx}{\textwidth}{|>{\raggedright\arraybackslash}p{2.6cm}|>{\raggedright\arraybackslash}p{3.0cm}|>{\raggedright\arraybackslash}p{2.9cm}|>{\raggedright\arraybackslash}X|}
+    \hline
+    \textbf{Elemento} & \textbf{Campo} & \textbf{Tipo} & \textbf{Descrição} \\ \hline
+
+    CommonRequest & provider & Provider & Fornecedor alvo da chamada. \\ \hline
+    CommonRequest & model & String & Identificador do modelo a utilizar. \\ \hline
+    CommonRequest & messages & \texttt{List\textless\allowbreak Common\allowbreak Request\allowbreak Message\textgreater} & Histórico de mensagens enviado ao modelo. \\ \hline
+    CommonRequest & systemPrompt & SystemPrompt? & Prompt de sistema global (opcional). \\ \hline
+    CommonRequest & config & CommonGenerationConfig? & Parâmetros de geração (opcional). \\ \hline
+    CommonRequest & tools & \texttt{List\textless\allowbreak Common\allowbreak Tool\textgreater} & Ferramentas disponíveis para chamadas de função. \\ \hline
+    CommonRequest & toolChoice & ToolChoice? & Política de seleção de ferramentas. \\ \hline
+    CommonRequest & jsonResponse & Boolean & Indica se a resposta deve ser forçada a JSON. \\ \hline
+    CommonRequest & providerOptions & TypedMap & Opções específicas do fornecedor. \\ \hline
+
+    \texttt{Common\allowbreak Request\allowbreak Message} & role & CommonRole & Papel da mensagem (SYSTEM, USER, ASSISTANT, TOOL). \\ \hline
+    \texttt{Common\allowbreak Request\allowbreak Message} & content & \texttt{List\textless\allowbreak Request\allowbreak Content\allowbreak Part\textgreater} & Conteúdo segmentado da mensagem. \\ \hline
+
+    SystemPrompt & text & String & Conteúdo do prompt de sistema. \\ \hline
+
+    \texttt{Common\allowbreak Generation\allowbreak Config} & temperature & Double? & Grau de aleatoriedade da geração. \\ \hline
+    \texttt{Common\allowbreak Generation\allowbreak Config} & maxTokens & Int? & Limite máximo de tokens de saída. \\ \hline
+    \texttt{Common\allowbreak Generation\allowbreak Config} & topP & Double? & Probabilidade cumulativa (nucleus sampling). \\ \hline
+    \texttt{Common\allowbreak Generation\allowbreak Config} & stopSequences & \texttt{List\textless\allowbreak String\textgreater}? & Sequências que interrompem a geração. \\ \hline
+
+    CommonTool & name & String & Nome da ferramenta. \\ \hline
+    CommonTool & description & String & Descrição funcional da ferramenta. \\ \hline
+    CommonTool & parametersSchema & JsonObjectMap & Esquema JSON dos parâmetros. \\ \hline
+
+    ToolChoice & Auto/None/Required/Specific & -- & Estratégia de uso de ferramentas (auto, nenhuma, obrigatório ou lista específica). \\ \hline
+
+    \texttt{Request\allowbreak Content\allowbreak Part} & TextPart & \texttt{text: String} & Conteúdo textual. \\ \hline
+    \texttt{Request\allowbreak Content\allowbreak Part} & JsonPart & \texttt{json: JsonValue} & Conteúdo JSON estruturado. \\ \hline
+    \texttt{Request\allowbreak Content\allowbreak Part} & ToolCallPart & \texttt{toolCallId, functionName, argumentsJson} & Chamada a ferramenta com argumentos. \\ \hline
+    \texttt{Request\allowbreak Content\allowbreak Part} & ToolResultPart & \texttt{toolCallId, content} & Resultado de execução de ferramenta. \\ \hline
+
+    \end{tabularx}
+    \caption{Parâmetros do domínio de \textit{Request}.}
+    \label{tab:request-parametros}
     \end{table}
 
-    \section{\texttt{TypedMap} e Extensibilidade do Domínio}
-    Nem todos os dados relevantes pertencem ao modelo mínimo de inferência. Algumas informações são específicas do fornecedor, como parâmetros avançados do Gemini e outras pertencem ao contexto operacional, como metadados de autenticação, IP do cliente, cabeçalhos HTTP ou atributos necessários para observabilidade e autorização. Para estes casos, o \textbf{OmniAI SDK} introduz a estrutura \texttt{TypedMap}.
 
-    O \texttt{TypedMap} funciona como um mapa de atributos tipado por chave. Cada \texttt{AttributeKey<T>} associa um nome lógico a um tipo esperado, permitindo guardar e recuperar valores sem depender de conversões frágeis de strings. Esta abordagem é mais segura do que um \texttt{Map<String, Any?>} puro, porque cada chave transporta também a expectativa de tipo. Ao mesmo tempo, é mais flexível do que adicionar campos ao domínio sempre que surge uma necessidade nova.
 
-    \begin{figure}[H]
-        \centering
-        \resizebox{0.9\textwidth}{!}{%
-            \begin{tikzpicture}[
-                node distance=1.1cm and 1.0cm,
-                box/.style={rectangle, draw, rounded corners, align=center, minimum width=3.4cm, minimum height=0.9cm},
-                map/.style={rectangle, draw, rounded corners, align=left, minimum width=5.0cm, minimum height=2.7cm, fill=gray!10},
-                arrow/.style={-Latex, thick}
-            ]
-                \node[box] (auth) {Metadados de autenticação};
-                \node[box, below=of auth] (http) {Cabeçalhos e IP do cliente};
-                \node[box, below=of http] (provider) {Opções específicas do fornecedor};
-
-                \node[map, right=2.0cm of http] (typedmap) {\texttt{TypedMap}\\[0.2cm]
-                \texttt{AttributeKey<String>}\\
-                \texttt{AttributeKey<AuthResult>}\\
-                \texttt{AttributeKey<Set<String>>}\\
-                \texttt{AttributeKey<Int>}};
-
-                \node[box, right=2.0cm of typedmap] (consumers) {Componentes do SDK\\ leem atributos tipados};
-
-                \draw[arrow] (auth.east) -- (typedmap.west);
-                \draw[arrow] (http.east) -- (typedmap.west);
-                \draw[arrow] (provider.east) -- (typedmap.west);
-                \draw[arrow] (typedmap.east) -- (consumers.west);
-            \end{tikzpicture}}
-        \caption{Utilização da \texttt{TypedMap} para transportar atributos extensíveis}
-        \label{fig:typed-map}
-    \end{figure}
-
-    No domínio de inferência, a \texttt{TypedMap} aparece em \texttt{providerOptions}, permitindo preservar dados que não pertencem ao subconjunto comum mas não devem ser perdidos durante a tradução. Fora da inferência estrita, a mesma estrutura permite transportar metadados entre componentes sem criar dependências diretas entre eles. Esta característica é útil para a evolução futura do \textbf{OmniAI SDK}, porque permite que mecanismos ,como autorização, observabilidade ou políticas de execução, usem atributos adicionais sem forçar alterações constantes nas classes centrais do domínio.
-
+    \subsection{{CommonResponse e CommonResponseEvent}}
