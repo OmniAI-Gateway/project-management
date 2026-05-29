@@ -130,7 +130,12 @@
 
     O \texttt{CommonResponse} é o modelo base que normaliza as respostas devolvidas pelos diferentes fornecedores, garantindo um contrato único e consistente para o cliente. A estrutura foi desenhada para representar o resultado final da geração, mantendo as escolhas (\texttt{CommonChoice}) com o respetivo índice e a razão de término (\texttt{FinishReason}). Cada escolha contém uma mensagem (\texttt{CommonResponseMessage}) com o papel (\texttt{CommonRole}) e o conteúdo em partes (\texttt{ResponseContentPart}), permitindo combinar texto, JSON, chamadas a ferramentas ou recusas. A informação de uso (\texttt{CommonUsage}) isola o consumo de tokens e facilita métricas e contabilização. Por fim, \texttt{providerOptions} preserva metadados específicos do fornecedor, mantendo o núcleo do domínio estável e extensível.
 
-    
+    \begin{figure}[H]
+        \centering
+        \includegraphics[width=0.95\textwidth]{../images/DiagramaClassesCommonResponse}
+        \caption{Estrutura de classes do \texttt{CommonResponse}.}
+        \label{fig:commonrequest-classes}
+    \end{figure}
 
     A Tabela~\ref{tab:response-parametros} reúne os campos do domínio de \textit{Response}, incluindo o objeto base, as escolhas e os eventos de streaming.
 
