@@ -57,7 +57,7 @@
         \item O \textbf{Response} descreve as respostas devolvidas, quer no formato (\texttt{CommonResponse}), quer em formato incremental atraves de eventos (\texttt{CommonResponseEvent}).
     \end{itemize}
 
-    \subsection{{Request}}
+    \subsection{{CommonRequest}}
 
     O \texttt{CommonRequest} é o modelo base que normaliza qualquer pedido a LLMs, garantindo um contrato único e consistente, independentemente do fornecedor. A estrutura foi desenhada para manter os elementos essenciais de geração (fornecedor, modelo e mensagens) e, ao mesmo tempo, permitir extensões controladas via configuração e opções específicas do provider.
     Como se observa na Figura 3.2, o \texttt{CommonRequest} agrega diretamente o \texttt{provider}, o \texttt{model} e a lista de \texttt{messages}, que representam o histórico conversacional. Cada \texttt{CommonRequestMessage} contém o papel (\texttt{CommonRole}) e o conteúdo em partes (\texttt{RequestContentPart}), permitindo combinar texto, JSON ou chamadas a ferramentas. A configuração de geração é isolada em \texttt{CommonGenerationConfig}, enquanto as ferramentas disponíveis são descritas por \texttt{CommonTool} e controladas por \texttt{ToolChoice}. Por fim, \texttt{SystemPrompt} e \texttt{providerOptions} suportam personalizações globais e específicas do fornecedor, mantendo o núcleo estável e extensível.
@@ -65,7 +65,7 @@
 
     \begin{figure}[H]
         \centering
-        \includegraphics[width=0.95\textwidth]{../images/DiagramaClassesCommonRequest}
+        \includegraphics[width=0.95\textwidth]{../images/EstruturaClassesCommonRequestV2}
         \caption{Estrutura de classes do \texttt{CommonRequest}.}
         \label{fig:commonrequest-classes}
     \end{figure}
@@ -99,7 +99,7 @@
 
     Common\-GenerationConfig & temperature & Double? & Grau de aleatoriedade da geração. \\ \hline
     Common\-GenerationConfig & maxTokens & Int? & Limite máximo de tokens de saída. \\ \hline
-    Common\-GenerationConfig & topP & Double? & Probabilidade cumulativa (nucleus sampling). \\ \hline
+    Common\-GenerationConfig & topP & Double? & Probabilidade cumulativa. \\ \hline
     Common\-GenerationConfig & stopSequences & List<String>? & Sequências que interrompem a geração. \\ \hline
 
     CommonTool & name & String & Nome da ferramenta. \\ \hline
@@ -126,13 +126,13 @@
 \end{table}
 
 
-    \subsection{{Response}}
+    \subsection{{CommonResponse e CommonResponseEvent}}
 
     O \texttt{CommonResponse} é o modelo base que normaliza as respostas devolvidas pelos diferentes fornecedores, garantindo um contrato único e consistente para o cliente. A estrutura foi desenhada para representar o resultado final da geração, mantendo as escolhas (\texttt{CommonChoice}) com o respetivo índice e a razão de término (\texttt{FinishReason}). Cada escolha contém uma mensagem (\texttt{CommonResponseMessage}) com o papel (\texttt{CommonRole}) e o conteúdo em partes (\texttt{ResponseContentPart}), permitindo combinar texto, JSON, chamadas a ferramentas ou recusas. A informação de uso (\texttt{CommonUsage}) isola o consumo de tokens e facilita métricas e contabilização. Por fim, \texttt{providerOptions} preserva metadados específicos do fornecedor, mantendo o núcleo do domínio estável e extensível.
 
     \begin{figure}[H]
         \centering
-        \includegraphics[width=0.95\textwidth]{../images/DiagramaClassesCommonResponse}
+        \includegraphics[width=0.95\textwidth]{../images/EstruturaClassesCommonResponseV2.drawio.png}
         \caption{Estrutura de classes do \texttt{CommonResponse}.}
         \label{fig:commonrequest-classes}
     \end{figure}
