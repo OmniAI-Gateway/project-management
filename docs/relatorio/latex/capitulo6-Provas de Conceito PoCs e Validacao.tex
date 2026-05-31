@@ -1,9 +1,9 @@
-    \chapter{Provas de Conceito (PoCs) e Validação}
+    \chapter{Proof of Concepts e Validação}
 
-    \section{Validação do POC OmniAI Gateway}
-    A validação principal foi realizada com a aplicação \texttt{OmniAiGateway}, um POC que consome o OmniAI SDK através do \textit{composite build}. Esta aplicação carrega o ficheiro \texttt{application.conf}, resolve variáveis de ambiente, instancia o \texttt{KtorHttpTransportClient}, configura outbounds, ativa segurança e telemetria, monta o runtime do SDK e expõe endpoints HTTP compatíveis com OpenAI, Anthropic e Gemini.
-
-    O comportamento validado não deve ser descrito como roteamento inteligente. A implementação atual realiza despacho configurado: o pedido contém fornecedor e modelo, e o dispatcher padrão escolhe o outbound que corresponde a essa combinação. Este desenho já permite demonstrar o desacoplamento entre cliente e fornecedor, mas políticas mais avançadas, como seleção por custo, qualidade, latência ou plano do cliente, permanecem como trabalho futuro. O trabalho de \textit{fallback} e \textit{circuit breaker} fornece a base técnica para esse tipo de evolução, mas o POC não afirma executar roteamento semântico ou otimizado.
+    \section{Validação do Proof of Concept da OmniAI Gateway}
+    A validação principal da arquitetura foi efetuada através da aplicação \texttt{OmniAiGateway}, um Proof of Concept (PoC) que integra o OmniAI SDK via \textit{composite build}, conforme detalhado anteriormente. Esta aplicação é responsável por carregar o ficheiro de configuração \texttt{application.conf},resolver as variáveis de ambiente necessárias,instanciar o \texttt{KtorHttpTransportClient} e configurar os respetivos outbounds. Adicionalmente, assegura a ativação dos módulos de segurança e telemetria, a inicialização do runtime do Software Development Kit e a exposição de endpoints HTTP compatíveis com as API da OpenAI \cite{openai_api}, Anthropic \cite{anthropic_api} e Gemini \cite{gemini}.
+    
+    É importante clarificar que o comportamento validado não configura um mecanismo de "roteamento inteligente". A implementação atual baseia-se numa seleção direta por configuração, em que o pedido original já especifica o fornecedor e o modelo pretendidos, cabendo ao dispatcher padrão direcionar o fluxo para o outbound correspondente. Embora este desenho garanta o desacoplamento efetivo entre o cliente e o fornecedor, a seleção dinâmica por critérios como custo, latência, qualidade ou plano de subscrição ainda não está implementada. Contudo, os mecanismos de \textit{fallback} e \textit{circuit breaker} \cite{treinaweb_circuit_breaker} \cite{itau_circuit_breaker} \cite{microsoft_circuit_breaker} já existentes estabelecem a infraestrutura necessária para evoluir a solução em direção a um roteamento semântico ou otimizado no futuro.
 
     \begin{figure}[H]
         \centering
@@ -22,7 +22,7 @@
             \node[box, below=0.8cm of claude] (node) {SDK Anthropic\\ Node.js};
 
             % --- GATEWAY CENTRAL ---
-            \node[gateway, right=of claude] (gateway) {\textbf{OmniAI Gateway POC}};
+            \node[gateway, right=of claude] (gateway) {\textbf{OmniAI Gateway}};
 
             % --- COLUNA DIREITA ---
             % Ajuste de yshift para espaçamento vertical no lado direito
@@ -37,33 +37,33 @@
             \draw[arrow] (gateway.east) -- (providers.west);
             \draw[arrow] (gateway.east) -- (obs.west);
         \end{tikzpicture}
-        \caption{Cenários de validação do POC OmniAI Gateway}
+        \caption{Cenários de validação do Proof of Concept}
         \label{fig:poc-validation}
     \end{figure}
 
     \section{Validação com REST Client}
-    O ficheiro \texttt{gateway-requests.http} foi usado para validar manualmente os endpoints expostos pela Gateway. Este ficheiro contém pedidos para \texttt{/v1/chat/completions}, \texttt{/v1/messages} e \texttt{/v1beta/models/\{model\}:generateContent}, cobrindo respostas unárias, \textit{streaming}, geração com parâmetros e integração com token Bearer.
+    O ficheiro \texttt{gateway-requests.http} foi utilizado para a validação manual dos endpoints expostos pela OmniAI Gateway. Este ficheiro agrupa pedidos direcionados a \texttt{/v1/chat/completions}, \texttt{/v1/messages} e \texttt{/v1beta/models/{model}:generateContent}, cobrindo cenários de respostas unárias, streaming, geração baseada em parâmetros e integração com autenticação via token Bearer.
 
-    Este cenário foi importante por duas razões. Primeiro, permitiu validar a forma exata dos contratos HTTP recebidos pelo POC sem depender de uma aplicação externa complexa. Segundo, permitiu testar rapidamente o fluxo completo: token emitido pelo Logto, pedido autenticado, tradução inbound, despacho para outbound, chamada ao fornecedor configurado e resposta no contrato esperado pelo cliente.
+    A relevância deste cenário de testes fundamenta-se em dois pilares principais. Em primeiro lugar, viabilizou a validação rigorosa dos contratos HTTP recebidos pela OmniAI Gateway, prescindindo do acoplamento a aplicações externas. Em segundo lugar, proporcionou a testagem rápida e integral do fluxo de dados: desde a emissão do token pelo Logto e a respetiva autenticação do pedido, passando pela tradução inbound, conversão para o outbound e invocação do fornecedor configurado, até à devolução da resposta no formato esperado pelo cliente.
 
     \section{Validação de Segurança com Logto}
-    A camada de segurança foi validada com Logto como Authorization Server local. O ambiente Docker inclui Logto, PostgreSQL, OpenTelemetry Collector, Prometheus e Grafana. A configuração do POC usa OIDC Discovery para obter metadados do servidor de autorização e validar tokens com audiência configurada para o recurso da API.
+    A camada de segurança foi validada com Logto como Authorization Server local. O ambiente Docker inclui Logto \cite{logto_docs}, PostgreSQL \cite{postgresql_ref}, OpenTelemetry Collector \cite{opentelemetry_otlp}, Prometheus \cite{prometheus_ref} e Grafana \cite{grafana_ref}. A configuração do Proof of Concept usa OIDC Discovery \cite{oidc_discovery} para obter metadados do servidor de autorização e validar tokens com audiência configurada para o recurso da API.
 
-    Durante o desenvolvimento foram realizados testes exploratórios com Keycloak, mas a configuração final mudou para Logto por reduzir a complexidade operacional do POC. O Logto facilitou a criação de API Resources, aplicações Machine-to-Machine e fluxos OIDC adequados à validação da Gateway como Resource Server.
+    Durante o desenvolvimento foram realizados testes exploratórios com Keycloak \cite{keycloak_docs}, mas a configuração final mudou para Logto \cite{logto_docs} por reduzir a complexidade operacional. O Logto facilitou a criação de API Resources, aplicações Machine-to-Machine e fluxos OIDC adequados à validação da OmniAI Gateway como Resource Server\cite{resource_ref}.
 
-    O fluxo também foi validado com \texttt{run\_claude.py}. Este script abre o browser para autenticação no Logto, usa PKCE, troca o código por um token e inicia o Claude Code com \texttt{ANTHROPIC\_BASE\_URL} a apontar para a OmniAI Gateway. O cabeçalho \texttt{Authorization} é injetado através de \texttt{ANTHROPIC\_CUSTOM\_HEADERS}, permitindo testar um cliente real compatível com Anthropic a passar pela Gateway.
+    O fluxo também foi validado com \texttt{run\_claude.py}. Este script abre o browser para autenticação no Logto, usa PKCE \cite{pkce_ref}, troca o código por um token e inicia o Claude Code com \texttt{ANTHROPIC\_BASE\_URL} a apontar para a OmniAI Gateway. O cabeçalho \texttt{Authorization} é injetado através de \texttt{ANTHROPIC\_CUSTOM\_HEADERS}, permitindo testar um cliente real compatível com Anthropic a passar pela nossa Gateway.
 
     \section{Validação de Observabilidade}
-    A observabilidade foi validada com OpenTelemetry Collector, Prometheus e Grafana. O POC ativa métricas na DSL do SDK, incluindo latência padrão, contagem de tokens e contagem de erros. Também acrescenta atributos como IP do cliente, versão do SDK, audiência e dados derivados do resultado de autenticação, como \texttt{sub}, \texttt{email} ou \texttt{preferred\_username} quando disponíveis.
+    A observabilidade foi validada com OpenTelemetry Collector, Prometheus e Grafana. A OmniAiGateway ativa métricas na DSL do OmniAI SDK, incluindo latência padrão, contagem de tokens e contagem de erros. Também acrescenta atributos como IP do cliente, versão do OmniAI SDK, audiência e dados derivados do resultado de autenticação, como \texttt{sub}, \texttt{email} ou \texttt{preferred\_username} quando disponíveis.
 
-    O objetivo desta validação foi confirmar que a Gateway consegue produzir telemetria em tempo real enquanto processa pedidos reais. A utilização de Prometheus e Grafana permitiu observar métricas operacionais da aplicação e confirmar que a instrumentação está separada da lógica de inferência, sendo configurada através da DSL e exportada por adapters próprios.
+    O objetivo desta validação foi confirmar que a OmniAI Gateway consegue produzir telemetria e garantir observabilidade em tempo real durante o processamento de pedidos. A utilização de Prometheus \cite{prometheus_ref} e Grafana \cite{grafana_ref} permitiu monitorizar as métricas operacionais da aplicação, comprovando que o módulo de telemetria corre de forma isolada da lógica de inferência sendo definido via DSL e exposto por adapters dedicados.
 
     \section{Validação com Aplicações Cliente}
     Foram estudados e testados cenários com clientes que permitem alterar o endpoint da API. No caso do Claude Code, a variável \texttt{ANTHROPIC\_BASE\_URL} permite redirecionar pedidos para a Gateway. \\
     Foi criado um teste com o sdk oficial da anthropic em \texttt{node-tests/anthropicSDKTest.js}, configurado com \texttt{baseURL} local e chave fictícia, para validar que um cliente existente consegue falar com a OmniAI Gateway quando esta expõe um contrato compatível.
 
-    Também foram estudadas aplicações como OpenCode, LibreChat e Dify, por permitirem configurar endpoints compatíveis com fornecedores existentes. Estes estudos demonstram o valor arquitetural da Gateway: quando o cliente já segue um contrato conhecido, a introdução da OmniAI Gateway pode ser feita por configuração de endpoint, sem alterar a lógica principal da aplicação cliente.
+    Também foram estudadas aplicações como OpenCode \cite{opencode_ref}, LibreChat\cite{librechat_ref} e Dify \cite{dify_ref}, por permitirem configurar endpoints compatíveis com fornecedores existentes. Estes estudos demonstram o valor arquitetural da OmniAI Gateway e assim quando o cliente já segue um contrato conhecido, a introdução da OmniAI Gateway pode ser feita por configuração de endpoint, sem alterar a lógica principal da aplicação cliente.
 
     \section{Limites da Validação}
-    A validação realizada confirma o consumo do SDK pelo POC, a exposição HTTP com Ktor, a integração com Logto, o uso de Prometheus/Grafana e a compatibilidade com clientes reais ou semi-reais. No entanto, existem limites importantes. O POC ainda não demonstra invocação de ferramentas via MCP Broker, nem políticas avançadas de roteamento por custo, latência ou qualidade. Estes pontos dependem de trabalho futuro sobre o módulo \texttt{mcp-broker}, sobre políticas de dispatcher e sobre stores distribuídos para cenários multi-instância.
+    A validação realizada confirma o consumo do OmniAI sdk pelo Proof Of Concept, a exposição HTTP com Ktor, a integração com Logto, o uso de Prometheus/Grafana e a compatibilidade com clientes reais ou semi-reais. No entanto, existem limites importantes. O Proof Of Concept ainda não demonstra invocação de ferramentas via MCP Broker, nem políticas avançadas de roteamento por custo, latência ou qualidade. Estes pontos dependem de trabalho futuro sobre o módulo \texttt{mcp-broker}, sobre políticas de dispatcher e sobre stores distribuídos para cenários multi-instância.
 
