@@ -1,8 +1,8 @@
 \documentclass[11pt,a4paper]{report}
 
-% --- Pacotes ---
+% --- Pacotes Base ---
 \usepackage{inconsolata}
-\usepackage[dvipsnames]{xcolor}
+\usepackage[dvipsnames]{xcolor} % Mantemos apenas este xcolor!
 \usepackage[utf8]{inputenc}
 \usepackage[T1]{fontenc}
 \usepackage{lmodern}
@@ -15,15 +15,16 @@
 \usepackage{titlesec}
 \usepackage{array}
 \usepackage{tabularx}
-\usepackage{tikz}
-
-
-\usetikzlibrary{arrows.meta,positioning,shapes.geometric,fit}
-\newcolumntype{Y}{>{\raggedright\arraybackslash}X}
-
 \usepackage{cite} % Adicionado para melhorar as citações IEEE
 \usepackage{listings}
-\usepackage{xcolor}
+
+% --- Configurações TikZ ---
+\usepackage{tikz}
+% Juntámos todas as bibliotecas numa só linha:
+\usetikzlibrary{arrows.meta, positioning, fit, calc, shapes.geometric}
+
+% --- Configurações de Tabelas ---
+\newcolumntype{Y}{>{\raggedright\arraybackslash}X}
 
 % --- Definições de Cores para o Código ---
 \colorlet{punct}{red!60!black}
@@ -33,6 +34,7 @@
 \definecolor{jsonbg}{RGB}{245,245,245}
 \colorlet{jsonstring}{blue!60!black}
 
+% --- Linguagens Personalizadas (Listings) ---
 \lstdefinelanguage{json}{
     basicstyle=\normalfont\ttfamily\footnotesize,
     backgroundcolor=\color{jsonbg},
@@ -61,6 +63,25 @@
       {\}}{{{\color{jsonbrace}{\}}}}}{1}
       {[}{{{\color{jsonbrace}{[}}}}{1}
       {]}{{{\color{jsonbrace}{]}}}}{1}
+}
+
+\lstdefinelanguage{kotlin}{
+    basicstyle=\normalfont\ttfamily\footnotesize,
+    backgroundcolor=\color{jsonbg},
+    frame=single,
+    framerule=0.3pt,
+    rulecolor=\color{gray!25},
+    showstringspaces=false,
+    breaklines=true,
+    columns=fullflexible,
+    keepspaces=true,
+    keywords={fun, val, var, class, interface, object, when, if, else, return, true, false, null, is, as, in, suspend, data, sealed, override, internal, private, by, it},
+    keywordstyle=\color{blue!70!black}\bfseries,
+    stringstyle=\color{OliveGreen},
+    commentstyle=\color{gray}\itshape,
+    morecomment=[l]{//},
+    morestring=[b]",
+    tabsize=4
 }
 
 \onehalfspacing

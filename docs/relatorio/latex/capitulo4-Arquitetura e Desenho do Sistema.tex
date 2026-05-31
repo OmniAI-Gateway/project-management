@@ -8,47 +8,50 @@ Para validar a arquitetura proposta e demonstrar a aplicabilidade do SDK num cen
 
 Esta separação entre SDK e Gateway constitui uma das principais decisões arquiteturais do projeto. O SDK concentra toda a lógica reutilizável e independente do contexto de execução, enquanto cada Gateway representa uma instanciação específica dessa infraestrutura, podendo ser configurada para diferentes fornecedores, requisitos operacionais ou cenários de utilização sem necessidade de alterar os componentes centrais do sistema.
 
-
 \begin{figure}[H]
     \centering
     \begin{tikzpicture}[
-        node distance=1.2cm and 1.5cm,
-        box/.style={rectangle, draw, rounded corners, align=center, text width=3.8cm, minimum height=1.2cm, inner sep=5pt, thick},
+        node distance=1.2cm and 2.0cm,
+        box/.style={rectangle, draw, rounded corners, align=center, text width=4.0cm, minimum height=1.2cm, inner sep=5pt, thick},
         inner/.style={rectangle, draw, rounded corners, align=center, text width=4.5cm, minimum height=1.0cm, fill=white, inner sep=5pt, thick},
         sdk/.style={rectangle, draw, rounded corners, align=center, text width=4.5cm, minimum height=1.0cm, fill=gray!20, inner sep=5pt, thick},
         group/.style={rectangle, draw, rounded corners, dashed, inner sep=15pt},
         arrow/.style={-Latex, thick},
         internal-arrow/.style={-Latex, thick, dashed, gray}
     ]
-        % --- CLIENTES ---
-        \node[box] (clients) {Clientes externos\\ex: REST Client, Claude Code};
+        % --- CLIENTS ---
+        \node[box] (clients) {External Clients\\ \footnotesize{(e.g., REST Client, Applications)}};
 
-        % --- OMNIAI GATEWAY (Instância) ---
-        \node[inner, right=1.5cm of clients, yshift=1.5cm] (config) {Instância da Gateway (PoC)};
-        \node[inner, below=0.6cm of config] (ktor) {Gateway Endpoints HTTP\\(Ktor)};
+        % --- OMNIAI GATEWAY (Instance) ---
+        \node[inner, right=1.5cm of clients, yshift=1.5cm] (config) {Gateway Instance};
+        \node[inner, below=0.6cm of config] (ktor) {Gateway HTTP Endpoints};
         \node[sdk, below=0.6cm of ktor] (sdk) {\textbf{OmniAI SDK}\\ \footnotesize{(Core, DSL, Pipeline, Adapters)}};
 
-        % Setas internas lógicas (A instância usa os endpoints que expõem o SDK)
+        % Internal logical arrows
         \draw[internal-arrow] (config.south) -- (ktor.north);
         \draw[internal-arrow] (ktor.south) -- (sdk.north);
 
-        % O grupo "fit" envolve os blocos internos
-        \node[group, fit=(config)(ktor)(sdk), label={[align=center]above:\textbf{Aplicação: OmniAI Gateway}}] (gatewayGroup) {};
+        % The "fit" group wraps the internal blocks
+        \node[group, fit=(config)(ktor)(sdk), label={[align=center]above:\textbf{Application: OmniAI Gateway}}] (gatewayGroup) {};
 
-        % --- LADO DIREITO ---
-        \node[box, right=1.5cm of ktor] (providers) {Fornecedores de inferência\\Gemini, Anthropic, OpenAI/Groq};
-        \node[box, below=0.8cm of providers] (observability) {Operação e Telemetria\\Logto, OTel, Prometheus};
+        % --- RIGHT SIDE (Agnostic / Conceptual) ---
+        \node[box, right=2.0cm of ktor] (providers) {Inference Providers\\ \footnotesize{(e.g., OpenAI, Anthropic, Gemini)}};
+        \node[box, above=0.6cm of providers] (auth) {Authorization Server\\ \footnotesize{(OIDC / OAuth2 Protocol)}};
+        \node[box, below=0.6cm of providers] (telemetry) {Observability \& Telemetry\\ \footnotesize{(OpenTelemetry Protocol)}};
 
-        % --- LIGAÇÕES EXTERNAS ---
-        % Entrada do grupo
-        \draw[arrow] (clients.east) -- node[above, font=\footnotesize]{} (gatewayGroup.west);
+        % --- EXTERNAL CONNECTIONS ---
+        % Group Input
+        \draw[arrow] (clients.east) -- (gatewayGroup.west);
 
-        % Saídas do grupo
-        \draw[arrow] (gatewayGroup.east) |- (providers.west);
-        \draw[arrow] (gatewayGroup.east) |- (observability.west);
+        % Group Outputs (Using a fork point to avoid overlapping the dashed border)
+        \coordinate (fork) at ([xshift=0.8cm]gatewayGroup.east);
+        \draw[thick] (gatewayGroup.east) -- (fork);
+        \draw[arrow] (fork) |- (auth.west);
+        \draw[arrow] (fork) -- (providers.west);
+        \draw[arrow] (fork) |- (telemetry.west);
 
     \end{tikzpicture}
-    \caption{Arquitetura \textit{top-level}: O OmniAI SDK utilizado para instanciar uma OmniAI Gateway (configurada como PoC).}
+    \caption{Arquitetura Top Level: O OmniAI SDK utilizado para instanciar uma OmniAI Gateway, abstraindo integrações externas padronizadas.}
     \label{fig:top-level}
 \end{figure}
 
@@ -85,7 +88,7 @@ Neste contexto, a Arquitetura Hexagonal revelou-se a solução mais adequada par
     \subsection{Inbounds}
     Os \textit{inbound adapters} recebem pedidos no formato do cliente e traduzem-nos para \texttt{CommonRequest}. Cada inbound implementa a porta \texttt{InboundPort} e recebe um \texttt{DispatcherPort}, não uma implementação concreta de pipeline ou de fornecedor. Além disso, cada inbound usa uma implementação de \texttt{InboundTranslator}, responsável por converter o objeto de entrada para domínio e por converter a resposta comum de volta para o contrato do cliente.
 
-    Esta decisão evita que o inbound exponha diretamente uma Web API. O SDK fornece adapters que trabalham sobre objetos de transferência, e a exposição HTTP fica noutro adapter, como o \texttt{gateway-ktor-server}. Assim, um servidor Ktor, uma função serverless, um handler Express ou outro mecanismo de entrada podem chamar o mesmo inbound desde que consigam construir o DTO esperado. Esta separação reduz a dependência do domínio e dos inbounds face a bibliotecas HTTP externas.
+    Esta decisão evita que o inbound exponha diretamente uma Web API. O SDK fornece adapters que trabalham sobre objetos de transferência, e a exposição HTTP fica noutro adapter, como o \texttt{gateway-ktor-server} (detalhado na Secção~\ref{sec:gateway-ktor-server}). Assim, um servidor Ktor, uma função serverless, um handler Express ou outro mecanismo de entrada podem chamar o mesmo inbound desde que consigam construir o DTO esperado. Esta separação reduz a dependência do domínio e dos inbounds face a bibliotecas HTTP externas.
 
     \subsection{Outbounds}
     Os \textit{outbound adapters} fazem o caminho inverso: recebem um \texttt{CommonRequest}, traduzem-no para o contrato do fornecedor real e executam a chamada externa. Cada \textit{outbound} implementa \texttt{OutboundPort}, identifica \texttt{provider}, \texttt{model} e \texttt{key}, e delega a tradução num \texttt{OutboundTranslator}. A implementação atual inclui \textit{outbounds} para OpenAI, Anthropic e Gemini.
@@ -101,9 +104,7 @@ Neste contexto, a Arquitetura Hexagonal revelou-se a solução mais adequada par
 
     O resultado de qualquer chamada HTTP é representado pela classe selada \texttt{HttpCallResult}, parametrizada pelo tipo da resposta esperada. Esta classe cobre os seguintes casos: \texttt{Success}, que encapsula os dados desserializados; \texttt{ApiError}, que retém o código de estado HTTP e o corpo da resposta de erro; \texttt{NetworkError}, originado por falhas de conectividade; \texttt{SerializationError}, resultante de respostas com formato inesperado; e \texttt{UnknownError}, para situações não classificadas. Todos os casos carregam um \texttt{TypedMap} de metadados, que permite propagar cabeçalhos de resposta e outras informações contextuais para os adaptadores e intercetores de forma estruturada.
 
-    A implementação concreta fornecida pelo \textit{SDK}, \texttt{KtorHttpTransportClient}, assenta no cliente HTTP Ktor e reside no módulo \texttt{contracts:ktor-http}. Esta implementação suporta retentativas configuráveis com atraso entre tentativas, tratamento explícito de exceções de rede e de serialização, e integração com SSE nativo do Ktor. A configuração do cliente HTTP subjacente é realizada através de \texttt{PlatformHttpClient}, que inclui \textit{timeouts} de ligação e de \textit{socket}, suporte a \textit{Content Negotiation} e o \textit{plugin} SSE. Esta configuração é fornecida por implementações específicas de plataformaneste caso JVM e JavaScript, permitindo ao \textit{SDK} operar como uma biblioteca \textit{Kotlin Multiplatform}.
-
-    A separação entre a interface \texttt{HttpTransportClient} e a sua implementação em Ktor tem implicações práticas relevantes. Em contextos de teste, os \textit{outbounds} podem ser exercitados com um cliente fictício sem realizar chamadas reais. Em contextos de produção, é possível substituir a implementação padrão por uma versão instrumentada com métricas, por um cliente com configurações específicas de \textit{proxy} ou por uma implementação adaptada a um ambiente de execução distinto, sem alterar qualquer lógica de adaptação ou de domínio.
+    A implementação concreta desta interface é descrita na Secção~\ref{sec:ktor-transport-impl}.
 
     \subsection{Dispatcher}
     O \texttt{DispatcherPort} é a porta chamada pelos inbounds para executar um \texttt{CommonRequest}. A sua responsabilidade não é, por si só, conter inteligência de roteamento; é despachar o pedido para uma estratégia de execução. No SDK é fornecida uma implementação simples, criada por \texttt{routingDispatcherFactory}, que procura o outbound cujo \texttt{provider} e \texttt{model} correspondem aos campos do pedido e envia a chamada para esse adapter.
