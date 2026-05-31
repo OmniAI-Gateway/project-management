@@ -201,11 +201,12 @@ Esta arquitetura permite adaptar o comportamento da camada HTTP ao contexto de e
 
     \section{Translators de Entrada (Inbound)}
 
-    Os \textit{Inbound Translators} implementam a conversão do pedido original de um cliente, de uma resposta completa, e de eventos intermédios em \textit{streaming} originários do domínio para a semântica do cliente.
+Os \textit{Inbound Translators} são responsáveis por converter os contratos específicos de cada fornecedor de inferência para o modelo de domínio comum do \textbf{OmniAI SDK}, e realizar o processo inverso na geração de respostas.
+Além da tradução de pedidos e respostas completas, estes componentes também adaptam eventos incrementais de \textit{streaming} para o formato esperado por cada API.
 
     \subsection{OpenAI Inbound Translator}
 
-    A implementação \texttt{OpenAiInboundTranslator} processa pedidos conformes à sintaxe da OpenAI.
+A implementação \texttt{OpenAiInboundTranslator} adapta os contratos compatíveis com a API da OpenAI para o domínio comum.
     
 \begin{table}[H]
     \centering
@@ -215,25 +216,37 @@ Esta arquitetura permite adaptar o comportamento da camada HTTP ao contexto de e
         \hline
         \textbf{Contrato Inbound (OpenAI)} & \textbf{Mapeamento para CommonRequest} \\
         \hline
-        temperature, maxTokens, topP & Integrados na \texttt{CommonGenerationConfig}. O \texttt{model} é mapeado diretamente no nível superior do \texttt{CommonRequest}. \\
+        temperature, maxTokens, topP &
+        Integrados na \texttt{CommonGenerationConfig}. O campo \texttt{model} é mapeado diretamente para o nível superior do \texttt{CommonRequest}. \\
         \hline
-        stop & Resolvedor distingue entre \texttt{Single} e \texttt{Multiple} e produz \texttt{List<String>}. \\
+        stop &
+        É convertido para uma \texttt{List<String>}, distinguindo automaticamente entre valores únicos (\texttt{Single}) e múltiplos (\texttt{Multiple}). \\
         \hline
-        messages[].role & Traduzido estritamente para \texttt{SYSTEM}, \texttt{ASSISTANT}, \texttt{TOOL}, \texttt{USER} (padrão se omisso). \\
+        messages[].role &
+        Convertido diretamente para os papéis do domínio comum: \texttt{SYSTEM}, \texttt{ASSISTANT}, \texttt{TOOL} e \texttt{USER} (utilizado por defeito quando omisso). \\
         \hline
-        messages[].content \& toolCalls & Content gera \texttt{TextPart}. Chamadas de ferramenta geram \texttt{ToolCallPart(toolCallId, functionName)} com os argumentos encapsulados num mapa sob a chave "raw". Se o papel for \texttt{TOOL}, gera \texttt{ToolResultPart} convertendo o texto para primitivas JSON. \\
+        messages[].content \& toolCalls &
+        O conteúdo origina instâncias de \texttt{TextPart}. As chamadas de ferramentas são convertidas em \texttt{ToolCallPart(toolCallId, functionName)}, com os argumentos encapsulados num mapa sob a chave \texttt{"raw"}. Quando o papel é \texttt{TOOL}, é gerado um \texttt{ToolResultPart}, convertendo o conteúdo textual para primitivas JSON. \\
         \hline
-        tools[].function & \texttt{CommonTool(name, description, parametersSchema)} extraindo as propriedades do schema. \\
+        tools[].function &
+        Convertido para \texttt{CommonTool(name, description, parametersSchema)}, extraindo as propriedades definidas no schema da ferramenta. \\
         \hline
-        toolChoice & Resolve de \texttt{auto/none/required} para \texttt{ToolChoice.Auto/None/Required}, ou resolve a chamada específica de função. \\
+        toolChoice &
+        Converte os valores \texttt{auto}, \texttt{none} e \texttt{required} para os respetivos tipos do domínio comum (\texttt{ToolChoice.Auto}, \texttt{ToolChoice.None} e \texttt{ToolChoice.Required}), podendo também representar a seleção explícita de uma função específica. \\
         \hline
-        responseFormat & Avalia \texttt{type == "json\_object"} ou \texttt{"json\_schema"} como \texttt{jsonResponse = true}. \\
+        responseFormat &
+        Verifica se o tipo corresponde a \texttt{"json\_object"} ou \texttt{"json\_schema"}, ativando a opção \texttt{jsonResponse}. \\
         \hline
-        stream, frequencyPenalty, presencePenalty, n, seed, user, logitBias, logProbs, topLogProbs & Colocados na \texttt{TypedMap} (\texttt{providerOptions}) do \texttt{CommonRequest}, servindo como opções específicas não abrangidas pelo domínio comum. \\
+        stream, frequencyPenalty, presencePenalty, n, seed, user, logitBias, logProbs, topLogProbs &
+        Armazenados na \texttt{TypedMap} (\texttt{providerOptions}) do \texttt{CommonRequest}, preservando opções específicas do fornecedor que não possuem representação no domínio comum. \\
         \hline
     \end{tabularx}
-\caption{Mapeamento Inbound: OpenAI Request para Domínio}
+    \caption{Mapeamento Inbound: OpenAI Request para o Domínio Comum}
+    \label{tab:openai-inbound-mapping}
 \end{table}
+
+
+No sentido inverso, a tradução da resposta converte os objetos do domínio comum para a estrutura nativa da API da OpenAI.
 
 \begin{table}[H]
     \centering
@@ -243,20 +256,28 @@ Esta arquitetura permite adaptar o comportamento da camada HTTP ao contexto de e
         \hline
         \textbf{Domínio Comum} & \textbf{Mapeamento para Contrato Resposta (OpenAI)} \\
         \hline
-        id \& created & Utiliza o \texttt{id} nativo ou gera um UUID \texttt{chatcmpl-...}. O tempo é recuperado das \texttt{providerOptions} ou gerado pelo \texttt{Clock.System}. \\
+        id \& created &
+        Utiliza o \texttt{id} nativo ou gera um identificador no formato \texttt{chatcmpl-UUID}. O instante temporal é recuperado das \texttt{providerOptions} ou gerado pelo \texttt{Clock.System}. \\
         \hline
-        choices[].message.content & O conteúdo é destilado via \texttt{firstRenderableContentOrNull()} que privilegia o primeiro \texttt{TextPart}, caindo em \texttt{RefusalPart} ou representação string de \texttt{JsonPart}. \\
+        choices[].message.content &
+        O conteúdo é obtido através de \texttt{firstRenderableContentOrNull()}, privilegiando o primeiro \texttt{TextPart} e recorrendo a \texttt{RefusalPart} ou à representação textual de \texttt{JsonPart} quando necessário. \\
         \hline
         choices[].message
-        .toolCalls & Um \texttt{ToolCallPart} origina um \texttt{OpenAiToolCallOutput} formatando os \texttt{argumentsJson} num string unificado. \\
+        .toolCalls &
+        Um \texttt{ToolCallPart} é convertido para um \texttt{OpenAiToolCallOutput}, formatando os \texttt{argumentsJson} numa única representação textual. \\
         \hline
-        choices[].finishReason & Traduz \texttt{STOP -> stop}, \texttt{LENGTH -> length}, \texttt{TOOL\_CALL -> tool\_calls}, \texttt{CONTENT\_FILTER -> content\_filter}. \\
+        choices[].finishReason &
+        Converte \texttt{STOP} para \texttt{stop}, \texttt{LENGTH} para \texttt{length}, \texttt{TOOL\_CALL} para \texttt{tool\_calls} e \texttt{CONTENT\_FILTER} para \texttt{content\_filter}. \\
         \hline
-        usage & Mapeia \texttt{inputTokens}, \texttt{outputTokens} e \texttt{totalTokens} para \texttt{promptTokens}, \texttt{completionTokens} e \texttt{totalTokens}, respetivamente. \\
+        usage &
+        Mapeia \texttt{inputTokens}, \texttt{outputTokens} e \texttt{totalTokens} para \texttt{promptTokens}, \texttt{completionTokens} e \texttt{totalTokens}, respetivamente. \\
         \hline
     \end{tabularx}
-\caption{Mapeamento Inbound: Domínio para OpenAI Response Unária}
+    \caption{Mapeamento Inbound: Domínio para OpenAI Response Unária}
 \end{table}
+
+
+Para respostas em \textit{streaming}, os eventos internos do domínio são convertidos para os \textit{chunks} SSE utilizados pela OpenAI.
 
 \begin{table}[H]
     \centering
@@ -283,7 +304,7 @@ Esta arquitetura permite adaptar o comportamento da camada HTTP ao contexto de e
         \hline
         \texttt{ResponseCompleted} & Emite Chunk sem \textit{choices}, sinalizando a conclusão bem-sucedida do stream. \\
         \hline
-        \texttt{ResponseErrored} & Emite Chunk injetando a mensagem de erro como texto no \texttt{delta.content} (simplificação face ao formato de erro nativo SSE da OpenAI). \\
+        \texttt{ResponseErrored} & Emite Chunk injetando a mensagem de erro como texto no \texttt{delta.content}. \\
         \hline
     \end{tabularx}
 \caption{Mapeamento Inbound: Domínio para OpenAI Streaming (\texttt{fromDomainEvent})}
@@ -291,8 +312,7 @@ Esta arquitetura permite adaptar o comportamento da camada HTTP ao contexto de e
 
 \subsection{Anthropic Inbound Translator}
 
-A integração de entrada da Anthropic converte requisições que utilizam a sintaxe \textit{Messages API}.
-
+O \texttt{AnthropicInboundTranslator} adapta os contratos compatíveis com a \textit{Messages API} da Anthropic para o domínio comum.
 
 \begin{table}[H]
     \centering
@@ -302,27 +322,28 @@ A integração de entrada da Anthropic converte requisições que utilizam a sin
         \hline
         \textbf{Contrato Inbound (Anthropic)} & \textbf{Mapeamento para CommonRequest} \\
         \hline
-        temperature, maxTokens, topP, stopSequences & Integrados na \texttt{CommonGenerationConfig}. O \texttt{model} é mapeado diretamente no nível superior do \texttt{CommonRequest}. \\
+        temperature, maxTokens, topP, stopSequences & Agrupados na \texttt{CommonGenerationConfig}. O campo \texttt{model}, por sua vez, fica mapeado logo na raiz do \texttt{CommonRequest}. \\
         \hline
-        system & A matriz de \texttt{AnthropicContent} converte \texttt{ListContentBlock} em \texttt{SystemPrompt} através da concatenação estrita de nós textuais via \texttt{joinToString()}. É ignorado se estiver em branco. \\
+        system & A lista de \texttt{AnthropicContent} transforma os blocos de texto num \texttt{SystemPrompt}, juntando tudo numa única string através de um \texttt{joinToString()}. Se o conteúdo estiver em branco, é simplesmente ignorado. \\
         \hline
-        messages[].role & Convertido estritamente para os enumerados \texttt{SYSTEM}, \texttt{ASSISTANT}, \texttt{TOOL}, \texttt{USER}. \\
+        messages[].role & Convertido de forma direta para os enums de domínio: \texttt{SYSTEM}, \texttt{ASSISTANT}, \texttt{TOOL} ou \texttt{USER}. \\
         \hline
-        messages[].content & \texttt{Text} gera \texttt{TextPart}. \texttt{ToolUse} gera \texttt{ToolCallPart(id, name, input)}, com fallback automático para o ID (\texttt{"anthropic-tool-use-\$index"}). \texttt{ToolResult} injeta num \texttt{ToolResultPart}. \textbf{Nota}: Nós \texttt{Thinking} (raciocínio interno) presentes no input são descartados e devolvem \texttt{null}. \\
+        messages[].content & O \texttt{Text} passa a \texttt{TextPart}. O \texttt{ToolUse} dá origem a um \texttt{ToolCallPart(id, name, input)}, gerando um ID automático (\texttt{"anthropic-tool-use-\$index"}) se for necessário. O \texttt{ToolResult} é encapsulado num \texttt{ToolResultPart}. \textbf{Nota}: Blocos de \texttt{Thinking} (raciocínio interno) que venham no input são ignorados e retornam \texttt{null}. \\
         \hline
-        tools & Lista mapeada para \texttt{CommonTool}. O \texttt{inputSchema} é promovido para um \texttt{JsonObject} universal no campo \texttt{parametersSchema}. \\
+        tools & A lista é mapeada para instâncias de \texttt{CommonTool}. O \texttt{inputSchema} original é convertido num \texttt{JsonObject} genérico e guardado no campo \texttt{parametersSchema}. \\
         \hline
-        toolChoice & Traduz estritamente \texttt{auto -> Auto}, \texttt{none -> None}, \texttt{any -> Required}, e instâncias \texttt{tool -> Specific(name)}. \\
+        toolChoice & Traduzido diretamente: \texttt{auto} para \texttt{Auto}, \texttt{none} para \texttt{None}, \texttt{any} para \texttt{Required}, e os casos de \texttt{tool} passam a \texttt{Specific(name)}. \\
         \hline
-        \normalfont\textit{(Constantes da Integração)} & O campo \texttt{provider} é fixado como \texttt{Provider.ANTHROPIC} e \texttt{jsonResponse} como \texttt{false}. \\
+        \normalfont\textit{(Constantes da Integração)} & O \texttt{provider} fica definido estaticamente como \texttt{Provider.ANTHROPIC} e o \texttt{jsonResponse} assume sempre o valor \texttt{false}. \\
         \hline
-        stream, topK, stopToken, thinking, metadata & Opções específicas avançadas transferidas para a \texttt{TypedMap} (\texttt{providerOptions}) do \texttt{CommonRequest}. \\
+        stream, topK, stopToken, thinking, metadata & Por serem opções específicas e mais avançadas, são guardadas no \texttt{TypedMap} (\texttt{providerOptions}) dentro do \texttt{CommonRequest}. \\
         \hline
     \end{tabularx}
-    \caption{Mapeamento Inbound: Anthropic Request para Dominio}
+    \caption{Mapeamento Inbound: Request da Anthropic para o Domínio}
 \end{table}
 
-Na resposta unária (\texttt{fromDomain}), a conversão reverte a abstração semântica para a estrutura \texttt{AnthropicMessageResponse}, forçando o papel nativo para \texttt{"assistant"}.
+No sentido inverso, a resposta do domínio comum é convertida para o formato \texttt{Anthropic\allowbreak{}Message\allowbreak{}Response}
+
 
 \begin{table}[H]
     \centering
@@ -346,8 +367,7 @@ Na resposta unária (\texttt{fromDomain}), a conversão reverte a abstração se
 \caption{Mapeamento Inbound: Domínio para Anthropic Message Response Unária}
 \end{table}
 
-No fluxo reativo (\textit{Server-Sent Events} - SSE), a abstração emite os eventos específicos documentados pela Anthropic.
-
+Em modo \textit{streaming}, os eventos do domínio são traduzidos para os eventos SSE definidos pela Anthropic.
 \begin{table}[H]
     \centering
     \footnotesize
@@ -356,23 +376,23 @@ No fluxo reativo (\textit{Server-Sent Events} - SSE), a abstração emite os eve
         \hline
         \textbf{Common Response Event} & \textbf{Mapeamento para Evento SSE (Anthropic)} \\
         \hline
-        \texttt{ResponseStarted} & Devolve \texttt{MessageStart} com metadados estáticos e \texttt{role="assistant"}. \\
+        \texttt{ResponseStarted} & Retorna um evento \texttt{MessageStart} com metadados estáticos, assumindo o papel de \texttt{role="assistant"}. \\
         \hline
-        \texttt{ChoiceStarted} & Devolve \texttt{ContentBlockStart} com o índice da \textit{choice}, anunciando um bloco de \texttt{Text}. \\
+        \texttt{ChoiceStarted} & Emite um \texttt{ContentBlockStart} com o índice da \textit{choice} correspondente, indicando o início de um bloco de \texttt{Text}. \\
         \hline
-        \texttt{TextDeltaEvent} & Traduz o \texttt{text} nativamente para o evento SSE \texttt{ContentBlockDelta(TextDelta)}. \\
+        \texttt{TextDeltaEvent} & O fragmento de texto (\texttt{text}) é repassado de forma direta para o evento SSE \texttt{ContentBlockDelta(TextDelta)}. \\
         \hline
-        \texttt{ToolCallStartedEvent} & Inicia um bloco via \texttt{ContentBlockStart(ToolUse)}, preservando o \texttt{id} e \texttt{name} e injetando um \texttt{JsonObject} vazio. \\
+        \texttt{ToolCallStartedEvent} & Inicia o bloco com um \texttt{ContentBlockStart(ToolUse)}, mantendo o \texttt{id} e o \texttt{name} originais, e inicializando a chamada com um \texttt{JsonObject} vazio. \\
         \hline
-        \texttt{ToolCallArgumentsDeltaEvent}& Transmite fragmentos parciais de argumentos delegando num SSE \texttt{ContentBlockDelta(InputJsonDelta)}. \\
+        \texttt{ToolCallArgumentsDeltaEvent}& Encaminha os fragmentos parciais dos argumentos recebidos para um evento SSE do tipo \texttt{ContentBlockDelta(InputJsonDelta)}. \\
         \hline
-        \texttt{ChoiceFinished} & Emite o evento SSE \texttt{MessageDelta} contendo a sumarização convertida para \texttt{stopReason}. \\
+        \texttt{ChoiceFinished} & Gera um evento \texttt{MessageDelta} que inclui o motivo de paragem (\texttt{stopReason}) associado a esta \textit{choice}. \\
         \hline
-        \texttt{UsageReported} & Emite o evento SSE \texttt{MessageDelta} informando a sumarização de tokens processados. \\
+        \texttt{UsageReported} & Gera um evento \texttt{MessageDelta} contendo a contagem atualizada de tokens processados. \\
         \hline
-        \texttt{ResponseCompleted} & Emite o evento de fecho de fluxo \texttt{MessageStop}. \\
+        \texttt{ResponseCompleted} & Emite o evento \texttt{MessageStop}, sinalizando o fecho definitivo da \textit{stream}. \\
         \hline
-        \texttt{ResponseErrored} & Interrompe a \textit{stream} enviando um evento \texttt{Error}, distinguindo falhas transitórias via tipo \texttt{overloaded\_error} vs \texttt{api\_error}. \\
+        \texttt{ResponseErrored} & Interrompe a \textit{stream} com um evento de \texttt{Error}. Faz-se a distinção entre falhas temporárias (\texttt{overloaded\_error}) e erros gerais da API (\texttt{api\_error}). \\
         \hline
     \end{tabularx}
     \caption{Mapeamento Inbound: Eventos SSE Anthropic (\texttt{fromDomainEvent})}
@@ -380,97 +400,97 @@ No fluxo reativo (\textit{Server-Sent Events} - SSE), a abstração emite os eve
 
     \subsection{Gemini Inbound Translator}
 
-    A camada de tradução de entrada para a API Gemini normaliza as assimetrias da abstração de objetos \texttt{GenerateContent}.
+O \texttt{GeminiInboundTranslator} adapta os contratos compatíveis com a API Gemini para o domínio comum.
 
-    \begin{table}[H]
-        \centering
-        \footnotesize
-        \renewcommand{\arraystretch}{1.25}
-        \begin{tabularx}{\textwidth}{|>{\ttfamily\raggedright\arraybackslash}p{4.5cm}|Y|}
-            \hline
-            \textbf{Contrato Inbound (Gemini)} & \textbf{Mapeamento para CommonRequest} \\
-            \hline
-            generationConfig & Propriedades base (\texttt{temperature}, \texttt{topP}, \texttt{stopSequences}) extraídas para a \texttt{CommonGenerationConfig}. \\
-            \hline
-            model & Identificador extraído do \textit{path} HTTP. Em caso de ausência absoluta aplica o \textit{fallback} de constante \texttt{"NO MODEL"}. \\
-            \hline
-            systemInstruction & Transposto para \texttt{SystemPrompt} unindo as \texttt{parts} de texto disponíveis num único bloco com separação de linha. \\
-            \hline
-            contents[].role & Mapeia papéis convertendo \texttt{model} ou \texttt{assistant} $\rightarrow$ \texttt{ASSISTANT}, \texttt{function} $\rightarrow$ \texttt{TOOL}, e mantendo \texttt{user}. \\
-            \hline
-            contents[].parts & \texttt{text} gera \texttt{TextPart}. \texttt{functionCall} gera \texttt{ToolCallPart}. \texttt{functionResponse} gera \texttt{ToolResultPart}. \\
-            \hline
-            tools[].functionDeclarations & Realiza o \textit{flattening} da hierarquia (\texttt{tools -> functionDeclarations}) para nivelar numa única \texttt{List<CommonTool>}. \\
-            \hline
-            toolConfig.functionCallingConfig & Mapeia \texttt{mode} (ex: \texttt{auto -> Auto}, \texttt{any -> Required}) e converte chamadas permitidas em escolhas específicas. \\
-            \hline
-            generationConfig.responseMimeType & Infere \texttt{jsonResponse = true} se for \texttt{application/json} ou se existir explicitamente um \texttt{responseJsonSchema}. \\
-            \hline
-            topK, thinkingConfig & Opções específicas avançadas transferidas para a \texttt{TypedMap} (\texttt{providerOptions}) do \texttt{CommonRequest}. \\
-            \hline
-        \end{tabularx}
-        \caption{Mapeamento Inbound: Gemini Request}
-    \end{table}
+\begin{table}[H]
+    \centering
+    \footnotesize
+    \renewcommand{\arraystretch}{1.25}
+    \begin{tabularx}{\textwidth}{|>{\ttfamily\raggedright\arraybackslash}p{4.5cm}|Y|}
+        \hline
+        \textbf{Contrato Inbound (Gemini)} & \textbf{Mapeamento para CommonRequest} \\
+        \hline
+        generationConfig & As propriedades base (\texttt{temperature}, \texttt{topP}, \texttt{stopSequences}) são extraídas diretamente para a \texttt{CommonGenerationConfig}. \\
+        \hline
+        model & O identificador do modelo é extraído a partir do \textit{path} HTTP. Caso não seja fornecido, assume-se a constante \texttt{"NO MODEL"} como \textit{fallback}. \\
+        \hline
+        systemInstruction & Convertido para um \texttt{SystemPrompt}, agrupando todas as \texttt{parts} de texto num único bloco contínuo, separadas por quebras de linha. \\
+        \hline
+        contents[].role & Adapta os papéis nativos para o domínio: \texttt{model} e \texttt{assistant} passam a \texttt{ASSISTANT}, \texttt{function} passa a \texttt{TOOL}, enquanto \texttt{user} se mantém inalterado. \\
+        \hline
+        contents[].parts & O conteúdo é transformado de acordo com o seu tipo: \texttt{text} gera um \texttt{TextPart}, \texttt{functionCall} origina um \texttt{ToolCallPart}, e \texttt{functionResponse} converte-se em \texttt{ToolResultPart}. \\
+        \hline
+        tools[].functionDeclarations & A hierarquia aninhada (\texttt{tools -> functionDeclarations}) é simplificada (\textit{flattened}) para criar uma lista única de ferramentas (\texttt{List<CommonTool>}). \\
+        \hline
+        toolConfig\newline.functionCallingConfig & O modo de execução é adaptado (ex: \texttt{auto} passa a \texttt{Auto}, \texttt{any} a \texttt{Required}), e as chamadas de funções permitidas são convertidas em escolhas específicas. \\
+        \hline
+        generationConfig\newline.responseMimeType & A \textit{flag} \texttt{jsonResponse} assume o valor \texttt{true} caso o tipo MIME seja \texttt{application/json} ou se existir um \texttt{responseJsonSchema} explicitamente definido. \\
+        \hline
+        topK, thinkingConfig & Por se tratarem de configurações mais avançadas e específicas do Gemini, são guardadas no \texttt{TypedMap} (\texttt{providerOptions}) do \texttt{CommonRequest}. \\
+        \hline
+    \end{tabularx}
+    \caption{Mapeamento Inbound: Request da Gemini para o Domínio}
+\end{table}
 
-    De modo recíproco, no mapeamento da resposta unária (\texttt{fromDomain}), os objetos de domínio são transportados para a gramática altamente tipada das \texttt{GeminiGenerateContentResponse}.
+No sentido inverso, a resposta do domínio comum é convertida para o formato \texttt{Gemini\allowbreak{}Generate\allowbreak{}Content\allowbreak{}Response}.
 
-    \begin{table}[H]
-        \centering
-        \footnotesize
-        \renewcommand{\arraystretch}{1.25}
-        \begin{tabularx}{\textwidth}{|>{\ttfamily\raggedright\arraybackslash}p{4cm}|Y|}
-            \hline
-            \textbf{Domínio Comum} & \textbf{Mapeamento para Contrato Resposta (Gemini)} \\
-            \hline
-            id \& model & Copiados diretamente para \texttt{responseId} e \texttt{modelVersion}. \\
-            \hline
-            choices & Geram os respetivos \texttt{GeminiCandidate}, acoplando o índice e revertendo a hierarquia de papéis (\texttt{SYSTEM/ASSISTANT -> "model"}, \texttt{TOOL -> "function"}, \texttt{USER -> "user"}). \\
-            \hline
-            choices[].message.content & De forma simétrica, processa \texttt{TextPart} gerando os campos textuais de um \texttt{GeminiResponsePart}, instancia o nó de propriedades no caso dos \texttt{ToolCallPart}, converte \texttt{JsonPart} como uma literal \texttt{String} em texto JSON e reverte os \texttt{RefusalPart} apresentando a razão recusa da geração de conteúdo. \\
-            \hline
-            choices[].finishReason & Transposto restritamente para as constantes enumeradas \texttt{STOP}, \texttt{MAX\_TOKENS} e \texttt{SAFETY}. \\
-            \hline
-            usage & Compacta e renomeia contadores de abstração para a estrutura dimensional \texttt{GeminiUsageMetadata} (\texttt{promptTokenCount}, \texttt{candidatesTokenCount}). \\
-            \hline
-        \end{tabularx}
-        \caption{Mapeamento Inbound: Domínio para Gemini Generate Content Response Unária}
-    \end{table}
+\begin{table}[H]
+    \centering
+    \footnotesize
+    \renewcommand{\arraystretch}{1.25}
+    \begin{tabularx}{\textwidth}{|>{\ttfamily\raggedright\arraybackslash}p{4cm}|Y|}
+        \hline
+        \textbf{Domínio Comum} & \textbf{Mapeamento para Contrato Resposta (Gemini)} \\
+        \hline
+        id \& model & São atribuídos de forma direta aos campos \texttt{responseId} e \texttt{modelVersion} do Gemini. \\
+        \hline
+        choices & Dão origem aos respetivos objetos \texttt{GeminiCandidate}, preservando o índice da resposta. A conversão de papéis é feita no sentido inverso: \texttt{SYSTEM} e \texttt{ASSISTANT} passam a \texttt{"model"}, \texttt{TOOL} a \texttt{"function"}, e \texttt{USER} mantém-se como \texttt{"user"}. \\
+        \hline
+        choices[].message\newline.content & De forma simétrica, o conteúdo é traduzido consoante a sua natureza: um \texttt{TextPart} gera o texto base de um \texttt{GeminiResponsePart}; um \texttt{ToolCallPart} preenche o nó correspondente à chamada de função; um \texttt{JsonPart} é convertido numa \texttt{String} com o conteúdo JSON; e um \texttt{RefusalPart} é exposto indicando o motivo pelo qual o modelo recusou a geração. \\
+        \hline
+        choices[].finishReason & Mapeado diretamente para os motivos de paragem nativos do Gemini: \texttt{STOP}, \texttt{MAX\_TOKENS} ou \texttt{SAFETY}. \\
+        \hline
+        usage & Os contadores genéricos do domínio são convertidos e agrupados na estrutura \texttt{GeminiUsageMetadata}, alimentando os campos \texttt{promptTokenCount} e \texttt{candidatesTokenCount}. \\
+        \hline
+    \end{tabularx}
+    \caption{Mapeamento Inbound: Domínio para Gemini Generate Content Response Unária}
+\end{table}
 
-    No fluxo de \textit{streaming} via Server-Sent Events (SSE), a API do Gemini distingue-se por não possuir objetos dedicados a deltas parciais (ao contrário da OpenAI ou Anthropic). Em vez disso, a Google reutiliza o mesmo objeto estrutural completo da resposta unária (\texttt{GeminiGenerateContentResponse}) para encapsular cada fragmento progressivo da \textit{stream}. Consequentemente, o tradutor é forçado a mapear os deltas granulares de domínio (\texttt{CommonResponseEvent}) recriando exaustivamente a hierarquia profunda do DTO nativo para cada evento emitido (instanciando \texttt{candidates}, \texttt{content} e \texttt{parts} até mesmo para transmitir apenas uma simples \textit{string} parcial).
+    Durante o fluxo de \textit{streaming} via Server-Sent Events (SSE), a API do Gemini diferencia-se de forncedores de inferencia como a OpenAI ou Anthropic por não adotar objetos específicos para deltas parciais. Em vez disso, a Google opta por reaproveitar a mesma estrutura da resposta unária (\texttt{Gemini\allowbreak{}Generate\allowbreak{}Content\allowbreak{}Response}) para encapsular cada evento da \textit{stream}. Como consequência, o tradutor é obrigado a mapear os deltas granulares de domínio (\texttt{CommonResponseEvent}) reconstruindo toda a hierarquia do DTO nativo a cada evento emitido, o que exige instanciar \texttt{candidates}, \texttt{content} e \texttt{parts} mesmo quando o objetivo é transmitir apenas um pequeno pedaço de texto.
 
-    \begin{table}[H]
-        \centering
-        \footnotesize
-        \renewcommand{\arraystretch}{1.25}
-        \begin{tabularx}{\textwidth}{|>{\raggedright\arraybackslash}p{4cm}|Y|}
-            \hline
-            \textbf{Common Response Event} & \textbf{Mapeamento para Evento SSE (Gemini Chunk)} \\
-            \hline
-            \texttt{ResponseStarted} & Emite uma instância básica portadora exclusivamente de metadados como o \texttt{modelVersion} e \texttt{responseId}. \\
-            \hline
-            \texttt{ChoiceStarted} & Inicializa as instâncias de \texttt{GeminiCandidate} estipulando apenas as chaves nucleares como o índice (\texttt{index}) e papel (\texttt{role}). \\
-            \hline
-            \texttt{TextDeltaEvent} & Transfere o delta textual criando recursivamente a grelha aninhada \texttt{candidates[] -> content -> parts[] -> GeminiResponsePart(text)}. \\
-            \hline
-            \texttt{ToolCallStartedEvent} & Emite um candidato instruindo o início da função via \texttt{GeminiResponsePart(functionCall)}, configurando o nome e inicializando os argumentos num \texttt{JsonObject} nulo. \\
-            \hline
-            \texttt{ToolCallArgumentsDeltaEvent} & Atribui os fragmentos incrementais criando especificamente uma \textit{key} \texttt{"partialJson"} portadora da \textit{string fragment} bruta como um artifício de construção do \textit{payload}. \\
-            \hline
-            \texttt{ChoiceFinished} & Limita a emissão à divulgação única do carimbo \texttt{finishReason} associado à terminação da resposta parcial. \\
-            \hline
-            \texttt{UsageReported} & Emite o agrupamento total de consumos gerando o \texttt{GeminiUsageMetadata}. \\
-            \hline
-            \texttt{ResponseCompleted} & Termina e purga a corrente emitindo uma réplica estruturalmente análoga ao \texttt{ResponseStarted}. \\
-            \hline
-            \texttt{ResponseErrored} & Se a plataforma bloquear a geração, aloca de imediato um objeto \texttt{GeminiPromptFeedback} na resposta com bloqueio assinalado. É emitido com sufixos explícitos \texttt{TRANSIENT\_ERROR} para retentativas admitidas. \\
-            \hline
-        \end{tabularx}
-        \caption{Mapeamento Inbound: Eventos SSE Gemini (\texttt{fromDomainEvent})}
-    \end{table}
+\begin{table}[H]
+    \centering
+    \footnotesize
+    \renewcommand{\arraystretch}{1.25}
+    \begin{tabularx}{\textwidth}{|>{\raggedright\arraybackslash}p{4cm}|Y|}
+        \hline
+        \textbf{Common Response Event} & \textbf{Mapeamento para Evento SSE (Gemini Chunk)} \\
+        \hline
+        \texttt{ResponseStarted} & Emite uma instância básica contendo apenas os metadados iniciais, como o \texttt{modelVersion} e o \texttt{responseId}. \\
+        \hline
+        \texttt{ChoiceStarted} & Inicializa as instâncias de \texttt{GeminiCandidate}, definindo apenas os atributos essenciais, como o índice (\texttt{index}) e o papel (\texttt{role}). \\
+        \hline
+        \texttt{TextDeltaEvent} & Encaminha o fragmento de texto (\textit{delta}) reconstruindo a estrutura aninhada da resposta: \texttt{candidates[] -> content -> parts[] -> GeminiResponsePart(text)}. \\
+        \hline
+        \texttt{ToolCallStartedEvent} & Gera um candidato que assinala o início da chamada de função através de um \texttt{GeminiResponsePart(functionCall)}, configurando o seu nome e inicializando os argumentos com um \texttt{JsonObject} vazio. \\
+        \hline
+        \texttt{ToolCallArguments\newline DeltaEvent} & Transmite os fragmentos incrementais dos argumentos utilizando uma chave provisória (\texttt{"partialJson"}), que transporta a \textit{string} bruta para facilitar a posterior reconstrução do \textit{payload}. \\
+        \hline
+        \texttt{ChoiceFinished} & Emite apenas o motivo de paragem (\texttt{finishReason}) correspondente ao término desta resposta parcial (\textit{choice}). \\
+        \hline
+        \texttt{UsageReported} & Emite a contagem total de tokens consumidos, encapsulada num objeto \texttt{GeminiUsageMetadata}. \\
+        \hline
+        \texttt{ResponseCompleted} & Sinaliza o fim da \textit{stream}, emitindo um evento com uma estrutura idêntica à do \texttt{ResponseStarted}. \\
+        \hline
+        \texttt{ResponseErrored} & Caso a geração seja bloqueada pela plataforma, inclui imediatamente um \texttt{GeminiPromptFeedback} a indicar o bloqueio. Erros temporários que permitam novas tentativas (\textit{retries}) são assinalados explicitamente com \texttt{TRANSIENT\_ERROR}. \\
+        \hline
+    \end{tabularx}
+    \caption{Mapeamento Inbound: Eventos SSE Gemini (\texttt{fromDomainEvent})}
+\end{table}
 
     \section{Translators de Saída (Outbound)}
 
-    Os \textit{Outbound Translators} efetuam o ciclo simétrico: formatam o `CommonRequest` gerado pelo núcleo na notação restrita de cada fornecedor e recompõem correntes de *streaming* (SSE) desfragmentadas de volta à taxonomia dos `CommonResponseEvents`.
+    Os \textit{Outbound Translators} operam no sentido inverso aos \textit{Inbound}, são responsáveis por converter o modelo de domínio comum do OmniAI SDK para os contratos específicos de cada fornecedor de inferência, e realizar o processo inverso na receção de respostas. Além da tradução de pedidos e respostas completas, estes componentes também adaptam eventos incrementais de \textit{streaming} de volta para o formato esperado pelo domínio.
 
     \subsection{OpenAI Outbound Translator}
 
@@ -578,7 +598,8 @@ No fluxo reativo (\textit{Server-Sent Events} - SSE), a abstração emite os eve
         \caption{Mapeamento Outbound: CommonRequest para Anthropic Request}
     \end{table}
 
-    No contexto iterativo da reposta não fragmentada da Anthropic (\texttt{AnthropicMessageResponse}):
+
+No contexto iterativo da reposta não fragmentada da Anthropic (\texttt{Anthropic\allowbreak{}Message\allowbreak{}Response}):
 
     \begin{table}[H]
         \centering
