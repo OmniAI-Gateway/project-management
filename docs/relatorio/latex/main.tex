@@ -17,6 +17,8 @@
 \usepackage{tabularx}
 \usepackage{cite} % Adicionado para melhorar as citações IEEE
 \usepackage{listings}
+\usepackage{needspace}
+\usepackage{etoolbox}
 
 % --- Configurações TikZ ---
 \usepackage{tikz}
@@ -82,6 +84,20 @@
     morecomment=[l]{//},
     morestring=[b]",
     tabsize=4
+}
+
+\lstset{
+    captionpos=b,
+    breaklines=true,
+    breakatwhitespace=false
+}
+
+\BeforeBeginEnvironment{lstlisting}{%
+    \par\Needspace{10\baselineskip}%
+    \noindent\begin{minipage}{\linewidth}%
+}
+\AfterEndEnvironment{lstlisting}{%
+    \end{minipage}\par
 }
 
 \onehalfspacing

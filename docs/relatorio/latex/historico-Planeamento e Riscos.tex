@@ -8,28 +8,28 @@
 
     \begin{itemize}
         \item \textbf{Curva de aprendizagem tecnológica:}
-        O projeto exigiu a utilização de tecnologias e conceitos com elevada complexidade, nomeadamente Kotlin Multiplatform, arquitetura hexagonal, APIs de inferência de diferentes fornecedores, autenticação baseada em OIDC/OAuth2 e o Model Context Protocol. Esta diversidade tecnológica representou um risco inicial, porque aumentou o tempo necessário para compreender os contratos externos, configurar o ambiente de desenvolvimento e definir uma arquitetura estável.
-        A mitigação passou pela realização de protótipos incrementais, pelo estudo isolado das APIs de OpenAI, Anthropic e Gemini, e pela separação progressiva do sistema em módulos com responsabilidades claras.
+        O projeto exigiu a utilização de tecnologias e conceitos com elevada complexidade, nomeadamente \textbf{Kotlin Multiplatform}, arquitetura hexagonal, APIs de inferência de diferentes fornecedores, autenticação baseada em \textbf{OIDC}/\textbf{OAuth2} e o \textbf{Model Context Protocol}. Esta diversidade tecnológica representou um risco inicial, porque aumentou o tempo necessário para compreender os contratos externos, configurar o ambiente de desenvolvimento e definir uma arquitetura estável.
+        A mitigação passou pela realização de protótipos incrementais, pelo estudo isolado das APIs de \textbf{OpenAI}, \textbf{Anthropic} e \textbf{Gemini}, e pela separação progressiva do sistema em módulos com responsabilidades claras.
 
         \item \textbf{Instabilidade de serviços externos:}
-        A Gateway depende de serviços de terceiros, como APIs de inferência, servidores de autorização e ferramentas externas. Estes serviços podem apresentar indisponibilidade temporária, alterações nos contratos, limites de utilização ou comportamentos diferentes dos documentados. Este risco poderia comprometer a validação da solução e tornar os testes dependentes de fatores externos.
-        Para reduzir este impacto, foram usados testes locais, servidores simulados, mocks e abstrações sobre o transporte HTTP. Além disso, a arquitetura inclui mecanismos de resiliência, como \textit{fallback} e \textit{circuit breaker}, que permitem lidar melhor com falhas de fornecedores.
+        A \textbf{Gateway} depende de serviços de terceiros, como APIs de inferência, servidores de autorização e ferramentas externas. Estes serviços podem apresentar indisponibilidade temporária, alterações nos contratos, limites de utilização ou comportamentos diferentes dos documentados. Este risco poderia comprometer a validação da solução e tornar os testes dependentes de fatores externos.
+        Para reduzir este impacto, foram usados testes locais, servidores simulados, \textit{mocks} e abstrações sobre o transporte \textbf{HTTP}. Além disso, a arquitetura inclui mecanismos de resiliência, como \textit{fallback} e \textit{circuit breaker}, que permitem lidar melhor com falhas de fornecedores.
 
         \item \textbf{Custos de utilização:}
-        A execução de testes com modelos pagos pode gerar custos inesperados, especialmente em cenários de \textit{streaming}, chamadas repetidas ou testes de integração. Este risco é relevante porque a Gateway incentiva a experimentação com múltiplos fornecedores e modelos.
-        A mitigação passou por limitar o número de chamadas reais, utilizar fornecedores com quotas gratuitas sempre que possível, recorrer a testes locais e validar grande parte da lógica através de contratos, adapters e servidores simulados.
+        A execução de testes com modelos pagos pode gerar custos inesperados, especialmente em cenários de \textit{streaming}, chamadas repetidas ou testes de integração. Este risco é relevante porque a \textbf{Gateway} incentiva a experimentação com múltiplos fornecedores e modelos.
+        A mitigação passou por limitar o número de chamadas reais, utilizar fornecedores com quotas gratuitas sempre que possível, recorrer a testes locais e validar grande parte da lógica através de contratos, \textit{adapters} e servidores simulados.
 
         \item \textbf{Complexidade de normalização entre fornecedores:}
-        As APIs de OpenAI, Anthropic e Gemini partilham conceitos semelhantes, como mensagens, modelos, parâmetros de geração e ferramentas, mas representam esses conceitos de formas diferentes. Alguns elementos, como \textit{tool calling}, \textit{streaming}, multimodalidade e metadados específicos, não têm correspondência direta entre fornecedores.
-        Este risco poderia levar a uma abstração demasiado rígida ou à perda de informação específica de cada API. Para o mitigar, foi definido um domínio comum extensível, complementado por campos de opções específicas do fornecedor. Desta forma, o SDK consegue representar o núcleo comum sem impedir a passagem de características particulares de cada API.
+        As APIs de \textbf{OpenAI}, \textbf{Anthropic} e \textbf{Gemini} partilham conceitos semelhantes, como mensagens, modelos, parâmetros de geração e ferramentas, mas representam esses conceitos de formas diferentes. Alguns elementos, como \textit{tool calling}, \textit{streaming}, multimodalidade e metadados específicos, não têm correspondência direta entre fornecedores.
+        Este risco poderia levar a uma abstração demasiado rígida ou à perda de informação específica de cada API. Para o mitigar, foi definido um domínio comum extensível, complementado por campos de opções específicas do fornecedor. Desta forma, o \textbf{SDK} consegue representar o núcleo comum sem impedir a passagem de características particulares de cada API.
 
         \item \textbf{Segurança e dados sensíveis:}
-        A centralização dos pedidos numa Gateway aumenta a responsabilidade sobre autenticação, autorização, gestão de tokens, logs, métricas e chaves de API. Um erro nesta camada poderia expor dados sensíveis ou permitir acesso indevido a modelos e recursos.
-        A mitigação passou pela introdução de uma pipeline de segurança com autenticação e autorização separadas, validação de tokens, integração com um Authorization Server e cuidado na recolha de métricas e logs. Ainda assim, este risco continua relevante para uma evolução futura em direção a ambientes de produção e cenários multi-tenant.
+        A centralização dos pedidos numa \textbf{Gateway} aumenta a responsabilidade sobre autenticação, autorização, gestão de \textit{tokens}, \textit{logs}, métricas e chaves de API. Um erro nesta camada poderia expor dados sensíveis ou permitir acesso indevido a modelos e recursos.
+        A mitigação passou pela introdução de uma \textit{pipeline} de segurança com autenticação e autorização separadas, validação de \textit{tokens}, integração com um \textit{Authorization Server} e cuidado na recolha de métricas e \textit{logs}. Ainda assim, este risco continua relevante para uma evolução futura em direção a ambientes de produção e cenários \textit{multi-tenant}.
 
         \item \textbf{Âmbito e complexidade funcional:}
-        O domínio das Gateways de IA inclui várias funcionalidades possíveis, como roteamento por custo, políticas avançadas de autorização, execução automática de ferramentas, suporte completo a MCP, cache semântica e gestão de quotas por utilizador. Implementar todas estas capacidades numa primeira versão aumentaria significativamente o risco de atrasos e instabilidade.
-        A mitigação passou pela definição de um âmbito inicial mais controlado, focado na arquitetura base, nos adapters principais, na pipeline de interceptors e numa Gateway funcional construída sobre o SDK. As funcionalidades mais avançadas foram identificadas como trabalho futuro.
+        O domínio das Gateways de IA inclui várias funcionalidades possíveis, como roteamento por custo, políticas avançadas de autorização, execução automática de ferramentas, suporte completo a \textbf{MCP}, cache semântica e gestão de quotas por utilizador. Implementar todas estas capacidades numa primeira versão aumentaria significativamente o risco de atrasos e instabilidade.
+        A mitigação passou pela definição de um âmbito inicial mais controlado, focado na arquitetura base, nos \textit{adapters} principais, na \textit{pipeline} de \textit{interceptors} e numa \textbf{Gateway} funcional construída sobre o \textbf{SDK}. As funcionalidades mais avançadas foram identificadas como trabalho futuro.
     \end{itemize}
 
     \section{Planeamento}
@@ -41,20 +41,20 @@
             \hline
             \textbf{Semana} & \textbf{Período} & \textbf{Descrição} \\
             \hline
-            1 & 18 fev -- 22 fev (parcial) & Estudo das APIs de inferência e protocolo MCP. \\
+            1 & 18 fev -- 22 fev (parcial) & Estudo das APIs de inferência e protocolo \textbf{MCP}. \\
             2 & 23 fev -- 1 mar & Continuação da semana anterior e início da proposta. \\
             3 & 2 mar -- 8 mar & \textbf{Entrega Proposta do projeto} \\
             4 & 9 mar -- 15 mar & Configuração inicial da biblioteca, definição da arquitetura base e das interfaces. \\
             5 & 16 mar -- 22 mar & Integração com as APIs de inferência. Foco inicial em dois fornecedores estáveis. \\
-            6 & 23 mar -- 29 mar & Integração do MCP no OmniAI Core. Invocação e registo dinâmico de ferramentas, gerindo o ciclo de \textit{tool calling}. \\
+            6 & 23 mar -- 29 mar & Integração do \textbf{MCP} no \textbf{OmniAI Core}. Invocação e registo dinâmico de ferramentas, gerindo o ciclo de \textit{tool calling}. \\
             7 & 30 mar -- 5 abr & Implementação de despacho configurável de modelos e mecanismos de redundância (\textit{fallback} e \textit{retry}). \\
             8 & 6 abr -- 12 abr & Implementação dos mecanismos de segurança, como controlo de acesso, preparação do contexto e remoção de dados sensíveis. \\
             9 & 13 abr -- 19 abr & Conclusão das implementações anteriores. \\
             10 & 20 abr -- 26 abr & \textbf{Apresentação de Progresso} \\
-            11 & 27 abr -- 3 mai & Início do desenvolvimento da aplicação final OmniAI Gateway. Exposição da WEB API. \\
-            12 & 4 mai -- 10 mai & Continuação da semana anterior e preparação das abstrações MCP para integração futura. \\
+            11 & 27 abr -- 3 mai & Início do desenvolvimento da aplicação final \textbf{OmniAI Gateway}. Exposição da Web API. \\
+            12 & 4 mai -- 10 mai & Continuação da semana anterior e preparação das abstrações \textbf{MCP} para integração futura. \\
             13 & 11 mai -- 17 mai & Término de todas as APIs de comunicação para o exterior. \\
-            14 & 18 mai -- 24 mai & Testes de integração do Core e da Gateway. \\
+            14 & 18 mai -- 24 mai & Testes de integração do Core e da \textbf{Gateway}. \\
             15 & 25 mai -- 31 mai & \textbf{Entrega da Versão beta} \\
             16 & 1 jun -- 7 jun & Refinamento de testes a todos os módulos. \\
             17 & 8 jun -- 14 jun & Refinamento de código, desempenho e limpeza de bugs do sistema. \\

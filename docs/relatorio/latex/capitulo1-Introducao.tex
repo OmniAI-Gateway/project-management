@@ -1,15 +1,15 @@
     \chapter{Introdução}
 
     \section{Contexto}
-    Os Modelos de Linguagem de Grande Escala (\textit{Large Language Models -- LLMs}) \cite{ibm_llm_topics} tornaram-se componentes relevantes no desenvolvimento de aplicações baseadas em inteligência artificial. Um LLM é um modelo treinado com grandes volumes de texto, capaz de interpretar linguagem natural, gerar respostas e apoiar tarefas como sumarização, classificação, programação assistida, pesquisa semântica. Uma funcionalidade também oferecida por estes modelos é o \textit{tool calling}\cite{ibm_tool_calling}\cite{toolCallingCycle}. O \textit{tool calling} permite que os modelos não se limitem ao seu conhecimento estático, permitindo-lhes realizar um pedido de interação com sistemas externos através de uma resposta estruturada. Este pedido obedece a um formato especifico, definido previamente no momento em que as ferramentas são enviadas a API de inferência.
+    Os Modelos de Linguagem de Grande Escala (\textit{Large Language Models -- LLMs}) \cite{ibm_llm_topics} tornaram-se componentes relevantes no desenvolvimento de aplicações baseadas em inteligência artificial. Um LLM é um modelo treinado com grandes volumes de texto, capaz de interpretar linguagem natural, gerar respostas e apoiar tarefas como sumarização, classificação, programação assistida, pesquisa semântica. Uma funcionalidade também oferecida por estes modelos é o \textit{tool calling}\cite{ibm_tool_calling}\cite{toolCallingCycle}. O \textit{tool calling} permite que os modelos não se limitem ao seu conhecimento estático, permitindo-lhes realizar um pedido de interação com sistemas externos através de uma resposta estruturada. Este pedido obedece a um formato específico, definido previamente no momento em que as ferramentas são enviadas à API de inferência.
 
-    O ciclo de vida de um modelo divide-se em duas fases principais:treino e inferência. O treino corresponde ao processo de aprendizagem a partir de grandes conjuntos de dados, exigindo elevados recursos computacionais. A inferência corresponde à utilização do modelo já treinado para gerar respostas a novos pedidos. Atualmente, a maioria das aplicações integra LLMs através de APIs de inferência disponibilizadas por fornecedores externos.
+    O ciclo de vida de um modelo divide-se em duas fases principais: treino e inferência. O treino corresponde ao processo de aprendizagem a partir de grandes conjuntos de dados, exigindo elevados recursos computacionais. A inferência corresponde à utilização do modelo já treinado para gerar respostas a novos pedidos. Atualmente, a maioria das aplicações integra LLMs através de APIs de inferência disponibilizadas por fornecedores externos.
 
-    A comunicação com estas APIs é normalmente realizada usando o protocolo HTTP com representação em JSON, tanto nos pedidos como nas respostas. Antes de serem processados pelos modelos, os textos são convertidos em \textit{tokens}, pequenas unidades de informação que permitem ao modelo representar e manipular sequências de entrada e saída \cite{nvidia_tokens}. Como a resposta é gerada de forma incremental, muitas APIs suportam \textit{streaming}, permitindo enviar fragmentos da resposta ao cliente à medida que são produzidos.
+    A comunicação com estas APIs é normalmente realizada usando o protocolo \textbf{HTTP} com representação em JSON, tanto nos pedidos como nas respostas. Antes de serem processados pelos modelos, os textos são convertidos em \textit{tokens}, pequenas unidades de informação que permitem ao modelo representar e manipular sequências de entrada e saída \cite{nvidia_tokens}. Como a resposta é gerada de forma incremental, muitas APIs suportam \textit{streaming}, permitindo enviar fragmentos da resposta ao cliente à medida que são produzidos.
 
-    Existem vários fornecedores relevantes, incluindo OpenAI \cite{openai_api}, Anthropic \cite{anthropic_api}, Google Gemini \cite{google_gemini_api} e Groq \cite{groq_api}. Embora todos disponibilizem APIs HTTP e estruturas JSON, cada fornecedor define interfaces próprias, campos específicos, regras de autenticação e modelos distintos para \textit{tool calling}. A integração direta com vários fornecedores obriga, por isso, as aplicações a conhecerem detalhes internos de cada API.
+    Existem vários fornecedores relevantes, incluindo \textbf{OpenAI} \cite{openai_api}, \textbf{Anthropic} \cite{anthropic_api}, \textbf{Google Gemini} \cite{google_gemini_api} e \textbf{Groq} \cite{groq_api}. Embora todos disponibilizem APIs \textbf{HTTP} e estruturas JSON, cada fornecedor define interfaces próprias, campos específicos, regras de autenticação e modelos distintos para \textit{tool calling}. A integração direta com vários fornecedores obriga, por isso, as aplicações a conhecerem detalhes internos de cada API.
 
-    Ao mesmo tempo, o uso de LLMs evoluiu de interações simples para sistemas baseados em agentes (\textit{agentic workflows}) \cite{ibm_agentic_workflows}. Nestes sistemas, o modelo não se limita a devolver texto, pode também devolver instruções para chamadas a ferramentas externas, interpretar resultados intermédios e produzir uma resposta final com base nesses dados. O \textit{Model Context Protocol} (MCP) surgiu como proposta de normalização para a comunicação entre modelos, aplicações e ferramentas externas \cite{mcp_protocol}.
+    Ao mesmo tempo, o uso de LLMs evoluiu de interações simples para sistemas baseados em agentes (\textit{agentic workflows}) \cite{ibm_agentic_workflows}. Nestes sistemas, o modelo não se limita a devolver texto, pode também devolver instruções para chamadas a ferramentas externas, interpretar resultados intermédios e produzir uma resposta final com base nesses dados. O \textbf{Model Context Protocol (MCP)} surgiu como proposta de normalização para a comunicação entre modelos, aplicações e ferramentas externas \cite{mcp_protocol}.
 
     \section{Motivação e Definição do Problema}
 
@@ -28,7 +28,7 @@
             \node[keybox, anchor=north east] (key) at (cliente.south east) {API Key};
 
             % --- FORNECEDOR ---
-            \node[box, right=of cliente] (fornecedor) {API do Gemini de acesso a inferência };
+            \node[box, right=of cliente] (fornecedor) {API do \textbf{Gemini} de acesso a inferência };
 
             % --- LIGAÇÃO ---
             \draw[arrow] (cliente.east) -- (fornecedor.west);
@@ -60,7 +60,7 @@
 
             % --- FORNECEDOR (API de acesso à inferência) ---
             % Posicionado ao lado do Cliente B para manter as setas simétricas e centradas
-            \node[box, right=of clienteB] (fornecedor) {API do Gemini de acesso a inferência};
+            \node[box, right=of clienteB] (fornecedor) {API do \textbf{Gemini} de acesso a inferência};
 
             % Ligações diretas e limpas das caixas dos 3 clientes para o fornecedor
             \draw[arrow] (clienteA.east) -- (fornecedor.west);
@@ -95,10 +95,10 @@
 
             % --- APIS DE INFERÊNCIA (Direita) ---
             % API 1 - Alinhada na direção do Cliente A
-            \node[box, right=of clienteA] (apiOpenAI) {API do Gemini de acesso a inferência};
+            \node[box, right=of clienteA] (apiOpenAI) {API do \textbf{Gemini} de acesso a inferência};
 
             % API 2 - AGORA ALINHADA COM O CLIENTE 2 (Cliente B)
-            \node[box, right=of clienteB] (apiGemini) {API da OpenAI de acesso a inferência};
+            \node[box, right=of clienteB] (apiGemini) {API da \textbf{OpenAI} de acesso a inferência};
 
 
 
@@ -111,7 +111,7 @@
     \end{figure}
 
     A existência de múltiplos fornecedores de LLMs e a ausência de um protocolo comum implicam
-    diferentes interfaces de acesso aos modelos, estruturas específicas de pedidos e respostas, modelos distintos de contabilização de tokens, custos variáveis e implementações particulares para invocação de funções externas (ver Figuras \ref{fig:p1}--\ref{fig:p3}). Por exemplo, a API da OpenAI \cite{openai_api} organiza a interação em torno de chat completions e tool calls; a API da Anthropic \cite{anthropic_api} utiliza uma arquitetura baseada em messages e blocos de conteúdo; e a API do Gemini \cite{google_gemini_api} estrutura a geração através de contents, parts, function declarations e configurações de geração próprias.
+    diferentes interfaces de acesso aos modelos, estruturas específicas de pedidos e respostas, modelos distintos de contabilização de \textit{tokens}, custos variáveis e implementações particulares para invocação de funções externas (ver Figuras \ref{fig:p1}--\ref{fig:p3}). Por exemplo, a API da \textbf{OpenAI} \cite{openai_api} organiza a interação em torno de \textit{chat completions} e \textit{tool calls}; a API da \textbf{Anthropic} \cite{anthropic_api} utiliza uma arquitetura baseada em messages e blocos de conteúdo; e a API do \textbf{Gemini} \cite{google_gemini_api} estrutura a geração através de contents, parts, function declarations e configurações de geração próprias.
 
     Estas diferenças criam acoplamento entre as aplicações cliente e os fornecedores, denominado de \textit{vendor lock-in}. Sempre que uma aplicação pretende trocar de modelo, suportar mais do que um fornecedor, adicionar um mecanismo de \textit{fallback} ou integrar ferramentas externas, torna-se necessário duplicar ou reimplementar lógica de tradução, autenticação, tratamento de erros e interpretação de respostas. Esta duplicação ou reimplementação aumenta a complexidade e dificulta a evolução do sistema, um problema recorrente em sistemas que combinam lógica de aplicação com integrações externas especializadas \cite{cloudzero_ai_vendor_lock_in}.
 
@@ -137,8 +137,8 @@
             \node[gateway, right=of cliente2] (gateway) {\textbf{OmniAI Gateway}};
 
             % --- FORNECEDORES ---
-            \node[box, right=of gateway, yshift=1.2cm] (api1) {API de Inferência (Gemini)};
-            \node[box, right=of gateway, yshift=-1.2cm] (api2) {API de Inferência (OpenAI)};
+            \node[box, right=of gateway, yshift=1.2cm] (api1) {API de Inferência (\textbf{Gemini})};
+            \node[box, right=of gateway, yshift=-1.2cm] (api2) {API de Inferência (\textbf{OpenAI})};
 
             % --- LIGAÇÕES ---
             \draw[arrow] (cliente1.east) -- (gateway.west);
@@ -148,20 +148,20 @@
             \draw[arrow] (gateway.east) -- (api1.west);
             \draw[arrow] (gateway.east) -- (api2.west);
         \end{tikzpicture}
-        \caption{Centralização com OmniAI Gateway}
+        \caption{Centralização com \textbf{OmniAI Gateway}}
         \label{fig:p4_cinza}
     \end{figure}
 
-    A solução proposta evoluiu para a construção de um \textbf{OmniAI SDK}, isto é, uma biblioteca reutilizável que permite instanciar uma \textbf{OmniAI Gateway}. A Gateway funciona como ponto de entrada único para aplicações cliente, centralizando o acesso a APIs de inferência, ferramentas externas e mecanismos transversais de segurança e operação. Esta abordagem aproxima-se do padrão de API Gateway \cite{api_gateway_design} e, no contexto específico de modelos de IA, do padrão de AI Gateway enquanto camada centralizada de acesso a modelos \cite{ai_gateway_pattern,karl_ai_gateway}. Embora existam soluções relacionadas, como LiteLLM e OpenRouter \cite{litellm,openrouter}, o foco deste projeto está na construção de um SDK extensível, configurável e validado por uma Gateway Proof of Concept própria.
+    A solução proposta evoluiu para a construção de um \textbf{OmniAI SDK}, isto é, uma biblioteca reutilizável que permite instanciar uma \textbf{OmniAI Gateway}. A \textbf{Gateway} funciona como ponto de entrada único para aplicações cliente, centralizando o acesso a APIs de inferência, ferramentas externas e mecanismos globais de segurança e operação. Esta abordagem aproxima-se do padrão de API \textbf{Gateway} \cite{api_gateway_design} e, no contexto específico de modelos de IA, do padrão de AI \textbf{Gateway} enquanto camada centralizada de acesso a modelos \cite{ai_gateway_pattern,karl_ai_gateway}. Embora existam soluções relacionadas, como LiteLLM e OpenRouter \cite{litellm,openrouter}, o foco deste projeto está na construção de um \textbf{SDK} extensível, configurável e validado por uma \textbf{Gateway} \textit{Proof of Concept} própria.
 
-    O \textbf{OmniAI SDK} foi desenvolvido em Kotlin Multiplatform, permitindo partilhar o núcleo de domínio entre targets diferentes e preparar a distribuição para JVM e JavaScript/Node.js \cite{kotlin_multiplatform}. Esta decisão torna possível disponibilizar a biblioteca em ecossistemas distintos: via Maven para aplicações JVM/Kotlin e via NPM para ambientes Node.js/TypeScript.
+    O \textbf{OmniAI SDK} foi desenvolvido em \textbf{Kotlin Multiplatform}, permitindo partilhar o domínio e vários componentes entre \textit{targets} diferentes e preparar a distribuição para \textbf{JVM} e \textbf{JavaScript}/\textbf{Node.js} \cite{kotlin_multiplatform}. Esta decisão torna possível disponibilizar a biblioteca em ecossistemas distintos: via \textbf{Maven} para aplicações \textbf{JVM}/\textbf{Kotlin} e via \textbf{NPM} para ambientes \textbf{Node.js}/\textbf{TypeScript}.
 
-    A arquitetura do \textbf{OmniAI SDK} foi organizada segundo os princípios da Arquitetura Hexagonal, também conhecida como \textit{Ports and Adapters} \cite{hexagonal_ports}. O domínio comum fica isolado de contratos externos, enquanto os \textit{inbound adapters} traduzem pedidos de clientes compatíveis com OpenAI, Anthropic ou Gemini para o modelo comum, e os \textit{outbound adapters} traduzem o modelo comum para chamadas reais aos fornecedores.
+    A arquitetura do \textbf{OmniAI SDK} foi organizada segundo os princípios da Arquitetura Hexagonal, também conhecida como \textit{Ports and Adapters} \cite{hexagonal_ports}. O domínio comum fica isolado de contratos externos, enquanto os \textit{inbound adapters} traduzem pedidos de clientes compatíveis com \textbf{OpenAI}, \textbf{Anthropic} ou \textbf{Gemini} para o modelo comum, e os \textit{outbound adapters} traduzem o modelo comum para chamadas reais aos fornecedores.
 
-    Para tornar a solução configurável e escalável, foi criada uma \textit{pipeline} interna de \textit{interceptors}, inspirada no modelo de filtros e cadeia de filtros dos Servlets \cite{java_servlet_filter}\cite{java_servlet_filterchain}. Esta \textit{pipeline} permite injetar comportamentos específicos tanto antes como após a chamada ao fornecedor de inferência ou ao próximo \textit{interceptor} na \textit{pipeline}, incluindo autenticação, autorização, métricas, \textit{rate limiting}, \textit{circuit breaker}, \textit{fallback} e \textit{logging}.
+    Para tornar a solução configurável e escalável, foi criada uma \textit{pipeline} interna de \textit{interceptors}, inspirada no modelo de filtros e cadeia de filtros dos \textbf{Servlets} \cite{java_servlet_filter}\cite{java_servlet_filterchain}. Esta \textit{pipeline} permite injetar comportamentos específicos tanto antes como após a chamada ao fornecedor de inferência ou ao próximo \textit{interceptor} na \textit{pipeline}, incluindo autenticação, autorização, métricas, \textit{rate limiting}, \textit{circuit breaker}, \textit{fallback} e \textit{logging}.
 
-    Para garantir que a \textbf{OmniAI Gateway} atue como uma peça de infraestrutura completa de inteligência artificial, a arquitetura incorpora um \textit{MCP Broker}. Este módulo permite a exposição  e centralização de múltiplas ferramentas externas através do \textit{Model Context Protocol} (MCP) \cite{mcp_protocol}.   
+    Para garantir que a \textbf{OmniAI Gateway} atue como uma peça de infraestrutura completa de inteligência artificial, a arquitetura incorpora um \textbf{MCP Broker}. Este módulo permite a exposição  e centralização de múltiplas ferramentas externas através do \textbf{Model Context Protocol (MCP)} \cite{mcp_protocol}.   
 
     \section{Estrutura do Documento}
-    Este documento encontra-se organizado de forma progressiva, partindo do problema de integração e avançando até à validação da solução construída. O Capítulo 2 apresenta o estudo prévio: primeiro a análise comparativa das APIs de inferência e depois o estudo do \textit{Model Context Protocol}. O Capítulo 3 descreve a modelação do domínio comum, explicando como os conceitos observados no estudo foram transformados em estruturas como \texttt{CommonRequest}, \texttt{CommonResponse}, \texttt{CommonResponseEvent}, \texttt{CommonTool} e \texttt{TypedMap}. O Capítulo 4 descreve a arquitetura do \textbf{OmniAI SDK} e do \textbf{Proof of concept}, incluindo a visão top-level, a Arquitetura Hexagonal, os módulos, os \textit{contracts}, os \textit{inbounds}, os \textit{outbounds}, o \textit{dispatcher}, a DSL e o cliente HTTP. O Capítulo 5 detalha a implementação técnica e a evolução do sistema, com foco na separação entre \textbf{OmniAI SDK} e \textbf{OmniAI Gateway}, na \textit{pipeline} de \textit{interceptors}, nos mecanismos de segurança, observabilidade e resiliência, no MCP Broker e na distribuição multiplataforma. O Capítulo 6 apresenta as provas de conceito efetivamente realizadas no Proof of concept OmniAI Gateway. O Capítulo 7 sintetiza as conclusões, limitações e linhas de evolução futura. O Capítulo 8 regista o histórico de planeamento e os principais riscos considerados durante o desenvolvimento.
+    Este documento encontra-se organizado de forma progressiva, partindo do problema de integração e avançando até à validação da solução construída. O Capítulo 2 apresenta o estudo prévio: primeiro a análise comparativa das APIs de inferência e depois o estudo do \textbf{Model Context Protocol}. O Capítulo 3 descreve a modelação do domínio comum, explicando como os conceitos observados no estudo foram transformados em estruturas como \texttt{CommonRequest}, \texttt{CommonResponse}, \texttt{CommonResponseEvent}, \texttt{CommonTool} e \texttt{TypedMap}. O Capítulo 4 descreve a arquitetura do \textbf{OmniAI SDK} e do \textit{Proof of Concept}, incluindo a visão top-level, a Arquitetura Hexagonal, os módulos, os \textit{contracts}, os \textit{inbounds}, os \textit{outbounds}, o \textit{dispatcher}, a DSL e o cliente \textbf{HTTP}. O Capítulo 5 detalha a implementação técnica e a evolução do sistema, com foco na separação entre \textbf{OmniAI SDK} e \textbf{OmniAI Gateway}, na \textit{pipeline} de \textit{interceptors}, nos mecanismos de segurança, observabilidade e resiliência, no \textbf{MCP Broker} e na distribuição multiplataforma. O Capítulo 6 apresenta as provas de conceito efetivamente realizadas no \textit{Proof of Concept} \textbf{OmniAI Gateway}. O Capítulo 7 sintetiza as conclusões, limitações e linhas de evolução futura. O Capítulo 8 regista o histórico de planeamento e os principais riscos considerados durante o desenvolvimento.
 

@@ -9,9 +9,9 @@ Este apêndice reúne os exemplos completos dos corpos JSON utilizados durante o
 \label{apx:json-requests}
 % ---------------------------------------------------------------
 
-\subsection{OpenAI (formato compatível)}
+\subsection{\textbf{OpenAI} (formato compatível)}
 
-\begin{lstlisting}[language=json, caption={Pedido básico à API da OpenAI (geração com \textit{system prompt})}]
+\begin{lstlisting}[language=json, caption={Pedido básico à API da \textbf{OpenAI} (geração com \textit{system prompt})}]
 {
   "model": "llama3.2:1b",
   "messages": [
@@ -28,7 +28,7 @@ Este apêndice reúne os exemplos completos dos corpos JSON utilizados durante o
 }
 \end{lstlisting}
 
-\begin{lstlisting}[language=json, caption={Pedido à API da OpenAI com ferramentas (\textit{tool calling})}]
+\begin{lstlisting}[language=json, caption={Pedido à API da \textbf{OpenAI} com ferramentas (\textit{tool calling})}]
 {
   "model": "llama3.2:1b",
   "messages": [
@@ -60,7 +60,7 @@ Este apêndice reúne os exemplos completos dos corpos JSON utilizados durante o
 }
 \end{lstlisting}
 
-\begin{lstlisting}[language=json, caption={Pedido à API da OpenAI com todos os parametros de geracao}]
+\begin{lstlisting}[language=json, caption={Pedido à API da \textbf{OpenAI} com todos os parâmetros de geração}]
 {
   "model": "llama-3.3-70b-versatile",
   "messages": [
@@ -87,7 +87,7 @@ Este apêndice reúne os exemplos completos dos corpos JSON utilizados durante o
 }
 \end{lstlisting}
 
-\begin{lstlisting}[language=json, caption={Pedido \textit{stream} à API da OpenAI}]
+\begin{lstlisting}[language=json, caption={Pedido \textit{stream} à API da \textbf{OpenAI}}]
 {
   "model": "llama3.2:1b",
   "messages": [
@@ -100,9 +100,9 @@ Este apêndice reúne os exemplos completos dos corpos JSON utilizados durante o
 }
 \end{lstlisting}
 
-\subsection{Anthropic}
+\subsection{\textbf{Anthropic}}
 
-\begin{lstlisting}[language=json, caption={Pedido basico à API da Anthropic (geracao com \textit{system prompt})}]
+\begin{lstlisting}[language=json, caption={Pedido básico à API da \textbf{Anthropic} (geração com \textit{system prompt})}]
 {
   "model": "claude-3-5-haiku-20241022",
   "max_tokens": 1024,
@@ -116,7 +116,7 @@ Este apêndice reúne os exemplos completos dos corpos JSON utilizados durante o
 }
 \end{lstlisting}
 
-\begin{lstlisting}[language=json, caption={Pedido à API da Anthropic com ferramentas (\textit{tool calling})}]
+\begin{lstlisting}[language=json, caption={Pedido à API da \textbf{Anthropic} com ferramentas (\textit{tool calling})}]
 {
   "model": "claude-3-5-haiku-20241022",
   "max_tokens": 1024,
@@ -145,7 +145,7 @@ Este apêndice reúne os exemplos completos dos corpos JSON utilizados durante o
 }
 \end{lstlisting}
 
-\begin{lstlisting}[language=json, caption={Pedido à API da Anthropic com parametros de amostragem}]
+\begin{lstlisting}[language=json, caption={Pedido à API da \textbf{Anthropic} com parâmetros de amostragem}]
 {
   "model": "claude-3-5-haiku-20241022",
   "max_tokens": 1024,
@@ -162,7 +162,7 @@ Este apêndice reúne os exemplos completos dos corpos JSON utilizados durante o
 }
 \end{lstlisting}
 
-\begin{lstlisting}[language=json, caption={Pedido à API da Anthropic com raciocinio (\textit{thinking})}]
+\begin{lstlisting}[language=json, caption={Pedido à API da \textbf{Anthropic} com raciocínio (\textit{thinking})}]
 {
   "model": "claude-3-7-sonnet-20250219",
   "max_tokens": 4096,
@@ -179,7 +179,7 @@ Este apêndice reúne os exemplos completos dos corpos JSON utilizados durante o
 }
 \end{lstlisting}
 
-\begin{lstlisting}[language=json, caption={Pedido \textit{stream} à API da Anthropic}]
+\begin{lstlisting}[language=json, caption={Pedido \textit{stream} à API da \textbf{Anthropic}}]
 {
   "model": "claude-3-5-haiku-20241022",
   "max_tokens": 200,
@@ -193,9 +193,9 @@ Este apêndice reúne os exemplos completos dos corpos JSON utilizados durante o
 }
 \end{lstlisting}
 
-\subsection{Google Gemini}
+\subsection{\textbf{Google Gemini}}
 
-\begin{lstlisting}[language=json, caption={Pedido basico à API do Gemini (geracao com \textit{system instruction})}]
+\begin{lstlisting}[language=json, caption={Pedido básico à API do \textbf{Gemini} (geração com \textit{system instruction})}]
 {
   "system_instruction": {
     "parts": [
@@ -212,7 +212,7 @@ Este apêndice reúne os exemplos completos dos corpos JSON utilizados durante o
 }
 \end{lstlisting}
 
-\begin{lstlisting}[language=json, caption={Pedido à API do Gemini com ferramentas (\textit{tool calling})}]
+\begin{lstlisting}[language=json, caption={Pedido à API do \textbf{Gemini} com ferramentas (\textit{tool calling})}]
 {
   "contents": [
     {
@@ -250,7 +250,7 @@ Este apêndice reúne os exemplos completos dos corpos JSON utilizados durante o
 }
 \end{lstlisting}
 
-\begin{lstlisting}[language=json, caption={Pedido à API do Gemini com configuracao de geracao e \textit{thinking}}]
+\begin{lstlisting}[language=json, caption={Pedido à API do \textbf{Gemini} com configuração de geração e \textit{thinking}}]
 {
   "contents": [
     {
@@ -272,7 +272,7 @@ Este apêndice reúne os exemplos completos dos corpos JSON utilizados durante o
 }
 \end{lstlisting}
 
-\begin{lstlisting}[language=json, caption={Pedido \textit{stream} à API do Gemini (URI com \texttt{?alt=sse})}]
+\begin{lstlisting}[language=json, caption={Pedido \textit{stream} à API do \textbf{Gemini} (URI com \texttt{?alt=sse})}]
 {
   "contents": [
     {
@@ -289,9 +289,9 @@ Este apêndice reúne os exemplos completos dos corpos JSON utilizados durante o
 \label{apx:json-responses}
 % ---------------------------------------------------------------
 
-\subsection{OpenAI (formato compatível)}
+\subsection{\textbf{OpenAI} (formato compatível)}
 
-\begin{lstlisting}[language=json, caption={Resposta completa da API da OpenAI (geracao basica)}]
+\begin{lstlisting}[language=json, caption={Resposta completa da API da \textbf{OpenAI} (geração básica)}]
 {
   "id": "chatcmpl-31",
   "object": "chat.completion",
@@ -316,7 +316,7 @@ Este apêndice reúne os exemplos completos dos corpos JSON utilizados durante o
 }
 \end{lstlisting}
 
-\begin{lstlisting}[language=json, caption={Resposta da API da OpenAI (chamada de ferramenta)}]
+\begin{lstlisting}[language=json, caption={Resposta da API da \textbf{OpenAI} (chamada de ferramenta)}]
 {
   "id": "chatcmpl-53",
   "object": "chat.completion",
@@ -352,7 +352,7 @@ Este apêndice reúne os exemplos completos dos corpos JSON utilizados durante o
 }
 \end{lstlisting}
 
-\begin{lstlisting}[language=json, caption={Resposta \textit{stream} da OpenAI (eventos SSE)}]
+\begin{lstlisting}[language=json, caption={Resposta \textit{stream} da \textbf{OpenAI} (eventos \textbf{SSE})}]
 data: {"id":"chatcmpl-308","object":"chat.completion.chunk",
   "created":1773532270,"model":"llama3.2:1b",
   "choices":[{"index":0,
@@ -374,9 +374,9 @@ data: {"id":"chatcmpl-308","object":"chat.completion.chunk",
 data: [DONE]
 \end{lstlisting}
 
-\subsection{Anthropic}
+\subsection{\textbf{Anthropic}}
 
-\begin{lstlisting}[language=json, caption={Resposta completa da API da Anthropic (geracao basica)}]
+\begin{lstlisting}[language=json, caption={Resposta completa da API da \textbf{Anthropic} (geração básica)}]
 {
   "id": "msg_01Xf...",
   "type": "message",
@@ -396,7 +396,7 @@ data: [DONE]
 }
 \end{lstlisting}
 
-\begin{lstlisting}[language=json, caption={Resposta da API da Anthropic (chamada de ferramenta)}]
+\begin{lstlisting}[language=json, caption={Resposta da API da \textbf{Anthropic} (chamada de ferramenta)}]
 {
   "id": "msg_01Cd...",
   "type": "message",
@@ -417,7 +417,7 @@ data: [DONE]
 }
 \end{lstlisting}
 
-\begin{lstlisting}[language=json, caption={Resposta da API da Anthropic (raciocinio \textit{thinking})}]
+\begin{lstlisting}[language=json, caption={Resposta da API da \textbf{Anthropic} (raciocínio \textit{thinking})}]
 {
   "id": "msg_01xyz...",
   "type": "message",
@@ -443,7 +443,7 @@ data: [DONE]
 }
 \end{lstlisting}
 
-\begin{lstlisting}[language=json, caption={Resposta \textit{stream} da Anthropic (eventos SSE)}]
+\begin{lstlisting}[language=json, caption={Resposta \textit{stream} da \textbf{Anthropic} (eventos \textbf{SSE})}]
 event: message_start
 data: {"type": "message_start",
   "message": {"id": "msg_d6d...", "role": "assistant",
@@ -468,7 +468,7 @@ event: message_stop
 data: {"type": "message_stop"}
 \end{lstlisting}
 
-\begin{lstlisting}[language=json, caption={Devolucao de resultado de ferramenta na API da Anthropic}]
+\begin{lstlisting}[language=json, caption={Devolução de resultado de ferramenta na API da \textbf{Anthropic}}]
 {
   "role": "user",
   "content": [
@@ -481,9 +481,9 @@ data: {"type": "message_stop"}
 }
 \end{lstlisting}
 
-\subsection{Google Gemini}
+\subsection{\textbf{Google Gemini}}
 
-\begin{lstlisting}[language=json, caption={Resposta completa da API do Gemini (geracao basica)}]
+\begin{lstlisting}[language=json, caption={Resposta completa da API do \textbf{Gemini} (geração básica)}]
 {
   "candidates": [
     {
@@ -514,7 +514,7 @@ data: {"type": "message_stop"}
 }
 \end{lstlisting}
 
-\begin{lstlisting}[language=json, caption={Resposta da API do Gemini (chamada de ferramenta)}]
+\begin{lstlisting}[language=json, caption={Resposta da API do \textbf{Gemini} (chamada de ferramenta)}]
 {
   "candidates": [
     {
@@ -555,7 +555,7 @@ data: {"type": "message_stop"}
 }
 \end{lstlisting}
 
-\begin{lstlisting}[language=json, caption={Resposta \textit{stream} do Gemini (padrao SSE)}]
+\begin{lstlisting}[language=json, caption={Resposta \textit{stream} do \textbf{Gemini} (padrão \textbf{SSE})}]
 data: {"candidates": [
   {"content": {"parts": [
     {"text": "AI works by "}
