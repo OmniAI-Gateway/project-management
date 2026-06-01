@@ -780,7 +780,7 @@ Na receção de uma resposta unária da \textbf{Anthropic} (\texttt{Anthropic\al
         \label{fig:pipeline}
     \end{figure}
 
-    Esta forma mantém a arquitetura simples. Para um caso mínimo, a \textbf{Gateway} pode operar com um \textit{dispatcher} direto. Para um caso operacional, a \textit{pipeline} permite adicionar autenticação, autorização, métricas, limites, \textit{circuit breaker}, \textit{fallback}, \textit{logging} e \textit{tracing} sem alterar \textit{adapters}. O modelo é semelhante ao dos filtros de \textbf{Servlets} \cite{servlet_filterchain}: cada filtro recebe um contexto, decide se continua a cadeia e pode executar lógica antes e depois do próximo elemento. A diferença é que, no \textbf{OmniAI SDK}, o contexto não representa apenas um pedido \textbf{HTTP}; representa uma chamada de inferência já normalizada, incluindo fornecedor, modelo, modo de execução, atributos tipados e eventual fluxo de \textit{streaming}.
+    Esta forma mantém a arquitetura simples. Para um caso mínimo, a \textbf{Gateway} pode operar com um \textit{dispatcher} direto. Para um caso operacional, a \textit{pipeline} permite adicionar autenticação, autorização, métricas, limites, \textit{circuit breaker}, \textit{fallback}, \textit{logging} e \textit{tracing} sem alterar \textit{adapters}. O modelo é semelhante ao dos filtros de \textbf{Servlets} \cite{java_servlet_filterchain}: cada filtro recebe um contexto, decide se continua a cadeia e pode executar lógica antes e depois do próximo elemento. A diferença é que, no \textbf{OmniAI SDK}, o contexto não representa apenas um pedido \textbf{HTTP}; representa uma chamada de inferência já normalizada, incluindo fornecedor, modelo, modo de execução, atributos tipados e eventual fluxo de \textit{streaming}.
 
     A \textit{pipeline} é composta por \texttt{GatewayPipeline}, \texttt{GatewayPipelineChain}, \texttt{Interceptor} e \texttt{GatewayContext}. O \texttt{GatewayContext} transporta o pedido comum, atributos tipados e modo de execução, podendo representar chamadas síncronas ou \textit{streaming}. A cadeia executa os \textit{interceptors} por ordem e, no fim, invoca o \textit{dispatcher} terminal.
 
@@ -836,7 +836,9 @@ Na receção de uma resposta unária da \textbf{Anthropic} (\texttt{Anthropic\al
 
     Para adicionar uma métrica, a aplicação usa a DSL do \texttt{gateway-client}. O utilizador pode ativar a latência padrão, acrescentar atributos globais e definir métricas próprias com uma função \texttt{value}, que extrai o valor a partir do contexto e do resultado, e uma função \texttt{tags}, que acrescenta dimensões de análise.
 
+    \vspace{0.5em}
     \begin{lstlisting}[language=kotlin, caption={Configuração de telemetria e métricas personalizadas na DSL}]
+        
 metrics {
     metricsPort = telemetryRuntime.metricsPort
     tracer = telemetryRuntime.tracer
@@ -904,7 +906,10 @@ metrics {
     A \textbf{Gateway} final usa \textbf{Logto} como \textit{Authorization Server} local \cite{logto_docs}, executado em \textbf{Docker} juntamente com \textbf{PostgreSQL}, \textbf{OpenTelemetry Collector}, \textbf{Prometheus} e \textbf{Grafana}. Foram também realizados testes exploratórios com \textbf{Keycloak} \cite{keycloak_docs}. A escolha final do \textbf{Logto} no POC deveu-se à simplicidade de configuração local, suporte a aplicações \textit{Machine-to-Machine} e facilidade de gerir API Resources durante a validação.
 
     A integração do processo de autenticação é declarada na montagem do \textit{SDK}:
+
+    \vspace{0.5em}
     \begin{lstlisting}[language=kotlin, caption={DSL de configuração do \textit{interceptor} de autenticação com \textbf{OIDC} Discovery}]
+
 security {
     authentication {
         discovery {
@@ -934,7 +939,10 @@ security {
     O \texttt{AuthorizationInput} segue o padrão \textbf{Subject-Action-Resource (SAR)}. O \textbf{Subject} representa o utilizador ou aplicação, incluindo identificador, roles e atributos vindos do token. A \textbf{Action} representa a operação, como \texttt{chat\_completion}. O \textbf{Resource} identifica o alvo, como fornecedor ou modelo. O \textbf{Context} acrescenta atributos ambientais, como IP, tempo ou metadados do pedido. A porta do PDP permite integrar motores diferentes, incluindo políticas internas, AuthZen, OPA ou outro serviço externo. Se a decisão for \textit{Deny}, a \textit{pipeline} é interrompida antes de qualquer chamada ao fornecedor \cite{authorization_pips}.
 
     A configuração de autorização permite estender o avaliador por omissão:
+
+    \vspace{0.5em}
     \begin{lstlisting}[language=kotlin, caption={DSL de configuração do \textit{interceptor} de autorização}]
+
 security {
     authorization {
         pdp = customPolicyDecisionPoint
@@ -953,7 +961,10 @@ security {
     O store atual em memória usa buckets protegidos por \texttt{Mutex}. Quando um pedido chega, o \textit{interceptor} tenta consumir uma unidade em todos os buckets aplicáveis. Se todos permitirem consumo, a cadeia continua. Se algum limite estiver esgotado, devolve \texttt{TooManyRequestsError} com \texttt{retryAfter}. Esta resposta permite que clientes bem comportados reduzam ritmo em vez de insistirem. Para desenvolvimento e instância única, este modelo é suficiente; em escalamento horizontal, o contrato \texttt{RateLimitStore} permite substituir a implementação por \textbf{Redis} ou outro \textit{backend} partilhado. Essa substituição é necessária quando várias instâncias da \textbf{Gateway} devem partilhar a mesma visão de quota.
 
     A configuração deste mecanismo recorre ao seguinte bloco:
+
+    \vspace{0.5em}
     \begin{lstlisting}[language=kotlin, caption={DSL de configuração do \textit{interceptor} de \textit{rate limiting}}]
+
 interceptors {
     rateLimiting {
         store = InMemoryRateLimitStore()
@@ -971,7 +982,9 @@ interceptors {
 
     Quando a chamada prossegue, o \textit{interceptor} observa o resultado. Erros incrementam o contador de falhas; ao atingir \texttt{failureThreshold}, o circuito passa para \texttt{OPEN}. Após um período de recuperação, o estado \texttt{HALF\_OPEN} permite testar um número limitado de pedidos antes de voltar ao estado \texttt{CLOSED}, evitando inundar um fornecedor que ainda está a recuperar \cite{microsoft_circuit_breaker}. A configuração inclui \texttt{failureThreshold}, \texttt{resetTimeoutMs} e \texttt{halfOpenTestRequests}. A implementação atual cobre a abertura e fecho básico do circuito; a evolução temporal mais completa do estado \texttt{HALF\_OPEN} é uma melhoria natural.
 
+    \vspace{0.5em}
     \begin{lstlisting}[language=kotlin, caption={DSL de configuração do \textit{interceptor} de \textit{circuit breaker}}]
+
 interceptors {
     circuitBreaker {
         store = InMemoryCircuitBreakerStore()
@@ -996,6 +1009,8 @@ interceptors {
     A evolução futura poderá acrescentar prioridades configuráveis, condições por código de erro, orçamentos de tentativa e métricas específicas de \textit{fallback}. Estas regras são importantes porque nem todo erro justifica \textit{fallback}: erros de autenticação ou autorização devem falhar imediatamente, enquanto \textit{timeouts}, 429 e 5xx podem justificar uma alternativa.
 
     A sua ativação é extremamente simples, não requerendo configuração intrincada:
+
+    \vspace{0.5em}
     \begin{lstlisting}[language=kotlin, caption={DSL de configuração do \textit{interceptor} de \textit{fallback}}]
 interceptors {
     fallback()
@@ -1010,6 +1025,8 @@ interceptors {
     O \texttt{TracingInterceptor} envolve o pedido num \textit{span} chamado \texttt{gateway.request.process}. Quando combinado com \textbf{OpenTelemetry}, este \textit{span} permite correlacionar latência, erros, chamadas externas e métricas agregadas. Em cenários de \textit{fallback} ou \textit{circuit breaker}, \textit{tracing} é particularmente útil porque permite observar o percurso real do pedido e distinguir falhas do fornecedor, decisões da \textbf{Gateway} e erros de cliente. Também permite perceber se uma resposta lenta resulta do fornecedor principal, de uma tentativa alternativa, de validação de token ou de uma política interna.
 
     A instalação processa-se em dois blocos da DSL, um explícito e outro decorrente da configuração de métricas:
+
+    \vspace{0.5em}
     \begin{lstlisting}[language=kotlin, caption={Instalação dos \textit{interceptors} de \textit{logging} e \textit{tracing}}]
 interceptors {
     // Instalacao manual do Logging Interceptor

@@ -2,7 +2,7 @@
 
     \section{Visão Global do Domínio}
 
-    No final do estudo prévio realizado no capítulo anterior, verificou-se uma acentuada fragmentação estrutural entre os principais fornecedores de Modelos de Linguagem de Grande Escala (LLMs) [13]. A ausência de uma padronização ou um protocolo comum leva à inconsistência entre as APIs da \textbf{OpenAI} [1], \textbf{Anthropic} [2] e \textbf{Gemini} [3] , as quais têm campos distintos, diferentes ciclos de vida para o fluxo de dados e estruturas de objetos incompatíveis entre as várias APIs.
+    No final do estudo prévio realizado no capítulo anterior, verificou-se uma acentuada fragmentação estrutural entre os principais fornecedores de Modelos de Linguagem de Grande Escala (LLMs) \cite{ibm_llm_topics}. A ausência de uma padronização ou um protocolo comum leva à inconsistência entre as APIs da \textbf{OpenAI} \cite{openai_api}, \textbf{Anthropic} \cite{anthropic_api} e \textbf{Gemini} \cite{google_gemini_api}, as quais têm campos distintos, diferentes ciclos de vida para o fluxo de dados e estruturas de objetos incompatíveis entre as várias APIs.
 
     Para garantir a interoperabilidade, a arquitetura do \textbf{OmniAI SDK} assenta na criação de um modelo de domínio comum. A ideia foi criar um modelo de dados interoperável com os maiores fornecedores de inferência para representar pedidos, respostas e eventos dos mesmos, mas sem copiar diretamente a estrutura de nenhum deles.
 
