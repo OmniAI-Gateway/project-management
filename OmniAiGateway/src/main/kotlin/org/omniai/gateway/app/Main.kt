@@ -1,8 +1,6 @@
 package org.omniai.gateway.app
 
-import io.ktor.server.application.serverConfig
 import io.ktor.server.engine.*
-import io.ktor.server.netty.*
 import io.ktor.server.engine.embeddedServer
 import io.ktor.server.netty.Netty
 import io.ktor.server.routing.routing

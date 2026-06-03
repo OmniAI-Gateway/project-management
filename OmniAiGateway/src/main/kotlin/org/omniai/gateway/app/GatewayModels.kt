@@ -1,6 +1,5 @@
 package org.omniai.gateway.app
 
-
 import org.omniai.sdk.interceptors.metrics.MetricsPort
 import org.omniai.sdk.interceptors.metrics.Tracer
 
