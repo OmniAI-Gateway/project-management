@@ -18,7 +18,7 @@ import org.omniai.sdk.contracts.anthropic.output.AnthropicOutputContent
 import org.omniai.sdk.contracts.anthropic.output.AnthropicStreamDelta
 import org.omniai.sdk.contracts.anthropic.output.AnthropicStreamEvent
 import org.omniai.sdk.contracts.anthropic.output.AnthropicUsage
-import org.omniai.sdk.core.ports.OutboundTranslator
+import org.omniai.sdk.ports.outbound.OutboundTranslator
 import org.omniai.sdk.domain.common.CommonRole
 import org.omniai.sdk.domain.common.CommonTool
 import org.omniai.sdk.domain.common.Model

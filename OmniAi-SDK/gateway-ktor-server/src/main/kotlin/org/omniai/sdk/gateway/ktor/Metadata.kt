@@ -5,7 +5,7 @@ import io.ktor.server.application.ApplicationCall
 import org.omniai.sdk.binders.ConfigurableMetadataBinder
 import org.omniai.sdk.binders.IncomingContext
 import org.omniai.sdk.binders.server.buildServerMetadataBinder
-import org.omniai.sdk.core.commom.key
+import org.omniai.sdk.common.key
 import org.omniai.sdk.domain.common.AUTH_BEARER_TOKEN_KEY
 
 const val CLIENT_IP_METADATA_KEY: String = "gateway.request.clientIp"

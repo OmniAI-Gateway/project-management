@@ -9,7 +9,7 @@ import org.omniai.sdk.interceptors.auth.domain.Kid
 import org.omniai.sdk.interceptors.auth.domain.PublicKey
 import org.omniai.sdk.interceptors.auth.dto.JwksDto
 import org.omniai.sdk.interceptors.auth.interfaces.PublicKeyCache
-import org.omniai.sdk.core.http.*
+import org.omniai.sdk.ports.outbound.http.*
 import kotlin.concurrent.Volatile
 import kotlin.time.TimeSource
 

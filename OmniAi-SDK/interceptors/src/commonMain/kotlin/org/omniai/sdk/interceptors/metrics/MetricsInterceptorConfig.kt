@@ -1,7 +1,7 @@
 package org.omniai.sdk.interceptors.metrics
 
-import org.omniai.sdk.core.pipeline.GatewayContext
-import org.omniai.sdk.core.pipeline.PipelineResult
+import org.omniai.sdk.application.pipeline.GatewayContext
+import org.omniai.sdk.application.pipeline.PipelineResult
 
 typealias MetricsAttributeExtractor = (GatewayContext, PipelineResult?) -> Map<String, String>
 

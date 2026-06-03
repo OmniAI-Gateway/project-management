@@ -21,7 +21,7 @@ import org.omniai.sdk.contracts.openai.output.OpenAiChoice
 import org.omniai.sdk.contracts.openai.output.OpenAiEventStream
 import org.omniai.sdk.contracts.openai.output.OpenAiToolCallOutput
 import org.omniai.sdk.contracts.openai.output.OpenAiUsage
-import org.omniai.sdk.core.ports.OutboundTranslator
+import org.omniai.sdk.ports.outbound.OutboundTranslator
 import org.omniai.sdk.domain.common.CommonRole
 import org.omniai.sdk.domain.common.CommonTool
 import org.omniai.sdk.domain.common.Model

@@ -1,6 +1,6 @@
 package org.omniai.sdk.interceptors.auth
 
-import org.omniai.sdk.core.commom.key
+import org.omniai.sdk.common.key
 import org.omniai.sdk.interceptors.auth.domain.AuthValidationResult
 
 val AUTH_RESULT_KEY = key<AuthValidationResult>("auth_result_key")

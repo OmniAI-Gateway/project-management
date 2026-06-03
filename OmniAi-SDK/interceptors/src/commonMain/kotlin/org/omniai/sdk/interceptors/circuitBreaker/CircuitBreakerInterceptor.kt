@@ -1,11 +1,11 @@
 package org.omniai.sdk.interceptors.circuitBreaker
 
-import org.omniai.sdk.core.commom.AttributeKey
-import org.omniai.sdk.core.pipeline.GatewayContext
-import org.omniai.sdk.core.pipeline.Interceptor
-import org.omniai.sdk.core.pipeline.InterceptorChain
-import org.omniai.sdk.core.pipeline.PipelineResult
-import org.omniai.sdk.core.ports.OutboundPort
+import org.omniai.sdk.common.AttributeKey
+import org.omniai.sdk.application.pipeline.GatewayContext
+import org.omniai.sdk.application.pipeline.Interceptor
+import org.omniai.sdk.application.pipeline.InterceptorChain
+import org.omniai.sdk.application.pipeline.PipelineResult
+import org.omniai.sdk.ports.outbound.OutboundPort
 import org.omniai.sdk.domain.errors.ApiDownError
 
 class CircuitBreakerInterceptor(

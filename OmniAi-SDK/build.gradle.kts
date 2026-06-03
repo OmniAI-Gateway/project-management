@@ -37,7 +37,7 @@ kotlin {
             api(project(":contracts:openai"))
             api(project(":contracts:anthropic"))
             api(project(":contracts:gemini"))
-            api(project(":contracts:ktor-http"))
+            api(project(":http-client"))
             api(project(":outbound:openai"))
             api(project(":outbound:anthropic"))
             api(project(":outbound:gemini"))

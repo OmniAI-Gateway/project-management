@@ -1,9 +1,9 @@
 package org.omniai.sdk.gateway.client.dsl
 
-import org.omniai.sdk.core.pipeline.Interceptor
-import org.omniai.sdk.core.ports.InboundConnector
-import org.omniai.sdk.core.ports.DispatcherPort
-import org.omniai.sdk.core.ports.OutboundPort
+import org.omniai.sdk.application.pipeline.Interceptor
+import org.omniai.sdk.ports.inbound.InboundConnector
+import org.omniai.sdk.ports.inbound.DispatcherPort
+import org.omniai.sdk.ports.outbound.OutboundPort
 import org.omniai.sdk.contracts.anthropic.input.AnthropicMessagesRequest
 import org.omniai.sdk.contracts.anthropic.output.AnthropicMessageResponse
 import org.omniai.sdk.contracts.anthropic.output.AnthropicStreamEvent

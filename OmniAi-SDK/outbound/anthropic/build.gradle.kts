@@ -21,7 +21,7 @@ kotlin {
     sourceSets {
         commonMain.dependencies {
             implementation(project(":core"))
-            implementation(project(":contracts:ktor-http"))
+            implementation(project(":http-client"))
             implementation(project(":contracts:anthropic"))
             implementation(libs.kotlinx.serialization.json)
 

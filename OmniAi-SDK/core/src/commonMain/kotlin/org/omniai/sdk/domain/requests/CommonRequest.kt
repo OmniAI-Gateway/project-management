@@ -1,6 +1,6 @@
 package org.omniai.sdk.domain.requests
 
-import org.omniai.sdk.core.commom.TypedMap
+import org.omniai.sdk.common.TypedMap
 import org.omniai.sdk.domain.common.CommonGenerationConfig
 import org.omniai.sdk.domain.common.CommonRole
 import org.omniai.sdk.domain.common.CommonTool

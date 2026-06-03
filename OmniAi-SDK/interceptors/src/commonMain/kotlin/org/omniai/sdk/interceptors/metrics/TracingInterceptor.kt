@@ -1,9 +1,9 @@
 package org.omniai.sdk.interceptors.metrics
 
-import org.omniai.sdk.core.pipeline.GatewayContext
-import org.omniai.sdk.core.pipeline.Interceptor
-import org.omniai.sdk.core.pipeline.InterceptorChain
-import org.omniai.sdk.core.pipeline.PipelineResult
+import org.omniai.sdk.application.pipeline.GatewayContext
+import org.omniai.sdk.application.pipeline.Interceptor
+import org.omniai.sdk.application.pipeline.InterceptorChain
+import org.omniai.sdk.application.pipeline.PipelineResult
 
 class TracingInterceptor(private val tracer: Tracer) : Interceptor {
     override suspend fun handle(context: GatewayContext, chain: InterceptorChain): PipelineResult {

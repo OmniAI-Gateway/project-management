@@ -4,14 +4,14 @@ import kotlinx.coroutines.flow.Flow
 import org.omniai.sdk.contracts.anthropic.input.AnthropicMessagesRequest
 import org.omniai.sdk.contracts.anthropic.output.AnthropicMessageResponse
 import org.omniai.sdk.contracts.anthropic.output.AnthropicStreamEvent
-import org.omniai.sdk.core.commom.Either
-import org.omniai.sdk.core.commom.Failure
-import org.omniai.sdk.core.commom.Success
-import org.omniai.sdk.core.commom.TypedMap
-import org.omniai.sdk.core.commom.failure
-import org.omniai.sdk.core.commom.success
-import org.omniai.sdk.core.ports.InboundPort
-import org.omniai.sdk.core.ports.DispatcherPort
+import org.omniai.sdk.common.Either
+import org.omniai.sdk.common.Failure
+import org.omniai.sdk.common.Success
+import org.omniai.sdk.common.TypedMap
+import org.omniai.sdk.common.failure
+import org.omniai.sdk.common.success
+import org.omniai.sdk.ports.inbound.InboundPort
+import org.omniai.sdk.ports.inbound.DispatcherPort
 import org.omniai.sdk.domain.common.Provider
 import org.omniai.sdk.domain.errors.DomainError
 

@@ -1,9 +1,9 @@
 package org.omniai.sdk.interceptors.ratelimiting
 
-import org.omniai.sdk.core.pipeline.GatewayContext
-import org.omniai.sdk.core.pipeline.Interceptor
-import org.omniai.sdk.core.pipeline.InterceptorChain
-import org.omniai.sdk.core.pipeline.PipelineResult
+import org.omniai.sdk.application.pipeline.GatewayContext
+import org.omniai.sdk.application.pipeline.Interceptor
+import org.omniai.sdk.application.pipeline.InterceptorChain
+import org.omniai.sdk.application.pipeline.PipelineResult
 import org.omniai.sdk.domain.errors.TooManyRequestsError
 import org.omniai.sdk.interceptors.ratelimiting.domain.RateLimitResult
 import org.omniai.sdk.interceptors.ratelimiting.policy.RateLimitPolicy

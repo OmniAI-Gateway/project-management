@@ -1,6 +1,6 @@
 package org.omniai.sdk.gateway.client
 
-import org.omniai.sdk.core.http.HttpTransportClient
+import org.omniai.sdk.ports.outbound.http.HttpTransportClient
 import org.omniai.sdk.gateway.client.core.OmniAiRuntime
 import org.omniai.sdk.gateway.client.dsl.JsOmniAiConfig
 import kotlin.js.JsExport

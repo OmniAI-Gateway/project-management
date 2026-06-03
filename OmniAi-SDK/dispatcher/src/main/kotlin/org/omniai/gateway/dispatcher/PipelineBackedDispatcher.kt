@@ -1,12 +1,12 @@
 package org.omniai.gateway.dispatcher
 
 import kotlinx.coroutines.flow.Flow
-import org.omniai.sdk.core.commom.Either
-import org.omniai.sdk.core.commom.TypedMap
-import org.omniai.sdk.core.pipeline.GatewayContext
-import org.omniai.sdk.core.pipeline.GatewayPipeline
-import org.omniai.sdk.core.pipeline.RequestMode
-import org.omniai.sdk.core.ports.DispatcherPort
+import org.omniai.sdk.common.Either
+import org.omniai.sdk.common.TypedMap
+import org.omniai.sdk.application.pipeline.GatewayContext
+import org.omniai.sdk.application.pipeline.GatewayPipeline
+import org.omniai.sdk.application.pipeline.RequestMode
+import org.omniai.sdk.ports.inbound.DispatcherPort
 import org.omniai.sdk.domain.errors.DomainError
 import org.omniai.sdk.domain.requests.CommonRequest
 import org.omniai.sdk.domain.responses.CommonResponse

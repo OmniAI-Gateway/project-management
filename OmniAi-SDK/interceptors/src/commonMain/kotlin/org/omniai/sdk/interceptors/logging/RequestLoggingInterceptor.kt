@@ -2,10 +2,10 @@ package org.omniai.sdk.interceptors.logging
 
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.onCompletion
-import org.omniai.sdk.core.pipeline.GatewayContext
-import org.omniai.sdk.core.pipeline.Interceptor
-import org.omniai.sdk.core.pipeline.InterceptorChain
-import org.omniai.sdk.core.pipeline.PipelineResult
+import org.omniai.sdk.application.pipeline.GatewayContext
+import org.omniai.sdk.application.pipeline.Interceptor
+import org.omniai.sdk.application.pipeline.InterceptorChain
+import org.omniai.sdk.application.pipeline.PipelineResult
 import org.omniai.sdk.domain.responses.CommonResponseEvent
 import org.omniai.sdk.interceptors.logger.*
 

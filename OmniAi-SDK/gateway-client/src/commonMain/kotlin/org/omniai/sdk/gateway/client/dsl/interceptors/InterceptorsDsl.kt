@@ -1,9 +1,9 @@
 package org.omniai.sdk.gateway.client.dsl.interceptors
 
-import org.omniai.sdk.core.commom.key
-import org.omniai.sdk.core.commom.AttributeKey
-import org.omniai.sdk.core.pipeline.Interceptor
-import org.omniai.sdk.core.ports.OutboundPort
+import org.omniai.sdk.common.key
+import org.omniai.sdk.common.AttributeKey
+import org.omniai.sdk.application.pipeline.Interceptor
+import org.omniai.sdk.ports.outbound.OutboundPort
 import org.omniai.sdk.interceptors.circuitBreaker.CircuitBreakerConfig
 import org.omniai.sdk.interceptors.circuitBreaker.CircuitBreakerInterceptor
 import org.omniai.sdk.interceptors.circuitBreaker.CircuitBreakerStore

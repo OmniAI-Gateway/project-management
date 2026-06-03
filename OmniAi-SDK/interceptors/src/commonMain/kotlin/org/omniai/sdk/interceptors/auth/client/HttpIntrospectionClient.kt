@@ -1,6 +1,6 @@
 package org.omniai.sdk.interceptors.auth.client
 
-import org.omniai.sdk.core.http.*
+import org.omniai.sdk.ports.outbound.http.*
 import org.omniai.sdk.interceptors.auth.domain.IntrospectionResult
 import org.omniai.sdk.interceptors.auth.domain.OPAQUE
 import org.omniai.sdk.interceptors.auth.domain.OpaqueToken

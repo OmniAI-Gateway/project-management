@@ -17,8 +17,8 @@ import org.omniai.sdk.contracts.gemini.output.GeminiPromptFeedback
 import org.omniai.sdk.contracts.gemini.output.GeminiResponseContent
 import org.omniai.sdk.contracts.gemini.output.GeminiResponsePart
 import org.omniai.sdk.contracts.gemini.output.GeminiUsageMetadata
-import org.omniai.sdk.core.commom.TypedMap
-import org.omniai.sdk.core.ports.InboundTranslator
+import org.omniai.sdk.common.TypedMap
+import org.omniai.sdk.ports.inbound.InboundTranslator
 import org.omniai.sdk.domain.common.CommonGenerationConfig
 import org.omniai.sdk.domain.common.CommonRole
 import org.omniai.sdk.domain.common.CommonTool

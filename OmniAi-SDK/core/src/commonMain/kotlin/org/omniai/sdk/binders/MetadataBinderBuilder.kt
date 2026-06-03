@@ -1,6 +1,6 @@
 package org.omniai.sdk.binders
 
-import org.omniai.sdk.core.commom.AttributeKey
+import org.omniai.sdk.common.AttributeKey
 
 class MetadataBinderBuilder {
 

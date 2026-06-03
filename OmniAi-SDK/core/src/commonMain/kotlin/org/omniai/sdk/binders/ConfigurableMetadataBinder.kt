@@ -1,7 +1,7 @@
 package org.omniai.sdk.binders
 
-import org.omniai.sdk.core.commom.AttributeKey
-import org.omniai.sdk.core.commom.TypedMap
+import org.omniai.sdk.common.AttributeKey
+import org.omniai.sdk.common.TypedMap
 
 class ConfigurableMetadataBinder(
     private val bindings: List<BindingSpec<*>> = emptyList()

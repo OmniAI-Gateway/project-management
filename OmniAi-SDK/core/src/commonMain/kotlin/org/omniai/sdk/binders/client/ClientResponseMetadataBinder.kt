@@ -2,8 +2,8 @@ package org.omniai.sdk.binders.client
 
 import org.omniai.sdk.binders.IncomingContext
 import org.omniai.sdk.binders.buildMetadataBinder
-import org.omniai.sdk.core.commom.TypedMap
-import org.omniai.sdk.core.commom.key
+import org.omniai.sdk.common.TypedMap
+import org.omniai.sdk.common.key
 
 fun bindClientResponseMetadata(context: IncomingContext, headerNames: Set<String>): TypedMap {
     val binder = buildMetadataBinder {

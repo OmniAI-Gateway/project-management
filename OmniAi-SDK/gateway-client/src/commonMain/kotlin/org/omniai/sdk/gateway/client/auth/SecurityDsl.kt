@@ -4,7 +4,7 @@ import org.omniai.sdk.interceptors.auth.AuthorizationInput
 import org.omniai.sdk.interceptors.auth.Subject
 import org.omniai.sdk.interceptors.auth.Action
 import org.omniai.sdk.interceptors.auth.Resource
-import org.omniai.sdk.core.pipeline.GatewayContext
+import org.omniai.sdk.application.pipeline.GatewayContext
 import org.omniai.sdk.interceptors.auth.interfaces.PolicyDecisionPointPort
 import org.omniai.sdk.interceptors.auth.pdp.PassThroughPDP
 

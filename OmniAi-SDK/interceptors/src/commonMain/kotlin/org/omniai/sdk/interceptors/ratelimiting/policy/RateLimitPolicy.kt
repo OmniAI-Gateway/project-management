@@ -1,6 +1,6 @@
 package org.omniai.sdk.interceptors.ratelimiting.policy
 
-import org.omniai.sdk.core.pipeline.GatewayContext
+import org.omniai.sdk.application.pipeline.GatewayContext
 import org.omniai.sdk.interceptors.ratelimiting.domain.RateLimitTarget
 
 /**

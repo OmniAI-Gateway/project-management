@@ -1,6 +1,6 @@
 package org.omniai.sdk.interceptors.auth
 
-import org.omniai.sdk.core.pipeline.GatewayContext
+import org.omniai.sdk.application.pipeline.GatewayContext
 
 fun interface AuthorizationInputProvider {
     fun getAuthorizationInput(context: GatewayContext): AuthorizationInput

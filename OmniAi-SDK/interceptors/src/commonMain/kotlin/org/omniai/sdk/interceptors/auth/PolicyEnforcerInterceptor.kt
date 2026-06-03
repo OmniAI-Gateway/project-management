@@ -1,6 +1,6 @@
 package org.omniai.sdk.interceptors.auth
 
-import org.omniai.sdk.core.pipeline.*
+import org.omniai.sdk.application.pipeline.*
 import org.omniai.sdk.domain.errors.InvalidRequest
 import org.omniai.sdk.interceptors.auth.interfaces.PolicyDecisionPointPort
 

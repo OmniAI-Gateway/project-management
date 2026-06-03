@@ -1,7 +1,7 @@
 package org.omniai.sdk.interceptors.auth
 
-import org.omniai.sdk.core.commom.key
-import org.omniai.sdk.core.pipeline.*
+import org.omniai.sdk.common.key
+import org.omniai.sdk.application.pipeline.*
 import org.omniai.sdk.domain.common.AUTH_BEARER_TOKEN_KEY
 import org.omniai.sdk.domain.errors.InvalidRequest
 import org.omniai.sdk.interceptors.auth.cache.InMemoryKeyCache

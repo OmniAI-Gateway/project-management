@@ -26,7 +26,7 @@ import org.omniai.sdk.contracts.gemini.output.GeminiEventStream
 import org.omniai.sdk.contracts.gemini.output.GeminiGenerateContentResponse
 import org.omniai.sdk.contracts.gemini.output.GeminiResponsePart
 import org.omniai.sdk.contracts.gemini.output.GeminiUsageMetadata
-import org.omniai.sdk.core.ports.OutboundTranslator
+import org.omniai.sdk.ports.outbound.OutboundTranslator
 import org.omniai.sdk.domain.common.CommonRole
 import org.omniai.sdk.domain.common.CommonTool
 import org.omniai.sdk.domain.common.Model

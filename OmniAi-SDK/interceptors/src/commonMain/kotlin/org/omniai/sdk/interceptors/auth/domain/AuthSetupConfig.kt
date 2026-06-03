@@ -1,6 +1,6 @@
 package org.omniai.sdk.interceptors.auth.domain
 
-import org.omniai.sdk.core.http.HttpTransportClient
+import org.omniai.sdk.ports.outbound.http.HttpTransportClient
 
 sealed interface AuthSetupConfig {
 

@@ -1,7 +1,7 @@
 package org.omniai.sdk.gateway.client.dsl.inbounds
 
-import org.omniai.sdk.core.ports.InboundConnector
-import org.omniai.sdk.core.ports.DispatcherPort
+import org.omniai.sdk.ports.inbound.InboundConnector
+import org.omniai.sdk.ports.inbound.DispatcherPort
 import org.omniai.sdk.gateway.client.core.InboundRegistration
 import org.omniai.sdk.contracts.openai.input.OpenAiChatCompletionsRequest
 import org.omniai.sdk.contracts.openai.output.OpenAiChatCompletionsResponse
@@ -9,7 +9,7 @@ import org.omniai.sdk.contracts.anthropic.input.AnthropicMessagesRequest
 import org.omniai.sdk.contracts.anthropic.output.AnthropicMessageResponse
 import org.omniai.sdk.contracts.gemini.input.GeminiGenerateContentRequest
 import org.omniai.sdk.contracts.gemini.output.GeminiGenerateContentResponse
-import org.omniai.sdk.core.ports.InboundPort
+import org.omniai.sdk.ports.inbound.InboundPort
 
 class InboundsDsl {
     internal var openAiConnector: InboundConnector<OpenAiChatCompletionsRequest, OpenAiChatCompletionsResponse, OpenAiChatCompletionsResponse>? = null

@@ -4,7 +4,7 @@ import org.omniai.sdk.gateway.client.auth.AuthorizationServerConfig
 import org.omniai.sdk.gateway.client.auth.AuthorizationServerDsl
 import org.omniai.sdk.gateway.client.auth.SecurityConfig
 import org.omniai.sdk.gateway.client.auth.SecurityDsl
-import org.omniai.sdk.core.ports.DispatcherPort
+import org.omniai.sdk.ports.inbound.DispatcherPort
 import org.omniai.sdk.gateway.client.core.OmniAiConfig
 import org.omniai.sdk.gateway.client.core.ExecutionMode
 import org.omniai.sdk.gateway.client.dsl.inbounds.InboundsDsl

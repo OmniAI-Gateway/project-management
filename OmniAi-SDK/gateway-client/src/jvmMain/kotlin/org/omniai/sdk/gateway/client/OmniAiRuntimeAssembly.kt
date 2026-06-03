@@ -2,18 +2,18 @@ package org.omniai.sdk.gateway.client
 
 import org.omniai.gateway.dispatcher.PipelineBackedDispatcher
 import org.omniai.gateway.dispatcher.routingDispatcherFactory
-import org.omniai.sdk.core.commom.TypedMap
-import org.omniai.sdk.core.http.HttpTransportClient
-import org.omniai.sdk.core.pipeline.GatewayPipelineBuilder
-import org.omniai.sdk.core.pipeline.Interceptor
-import org.omniai.sdk.core.ports.DispatcherPort
+import org.omniai.sdk.common.TypedMap
+import org.omniai.sdk.ports.outbound.http.HttpTransportClient
+import org.omniai.sdk.application.pipeline.GatewayPipelineBuilder
+import org.omniai.sdk.application.pipeline.Interceptor
+import org.omniai.sdk.ports.inbound.DispatcherPort
 import org.omniai.sdk.gateway.client.auth.AuthorizationServerConfig
 import org.omniai.sdk.inbound.anthropic.AnthropicInboundAdapter
 import org.omniai.sdk.inbound.gemini.GeminiInboundAdapter
 import org.omniai.sdk.inbound.openai.OpenAiInboundAdapter
 import org.omniai.sdk.interceptors.auth.AuthenticationInterceptor
 import org.omniai.sdk.interceptors.auth.PolicyEnforcerInterceptor
-import org.omniai.sdk.core.pipeline.getInterceptorPriority
+import org.omniai.sdk.application.pipeline.getInterceptorPriority
 import org.omniai.sdk.gateway.client.core.OmniAiConfig
 import org.omniai.sdk.gateway.client.auth.SecurityConfig
 import org.omniai.sdk.gateway.client.core.OmniAiRuntime

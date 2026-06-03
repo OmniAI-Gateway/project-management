@@ -1,7 +1,7 @@
 package org.omniai.sdk.gateway.client.dsl.interceptors
 
 import MetricsInterceptor
-import org.omniai.sdk.core.pipeline.Interceptor
+import org.omniai.sdk.application.pipeline.Interceptor
 import org.omniai.sdk.interceptors.metrics.CustomMetric
 import org.omniai.sdk.interceptors.metrics.DefaultLatencyMetricConfig
 import org.omniai.sdk.interceptors.metrics.DefaultLatencyMetricConfigBuilder

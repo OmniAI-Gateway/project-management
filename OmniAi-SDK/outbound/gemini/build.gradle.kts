@@ -20,7 +20,7 @@ kotlin {
     sourceSets {
         commonMain.dependencies {
             implementation(project(":core"))
-            implementation(project(":contracts:ktor-http"))
+            implementation(project(":http-client"))
             implementation(project(":contracts:gemini"))
             implementation(libs.kotlinx.serialization.json)
         }

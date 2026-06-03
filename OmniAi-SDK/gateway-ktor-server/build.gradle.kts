@@ -15,7 +15,7 @@ dependencies {
     implementation(project(":contracts:openai"))
     implementation(project(":contracts:anthropic"))
     implementation(project(":contracts:gemini"))
-    implementation(project(":contracts:ktor-http"))
+    implementation(project(":http-client"))
 
     implementation(libs.ktor.server.core)
     implementation(libs.kotlinx.serialization.json)

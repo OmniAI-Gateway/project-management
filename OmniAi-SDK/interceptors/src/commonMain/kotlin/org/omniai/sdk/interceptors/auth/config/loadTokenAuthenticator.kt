@@ -9,8 +9,8 @@ import org.omniai.sdk.interceptors.auth.domain.TokenValidationParams
 import org.omniai.sdk.interceptors.auth.interfaces.IntrospectionCache
 import org.omniai.sdk.interceptors.auth.interfaces.PublicKeyCache
 import org.omniai.sdk.interceptors.auth.oidc.OidcDiscovery
-import org.omniai.sdk.core.http.HttpCallResult
-import org.omniai.sdk.core.http.toDomainError
+import org.omniai.sdk.ports.outbound.http.HttpCallResult
+import org.omniai.sdk.ports.outbound.http.toDomainError
 import org.omniai.sdk.domain.common.Provider
 import org.omniai.sdk.interceptors.auth.authenticators.*
 import org.omniai.sdk.interceptors.auth.engines.*

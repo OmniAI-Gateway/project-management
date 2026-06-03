@@ -12,11 +12,11 @@ import org.omniai.sdk.contracts.anthropic.input.AnthropicMessageInput
 import org.omniai.sdk.contracts.anthropic.input.AnthropicMessagesRequest
 import org.omniai.sdk.contracts.anthropic.input.ListContentBlock
 import org.omniai.sdk.contracts.anthropic.output.AnthropicStreamEvent
-import org.omniai.sdk.core.commom.Either
-import org.omniai.sdk.core.commom.Success
-import org.omniai.sdk.core.commom.TypedMap
-import org.omniai.sdk.core.commom.success
-import org.omniai.sdk.core.ports.DispatcherPort
+import org.omniai.sdk.common.Either
+import org.omniai.sdk.common.Success
+import org.omniai.sdk.common.TypedMap
+import org.omniai.sdk.common.success
+import org.omniai.sdk.ports.inbound.DispatcherPort
 import org.omniai.sdk.domain.common.CommonRole
 import org.omniai.sdk.domain.common.Model
 import org.omniai.sdk.domain.common.Provider

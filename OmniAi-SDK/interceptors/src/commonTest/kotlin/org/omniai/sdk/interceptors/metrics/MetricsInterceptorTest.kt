@@ -9,10 +9,10 @@ import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
 import kotlin.test.fail
-import org.omniai.sdk.core.commom.key
-import org.omniai.sdk.core.pipeline.GatewayContext
-import org.omniai.sdk.core.pipeline.InterceptorChain
-import org.omniai.sdk.core.pipeline.PipelineResult
+import org.omniai.sdk.common.key
+import org.omniai.sdk.application.pipeline.GatewayContext
+import org.omniai.sdk.application.pipeline.InterceptorChain
+import org.omniai.sdk.application.pipeline.PipelineResult
 import org.omniai.sdk.domain.common.CommonRole
 import org.omniai.sdk.domain.common.Model
 import org.omniai.sdk.domain.common.Provider

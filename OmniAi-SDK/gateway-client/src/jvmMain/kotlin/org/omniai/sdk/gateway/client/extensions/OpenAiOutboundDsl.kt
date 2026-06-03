@@ -1,7 +1,7 @@
 package org.omniai.sdk.gateway.client.extensions
 
-import org.omniai.sdk.core.http.HttpTransportClient
-import org.omniai.sdk.core.ports.OutboundPort
+import org.omniai.sdk.ports.outbound.http.HttpTransportClient
+import org.omniai.sdk.ports.outbound.OutboundPort
 import org.omniai.sdk.gateway.client.dsl.outbounds.OutboundsDsl
 import org.omniai.sdk.adapters.openai.OpenAiOutboundAdapter
 
