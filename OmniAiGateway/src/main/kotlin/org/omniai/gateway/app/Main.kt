@@ -5,7 +5,6 @@ import io.ktor.server.engine.embeddedServer
 import io.ktor.server.netty.Netty
 import io.ktor.server.routing.routing
 import org.omniai.sdk.core.http.KtorHttpTransportClient
-import org.omniai.sdk.core.pipeline.PipelineResult
 import org.omniai.sdk.gateway.client.assemble
 import org.omniai.sdk.gateway.client.dsl.omniAiGateway
 import org.omniai.sdk.gateway.client.extensions.anthropic
@@ -22,6 +21,7 @@ import org.omniai.sdk.interceptors.auth.AUTH_RESULT_KEY
 import org.omniai.sdk.interceptors.auth.domain.AuthValidationResult
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.contentOrNull
+import org.omniai.sdk.application.pipeline.PipelineResult
 
 suspend fun main() {
     val config = loadGatewayConfig()
