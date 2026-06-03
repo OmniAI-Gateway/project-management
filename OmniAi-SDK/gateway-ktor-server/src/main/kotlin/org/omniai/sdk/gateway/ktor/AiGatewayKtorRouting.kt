@@ -20,13 +20,9 @@ import org.omniai.sdk.contracts.openai.input.OpenAiChatCompletionsRequest
 import org.omniai.sdk.contracts.openai.output.OpenAiChatCompletionsResponse
 import org.omniai.sdk.common.Either
 import org.omniai.sdk.common.TypedMap
-import org.omniai.sdk.domain.errors.ApiDownError
 import org.omniai.sdk.domain.errors.DomainError
-import org.omniai.sdk.domain.errors.InvalidRequest
-import org.omniai.sdk.domain.errors.ParsingError
-import org.omniai.sdk.domain.errors.ProviderApiError
 import org.omniai.sdk.ports.inbound.InboundConnector
-import org.omniai.sdk.ports.outbound.http.ErrorHttpMapper
+import org.omniai.sdk.core.http.ErrorHttpMapper
 
 val defaultGatewayJson = Json {
     ignoreUnknownKeys = true

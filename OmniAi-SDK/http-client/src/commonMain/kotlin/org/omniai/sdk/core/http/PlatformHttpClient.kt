@@ -1,4 +1,4 @@
-package org.omniai.sdk.ports.outbound.http
+package org.omniai.sdk.core.http
 
 import io.ktor.client.HttpClient
 import io.ktor.client.HttpClientConfig

@@ -1,4 +1,4 @@
-package org.omniai.sdk.ports.outbound.http
+package org.omniai.sdk.core.http
 
 import io.ktor.http.HttpStatusCode
 import org.omniai.sdk.domain.errors.ErrorCode

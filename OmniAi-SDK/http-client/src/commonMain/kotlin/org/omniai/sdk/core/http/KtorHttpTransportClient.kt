@@ -1,4 +1,4 @@
-package org.omniai.sdk.ports.outbound.http
+package org.omniai.sdk.core.http
 
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.sse.sse
@@ -28,6 +28,10 @@ import kotlinx.io.IOException
 import org.omniai.sdk.binders.IncomingContext
 import org.omniai.sdk.binders.client.bindClientResponseMetadata
 import org.omniai.sdk.common.TypedMap
+import org.omniai.sdk.ports.outbound.http.HttpCallResult
+import org.omniai.sdk.ports.outbound.http.HttpMethod
+import org.omniai.sdk.ports.outbound.http.HttpTransportClient
+import org.omniai.sdk.ports.outbound.http.RequestConfig
 
 class KtorHttpTransportClient(
     private val client: HttpClient,
