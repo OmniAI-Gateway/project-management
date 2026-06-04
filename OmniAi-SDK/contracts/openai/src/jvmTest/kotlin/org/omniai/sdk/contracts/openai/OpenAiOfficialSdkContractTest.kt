@@ -28,6 +28,7 @@ import org.omniai.sdk.contracts.openai.output.OpenAiChatCompletionsResponse
 import org.omniai.sdk.contracts.openai.output.OpenAiDelta
 import org.omniai.sdk.contracts.openai.output.OpenAiErrorResponse
 import org.omniai.sdk.contracts.openai.output.OpenAiMessageOutput
+import org.omniai.sdk.testutils.LocalHttpMockServer
 
 class OpenAiOfficialSdkContractTest {
 
@@ -38,7 +39,7 @@ class OpenAiOfficialSdkContractTest {
 
     @Test
     fun `official SDK request maps to OpenAI request DTO`() {
-        OpenAiLocalHttpTestServer(responseBody = completionResponseJson("pong")).use { server ->
+        LocalHttpMockServer(responseBody = completionResponseJson("pong")).use { server ->
             server.start()
 
             val client: OpenAIClient = OpenAIOkHttpClient.builder()
@@ -69,7 +70,7 @@ class OpenAiOfficialSdkContractTest {
 
     @Test
     fun `official SDK keeps message order in DTO parsing`() {
-        OpenAiLocalHttpTestServer(responseBody = completionResponseJson("ok")).use { server ->
+        LocalHttpMockServer(responseBody = completionResponseJson("ok")).use { server ->
             server.start()
 
             val client: OpenAIClient = OpenAIOkHttpClient.builder()

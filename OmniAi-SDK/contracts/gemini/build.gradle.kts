@@ -28,6 +28,7 @@ kotlin {
 
         jvmTest.dependencies {
             implementation("com.google.genai:google-genai:1.44.0")
+            implementation(project(":contracts:test-utils"))
         }
     }
 }

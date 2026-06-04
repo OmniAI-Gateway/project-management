@@ -28,6 +28,7 @@ kotlin {
 
         jvmTest.dependencies {
             implementation("com.anthropic:anthropic-java:2.18.0")
+            implementation(project(":contracts:test-utils"))
         }
     }
 }

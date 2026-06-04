@@ -31,6 +31,7 @@ import org.omniai.sdk.contracts.anthropic.output.AnthropicMessageResponse
 import org.omniai.sdk.contracts.anthropic.output.AnthropicOutputContent
 import org.omniai.sdk.contracts.anthropic.output.AnthropicStreamDelta
 import org.omniai.sdk.contracts.anthropic.output.AnthropicStreamEvent
+import org.omniai.sdk.testutils.LocalHttpMockServer
 
 class AnthropicOfficialSdkContractTest {
 
@@ -44,7 +45,7 @@ class AnthropicOfficialSdkContractTest {
         val sentText = "ping from sdk"
         val responseJson = anthropicResponseJson(sentText)
 
-        AnthropicLocalHttpTestServer(responseBody = responseJson).use { testServer ->
+        LocalHttpMockServer(responseBody = responseJson).use { testServer ->
             testServer.start()
 
             val client: AnthropicClient = AnthropicOkHttpClient.builder()
@@ -75,7 +76,7 @@ class AnthropicOfficialSdkContractTest {
 
     @Test
     fun `sdk request includes expected transport metadata and body fields`() {
-        AnthropicLocalHttpTestServer(responseBody = successResponseJson()).use { server ->
+        LocalHttpMockServer(responseBody = successResponseJson()).use { server ->
             server.start()
 
             val client: AnthropicClient = AnthropicOkHttpClient.builder()
@@ -108,7 +109,7 @@ class AnthropicOfficialSdkContractTest {
 
     @Test
     fun `sdk preserves order when sending multiple user messages`() {
-        AnthropicLocalHttpTestServer(responseBody = successResponseJson()).use { server ->
+        LocalHttpMockServer(responseBody = successResponseJson()).use { server ->
             server.start()
 
             val client: AnthropicClient = AnthropicOkHttpClient.builder()

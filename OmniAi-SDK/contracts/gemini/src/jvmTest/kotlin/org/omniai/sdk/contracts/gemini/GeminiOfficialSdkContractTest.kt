@@ -29,6 +29,7 @@ import org.omniai.sdk.contracts.gemini.output.GeminiFunctionCall as GeminiOutput
 import org.omniai.sdk.contracts.gemini.output.GeminiErrorResponse
 import org.omniai.sdk.contracts.gemini.output.GeminiGenerateContentResponse
 import org.omniai.sdk.contracts.gemini.output.GeminiResponsePart
+import org.omniai.sdk.testutils.LocalHttpMockServer
 
 class GeminiOfficialSdkContractTest {
 
@@ -39,7 +40,7 @@ class GeminiOfficialSdkContractTest {
 
     @Test
     fun `official SDK request maps to Gemini request DTO`() {
-        GeminiLocalHttpTestServer(responseBody = sdkResponseJson("pong")).use { server ->
+        LocalHttpMockServer(responseBody = sdkResponseJson("pong")).use { server ->
             server.start()
 
             val client = Client.builder()

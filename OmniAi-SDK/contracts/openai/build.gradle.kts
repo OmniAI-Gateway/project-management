@@ -28,6 +28,7 @@ kotlin {
 
         jvmTest.dependencies {
             implementation("com.openai:openai-java:4.30.0")
+            implementation(project(":contracts:test-utils"))
         }
     }
 }
