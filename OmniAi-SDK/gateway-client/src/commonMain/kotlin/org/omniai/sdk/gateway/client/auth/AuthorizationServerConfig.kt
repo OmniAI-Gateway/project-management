@@ -3,8 +3,6 @@ package org.omniai.sdk.gateway.client.auth
 
 import org.omniai.sdk.interceptors.auth.interfaces.TokenAuthenticator
 import org.omniai.sdk.interceptors.auth.interfaces.IntrospectionCache
-import org.omniai.sdk.interceptors.auth.interfaces.PolicyDecisionPointPort
-import org.omniai.sdk.interceptors.auth.pdp.PassThroughPDP
 import kotlin.time.Duration
 
 sealed interface AuthorizationServerConfig {

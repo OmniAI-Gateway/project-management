@@ -3,20 +3,21 @@ package org.omniai.gateway.app
 import io.ktor.server.engine.*
 import io.ktor.server.engine.embeddedServer
 import io.ktor.server.netty.Netty
+import io.ktor.server.routing.Route
 import io.ktor.server.routing.routing
 import org.omniai.sdk.core.http.KtorHttpTransportClient
-import org.omniai.sdk.gateway.client.assemble
 import org.omniai.sdk.gateway.client.dsl.omniAiGateway
-import org.omniai.sdk.gateway.client.extensions.anthropic
-import org.omniai.sdk.gateway.client.extensions.gemini
-import org.omniai.sdk.gateway.client.extensions.openAI
+import org.omniai.sdk.gateway.client.startServer
+import org.omniai.sdk.gateway.client.extensions.outbounds.anthropic
+import org.omniai.sdk.gateway.client.extensions.outbounds.gemini
+import org.omniai.sdk.gateway.client.extensions.outbounds.openAI
+import org.omniai.sdk.gateway.client.extensions.inbounds.openAi
+import org.omniai.sdk.gateway.client.extensions.inbounds.anthropic as inboundAnthropic
+import org.omniai.sdk.gateway.client.extensions.inbounds.gemini as inboundGemini
 import org.omniai.sdk.gateway.ktor.ClientIpMetadataKey
 import org.omniai.sdk.gateway.ktor.openAiConnector
 import org.omniai.sdk.gateway.ktor.anthropicConnector
 import org.omniai.sdk.gateway.ktor.geminiConnector
-import org.omniai.sdk.inbound.openai.OpenAiInboundAdapter
-import org.omniai.sdk.inbound.anthropic.AnthropicInboundAdapter
-import org.omniai.sdk.inbound.gemini.GeminiInboundAdapter
 import org.omniai.sdk.interceptors.auth.AUTH_RESULT_KEY
 import org.omniai.sdk.interceptors.auth.domain.AuthValidationResult
 import kotlinx.serialization.json.jsonPrimitive
@@ -29,7 +30,34 @@ suspend fun main() {
     val telemetryRuntime = buildTelemetryRuntime(config)
     val httpClient = KtorHttpTransportClient.default()
 
+    var ktorRoute: Route? = null
+    val server = embeddedServer(
+        factory = Netty,
+        configure = {
+            connector {
+                port = config.port
+                host = "0.0.0.0"
+            }
+            requestReadTimeoutSeconds = 60
+            responseWriteTimeoutSeconds = 120
+            tcpKeepAlive = true
+        },
+        module = {
+            configureHttp(jsonConfig)
+            routing {
+                ktorRoute = this
+            }
+        }
+    )
+
     val gateway = omniAiGateway {
+        inbounds {
+            requireNotNull(ktorRoute) { "Ktor routing was not initialized" }.let { route ->
+                openAi(route.openAiConnector(json = jsonConfig))
+                inboundAnthropic(route.anthropicConnector(json = jsonConfig))
+                inboundGemini(route.geminiConnector(json = jsonConfig))
+            }
+        }
         execution {
             useNativePipeline {
                 outbounds {
@@ -94,7 +122,6 @@ suspend fun main() {
                                 enabled = true
                             }
                             customMetrics {
-                                
                                 counter(
                                     name = "gateway.llm.tokens",
                                     description = "Total de tokens consumidos",
@@ -140,27 +167,9 @@ suspend fun main() {
         }
     }
 
-    val runtime = gateway.assemble(httpClient)
-
-    val server = embeddedServer(
-        factory = Netty,
-        configure = {
-            connector {
-                port = config.port
-                host = "0.0.0.0"
-            }
-            requestReadTimeoutSeconds = 60
-            responseWriteTimeoutSeconds = 120
-            tcpKeepAlive = true
-        },
-        module = {
-            configureHttp(jsonConfig)
-            routing {
-                openAiConnector(json = jsonConfig).connect(OpenAiInboundAdapter(runtime.dispatcher))
-                anthropicConnector(json = jsonConfig).connect(AnthropicInboundAdapter(runtime.dispatcher))
-                geminiConnector(json = jsonConfig).connect(GeminiInboundAdapter(runtime.dispatcher))
-            }
-        }
+    gateway.startServer(
+        httpClient = httpClient,
+        onStart = { server.start(wait = true) },
+        onEnd = { server.stop(1000, 5000) }
     )
-    server.start(wait = true)
 }

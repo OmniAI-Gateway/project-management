@@ -8,9 +8,7 @@ import org.omniai.sdk.application.pipeline.GatewayPipelineBuilder
 import org.omniai.sdk.application.pipeline.Interceptor
 import org.omniai.sdk.ports.inbound.DispatcherPort
 import org.omniai.sdk.gateway.client.auth.AuthorizationServerConfig
-import org.omniai.sdk.inbound.anthropic.AnthropicInboundAdapter
-import org.omniai.sdk.inbound.gemini.GeminiInboundAdapter
-import org.omniai.sdk.inbound.openai.OpenAiInboundAdapter
+
 import org.omniai.sdk.interceptors.auth.AuthenticationInterceptor
 import org.omniai.sdk.interceptors.auth.PolicyEnforcerInterceptor
 import org.omniai.sdk.application.pipeline.getInterceptorPriority
@@ -18,6 +16,7 @@ import org.omniai.sdk.gateway.client.core.OmniAiConfig
 import org.omniai.sdk.gateway.client.auth.SecurityConfig
 import org.omniai.sdk.gateway.client.core.OmniAiRuntime
 import org.omniai.sdk.gateway.client.core.ExecutionMode
+import org.omniai.sdk.gateway.client.platform.addShutdownHook
 import org.omniai.sdk.interceptors.auth.domain.AuthSetupConfig
 
 suspend fun OmniAiConfig.assemble(
@@ -32,33 +31,23 @@ suspend fun OmniAiConfig.assemble(
 
 suspend fun OmniAiConfig.startServer(
     httpClient: HttpTransportClient,
-    serverLogic: () -> Unit
+    onStart: () -> Unit,
+    onEnd: () -> Unit = {}
 ) {
     val runtime = assemble(httpClient)
     
     // Initialize Inbounds and pass them to their registered connectors
-    inbounds.openAiConnector?.let { connector ->
-        val adapter = OpenAiInboundAdapter(runtime.dispatcher)
-        connector.connect(adapter)
-    }
-    
-    inbounds.anthropicConnector?.let { connector ->
-        val adapter = AnthropicInboundAdapter(runtime.dispatcher)
-        connector.connect(adapter)
-    }
-    
-    inbounds.geminiConnector?.let { connector ->
-        val adapter = GeminiInboundAdapter(runtime.dispatcher)
-        connector.connect(adapter)
-    }
-    
-    inbounds.customFactories.forEach { (_, setup) ->
+    inbounds.setups.forEach { setup ->
         val adapter = setup.factory(runtime.dispatcher)
         setup.connect(adapter)
     }
     
+    addShutdownHook {
+        onEnd()
+    }
+    
     // Once everything is connected and assembled, start the user's server
-    serverLogic()
+    onStart()
 }
 
 private suspend fun OmniAiConfig.resolveDispatcher(httpClient: HttpTransportClient): DispatcherPort {

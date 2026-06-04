@@ -12,7 +12,9 @@ import org.omniai.sdk.interceptors.metrics.MetricsInterceptorConfig
 import org.omniai.sdk.interceptors.metrics.MetricsPort
 import org.omniai.sdk.interceptors.metrics.Tracer
 import org.omniai.sdk.interceptors.metrics.TracingInterceptor
+import org.omniai.sdk.gateway.client.dsl.GatewayDsl
 
+@GatewayDsl
 class MetricsInterceptorBuilder {
     var metricsPort: MetricsPort? = null
     var tracer: Tracer? = null

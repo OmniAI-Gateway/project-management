@@ -17,6 +17,7 @@ kotlin {
         commonMain.dependencies {
             implementation(project(":core"))
             api(project(":pipeline-engine"))
+            implementation(project(":dispatcher"))
             implementation(project(":interceptors"))
             implementation(project(":inbound:openai"))
             implementation(project(":inbound:anthropic"))
@@ -24,11 +25,6 @@ kotlin {
             implementation(project(":contracts:openai"))
             implementation(project(":contracts:anthropic"))
             implementation(project(":contracts:gemini"))
-        }
-
-        jvmMain.dependencies {
-            implementation(project(":dispatcher"))
-            implementation(project(":interceptors"))
             implementation(project(":http-client"))
             implementation(project(":outbound:openai"))
             implementation(project(":outbound:anthropic"))
@@ -40,4 +36,3 @@ kotlin {
         }
     }
 }
-

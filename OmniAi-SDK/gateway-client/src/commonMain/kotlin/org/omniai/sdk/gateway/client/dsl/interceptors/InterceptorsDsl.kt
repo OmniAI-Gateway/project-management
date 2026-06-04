@@ -10,8 +10,11 @@ import org.omniai.sdk.interceptors.circuitBreaker.CircuitBreakerStore
 import org.omniai.sdk.interceptors.circuitBreaker.InMemoryCircuitBreakerStore
 import org.omniai.sdk.interceptors.fallback.FallbackInterceptor
 
+import org.omniai.sdk.gateway.client.dsl.GatewayDsl
+
 val DefaultDeniedOutboundsKey = key<Set<String>>("denied_outbounds")
 
+@GatewayDsl
 class InterceptorsDsl {
     private val interceptors = mutableListOf<Interceptor>()
     private val deferredInterceptors = mutableListOf<(List<OutboundPort>) -> Interceptor>()
@@ -57,6 +60,7 @@ class InterceptorsDsl {
         interceptors.toList() + deferredInterceptors.map { it(outbounds) }
 }
 
+@GatewayDsl
 class CircuitBreakerBuilder {
     var store: CircuitBreakerStore = InMemoryCircuitBreakerStore()
     var config: CircuitBreakerConfig = CircuitBreakerConfig()

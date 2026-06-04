@@ -4,10 +4,12 @@ import org.omniai.sdk.interceptors.ratelimiting.RateLimitInterceptor
 import org.omniai.sdk.interceptors.ratelimiting.policy.RateLimitPolicy
 import org.omniai.sdk.interceptors.ratelimiting.store.InMemoryRateLimitStore
 import org.omniai.sdk.interceptors.ratelimiting.store.RateLimitStore
+import org.omniai.sdk.gateway.client.dsl.GatewayDsl
 
 /**
  * DSL Builder for configuring a [RateLimitInterceptor].
  */
+@GatewayDsl
 class RateLimitingInterceptorBuilder {
     /**
      * The storage backend to use for rate limiting.

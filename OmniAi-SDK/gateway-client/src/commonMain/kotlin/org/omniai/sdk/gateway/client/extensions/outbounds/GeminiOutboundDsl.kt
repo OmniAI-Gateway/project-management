@@ -1,18 +1,19 @@
-package org.omniai.sdk.gateway.client.extensions
+package org.omniai.sdk.gateway.client.extensions.outbounds
 
 import org.omniai.sdk.ports.outbound.http.HttpTransportClient
 import org.omniai.sdk.ports.outbound.OutboundPort
 import org.omniai.sdk.gateway.client.dsl.outbounds.OutboundsDsl
-import org.omniai.sdk.adapters.anthropic.AnthropicOutboundAdapter
+import org.omniai.sdk.adapters.gemini.GeminiOutboundAdapter
+import org.omniai.sdk.domain.common.Model
 
-data class AnthropicOutboundConfig(
+data class GeminiOutboundConfig(
     val key: String,
     val models: List<String>,
     val baseUrl: String? = null
 )
 
-class AnthropicOutboundBuilder(private val httpClient: HttpTransportClient) {
-    private val configurations = mutableListOf<AnthropicOutboundConfig>()
+class GeminiOutboundBuilder(private val httpClient: HttpTransportClient) {
+    private val configurations = mutableListOf<GeminiOutboundConfig>()
     private var currentBaseUrl: String? = null
 
     fun baseUrl(url: String) {
@@ -21,7 +22,7 @@ class AnthropicOutboundBuilder(private val httpClient: HttpTransportClient) {
 
     fun apiKey(key: String, block: ModelMappingBuilder.() -> Unit) {
         val mapping = ModelMappingBuilder().apply(block).build()
-        configurations.add(AnthropicOutboundConfig(key, mapping, currentBaseUrl))
+        configurations.add(GeminiOutboundConfig(key, mapping, currentBaseUrl))
         currentBaseUrl = null
     }
 
@@ -31,15 +32,15 @@ class AnthropicOutboundBuilder(private val httpClient: HttpTransportClient) {
             config.models.forEach { modelName ->
                 ports.add(
                     if (config.baseUrl != null) {
-                        AnthropicOutboundAdapter(
-                            model = org.omniai.sdk.domain.common.Model(modelName),
+                        GeminiOutboundAdapter(
+                            model = Model(modelName),
                             apiKey = config.key,
                             baseUrl = config.baseUrl,
                             transportClient = httpClient
                         )
                     } else {
-                        AnthropicOutboundAdapter(
-                            model = org.omniai.sdk.domain.common.Model(modelName),
+                        GeminiOutboundAdapter(
+                            model = Model(modelName),
                             apiKey = config.key,
                             transportClient = httpClient
                         )
@@ -51,7 +52,7 @@ class AnthropicOutboundBuilder(private val httpClient: HttpTransportClient) {
     }
 }
 
-fun OutboundsDsl.anthropic(httpClient: HttpTransportClient, block: AnthropicOutboundBuilder.() -> Unit) {
-    val builder = AnthropicOutboundBuilder(httpClient).apply(block)
+fun OutboundsDsl.gemini(httpClient: HttpTransportClient, block: GeminiOutboundBuilder.() -> Unit) {
+    val builder = GeminiOutboundBuilder(httpClient).apply(block)
     builder.buildPorts().forEach { use(it) }
 }

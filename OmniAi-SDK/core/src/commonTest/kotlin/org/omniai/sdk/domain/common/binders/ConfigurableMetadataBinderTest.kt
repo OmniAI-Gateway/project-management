@@ -28,10 +28,9 @@ class ConfigurableMetadataBinderTest {
 
         val result = binder.bind(context)
 
-        // Assuming your TypedMap has a get(AttributeKey) function
-        assertEquals(100, result.get(intKey))
-        assertEquals(true, result.get(boolKey))
-        assertEquals("user-123", result.get(stringKey))
+        assertEquals(100, result[intKey])
+        assertEquals(true, result[boolKey])
+        assertEquals("user-123", result[stringKey])
     }
 
     @Test

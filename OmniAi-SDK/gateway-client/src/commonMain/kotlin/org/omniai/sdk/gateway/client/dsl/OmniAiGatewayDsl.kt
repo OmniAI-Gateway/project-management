@@ -1,7 +1,5 @@
 package org.omniai.sdk.gateway.client.dsl
 
-import org.omniai.sdk.gateway.client.auth.AuthorizationServerConfig
-import org.omniai.sdk.gateway.client.auth.AuthorizationServerDsl
 import org.omniai.sdk.gateway.client.auth.SecurityConfig
 import org.omniai.sdk.gateway.client.auth.SecurityDsl
 import org.omniai.sdk.ports.inbound.DispatcherPort
@@ -14,6 +12,7 @@ import org.omniai.sdk.gateway.client.dsl.interceptors.InterceptorsDsl
 fun omniAiGateway(block: OmniAiGatewayDsl.() -> Unit): OmniAiConfig =
     OmniAiGatewayDsl().apply(block).build()
 
+@GatewayDsl
 class OmniAiGatewayDsl {
     private val inboundsDsl = InboundsDsl()
     private var executionMode: ExecutionMode? = null
@@ -43,6 +42,7 @@ class OmniAiGatewayDsl {
     }
 }
 
+@GatewayDsl
 class ExecutionDsl {
     private var executionMode: ExecutionMode? = null
 
@@ -61,6 +61,7 @@ class ExecutionDsl {
     }
 }
 
+@GatewayDsl
 class NativePipelineDsl {
     private val outboundsDsl = OutboundsDsl()
     private val interceptorsDsl = InterceptorsDsl()

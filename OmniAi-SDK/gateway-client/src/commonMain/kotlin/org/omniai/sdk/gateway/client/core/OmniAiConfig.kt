@@ -8,17 +8,7 @@ import org.omniai.sdk.ports.outbound.OutboundPort
 import org.omniai.sdk.domain.common.Provider
 import org.omniai.sdk.gateway.client.auth.AuthorizationServerConfig
 import org.omniai.sdk.gateway.client.auth.SecurityConfig
-import org.omniai.sdk.inbound.anthropic.AnthropicInboundAdapter
-import org.omniai.sdk.inbound.gemini.GeminiInboundAdapter
-import org.omniai.sdk.inbound.openai.OpenAiInboundAdapter
-import org.omniai.sdk.gateway.client.dsl.inbounds.CustomInboundSetup
-
-import org.omniai.sdk.contracts.openai.input.OpenAiChatCompletionsRequest
-import org.omniai.sdk.contracts.openai.output.OpenAiChatCompletionsResponse
-import org.omniai.sdk.contracts.anthropic.input.AnthropicMessagesRequest
-import org.omniai.sdk.contracts.anthropic.output.AnthropicMessageResponse
-import org.omniai.sdk.contracts.gemini.input.GeminiGenerateContentRequest
-import org.omniai.sdk.contracts.gemini.output.GeminiGenerateContentResponse
+import org.omniai.sdk.ports.inbound.InboundPort
 
 /**
  * Final immutable configuration produced by the OmniAi DSL.
@@ -38,10 +28,12 @@ data class OmniAiRuntime(
 )
 
 data class InboundRegistration(
-    val openAiConnector: InboundConnector<OpenAiChatCompletionsRequest, OpenAiChatCompletionsResponse, OpenAiChatCompletionsResponse>?,
-    val anthropicConnector: InboundConnector<AnthropicMessagesRequest, AnthropicMessageResponse, org.omniai.sdk.contracts.anthropic.output.AnthropicStreamEvent>?,
-    val geminiConnector: InboundConnector<GeminiGenerateContentRequest, GeminiGenerateContentResponse, GeminiGenerateContentResponse>?,
-    val customFactories: Map<String, CustomInboundSetup>
+    val setups: List<InboundSetup>
+)
+
+data class InboundSetup(
+    val factory: (DispatcherPort) -> InboundPort<*, *, *>,
+    val connect: (InboundPort<*, *, *>) -> Unit
 )
 
 sealed interface ExecutionMode {

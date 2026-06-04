@@ -25,17 +25,8 @@ object JsOmniAiGatewayRuntime {
         config: JsOmniAiConfig,
         httpClient: dynamic
     ): Promise<dynamic> = GlobalScope.promise {
-        // Here we would delegate to the actual multiplatform or JS-specific assembly.
-        // For pure JS compatibility, we return a Promise that will resolve with the Runtime.
-        // This relies on the core Kotlin `assemble` logic once `services` are fully multiplatform.
         val transportClient = httpClient.unsafeCast<HttpTransportClient>()
-        
-        // As a placeholder for JS compatibility logic:
-        // config.config.assemble(transportClient) 
-        // (Assuming a common assemble method becomes available or we implement a JS-specific service factory)
-        
-        // This is a compatibility layer stub to show the API structure requested.
-        js("({ status: 'assembled', config: config })")
+        config.config.assemble(transportClient)
     }
 
     /**
@@ -45,18 +36,10 @@ object JsOmniAiGatewayRuntime {
     fun startServer(
         config: JsOmniAiConfig,
         httpClient: dynamic,
-        serverLogic: () -> Unit
+        onStart: () -> Unit,
+        onEnd: () -> Unit = {}
     ): Promise<Unit> = GlobalScope.promise {
-        // Similar to the JVM assembly, we would resolve the services and connect adapters here.
         val transportClient = httpClient.unsafeCast<HttpTransportClient>()
-        
-        // Initialization logic for JS environment
-        val inbounds = config.config.inbounds
-        
-        // We'd connect the adapters to connectors just like in JVM
-        // inbounds.openAiConnector?.let { connector -> ... }
-        
-        // Execute the user server logic callback
-        serverLogic()
+        config.config.startServer(transportClient, onStart, onEnd)
     }
 }
