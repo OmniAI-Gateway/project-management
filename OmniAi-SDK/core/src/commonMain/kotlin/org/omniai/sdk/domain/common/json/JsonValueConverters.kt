@@ -33,15 +33,15 @@ fun JsonValue.JsonObject.toRawMap(): Map<String, Any?> =
     properties.mapValues { (_, value) -> value.toRawAny() }
 
 
-// A tua função de extensão principal
+
 fun String.toJsonObjectOrNull(): JsonValue.JsonObject? {
     val trimmed = this.trim()
     if (!trimmed.startsWith("{") || !trimmed.endsWith("}")) return null
 
     return try {
         SimpleJsonParser(trimmed).parse() as? JsonValue.JsonObject
-    } catch (e: Exception) {
-        null // Se falhar na leitura, devolve null de forma segura
+    } catch (_: Exception) {
+        null
     }
 }
 
@@ -77,7 +77,7 @@ private class SimpleJsonParser(private val input: String) {
         }
         while (true) {
             skipWhitespace()
-            val key = (parseString() as JsonValue.JsonString).value
+            val key = parseString().value
             skipWhitespace()
             if (input[pos] != ':') throw IllegalArgumentException("Faltou ':'")
             pos++

@@ -16,12 +16,21 @@ sealed class JsonValue {
 
     data object JsonNull : JsonValue()
 
-
     fun toJsonString(): String = when (this) {
         is JsonNull -> "null"
         is JsonBoolean -> value.toString()
         is JsonNumber -> value.toString()
-        is JsonString -> "\"$value\""
+
+        is JsonString -> {
+            val escaped = value
+                .replace("\\", "\\\\")
+                .replace("\"", "\\\"")
+                .replace("\n", "\\n")
+                .replace("\r", "\\r")
+                .replace("\t", "\\t")
+                .replace("\b", "\\b")
+            "\"$escaped\""
+        }
 
         is JsonArray -> items.joinToString(
             prefix = "[",
