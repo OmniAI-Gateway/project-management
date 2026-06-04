@@ -5,6 +5,7 @@ rootProject.name = "OmniAi-SDK"
 
 
 include(":core")
+include(":pipeline-engine")
 include(":contracts")
 include(":contracts:anthropic")
 include(":contracts:gemini")

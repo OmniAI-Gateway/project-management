@@ -30,6 +30,7 @@ kotlin {
     sourceSets {
         commonMain.dependencies {
             api(project(":core"))
+            api(project(":pipeline-engine"))
             api(project(":interceptors"))
             api(project(":inbound:openai"))
             api(project(":inbound:anthropic"))

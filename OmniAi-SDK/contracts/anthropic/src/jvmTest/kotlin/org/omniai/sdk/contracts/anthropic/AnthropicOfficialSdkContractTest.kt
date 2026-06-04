@@ -96,7 +96,7 @@ class AnthropicOfficialSdkContractTest {
 
             assertEquals("POST", captured.method)
             assertEquals("/v1/messages", captured.path)
-            assertTrue(captured.headers.getFirst("content-type")?.contains("application/json") == true)
+            assertEquals(captured.headers.getFirst("content-type")?.contains("application/json"), true)
 
             assertEquals("claude-opus-4-6", dto.model)
             assertEquals(64, dto.maxTokens)

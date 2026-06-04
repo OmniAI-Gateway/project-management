@@ -16,6 +16,7 @@ kotlin {
     sourceSets {
         commonMain.dependencies {
             implementation(project(":core"))
+            api(project(":pipeline-engine"))
             implementation(project(":interceptors"))
             implementation(project(":inbound:openai"))
             implementation(project(":inbound:anthropic"))
