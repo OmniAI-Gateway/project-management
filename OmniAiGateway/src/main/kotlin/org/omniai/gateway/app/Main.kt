@@ -49,7 +49,7 @@ suspend fun main() {
             }
         }
     )
-
+    server.start(wait = false)
     val gateway = omniAiGateway {
         inbounds {
             requireNotNull(ktorRoute) { "Ktor routing was not initialized" }.let { route ->
@@ -169,7 +169,7 @@ suspend fun main() {
 
     gateway.startServer(
         httpClient = httpClient,
-        onStart = { server.start(wait = true) },
+        onStart = { Thread.currentThread().join() },
         onEnd = { server.stop(1000, 5000) }
     )
 }
