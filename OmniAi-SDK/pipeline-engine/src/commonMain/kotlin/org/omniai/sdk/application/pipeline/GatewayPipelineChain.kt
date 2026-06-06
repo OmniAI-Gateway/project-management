@@ -22,8 +22,6 @@ internal class GatewayPipelineChain(
                 }
 
                 is PipelineResult.Error -> context.res
-                // Antes devolvia NoResult e quebrava o contrato do executeUnary/executeStream.
-                // Agora escolhe a chamada final com base no modo pedido no GatewayContext.
                 is PipelineResult.NoResult -> when (context.mode) {
                     RequestMode.UNARY -> when (val result = dispatcher.generate(context.request, context.attributes)) {
                         is Either.Right -> PipelineResult.Unary(result.value)

@@ -86,6 +86,7 @@ suspend fun main() {
                 }
 
                 interceptors {
+                    fallback()
                     if (config.telemetryEnabled) {
                         metrics {
                             metricsPort = telemetryRuntime.metricsPort

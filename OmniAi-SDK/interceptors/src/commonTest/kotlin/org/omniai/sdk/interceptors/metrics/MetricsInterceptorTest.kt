@@ -1,7 +1,5 @@
 package org.omniai.sdk.interceptors.metrics
 
-import MetricsInterceptor
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test

@@ -14,7 +14,7 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 # ==========================================
 LOGTO_OIDC_ENDPOINT = "http://localhost:3001/oidc"
 # WARNING: Use a "Native App" Client ID, not the previous M2M one!
-CLIENT_ID = "esqmensytzanni9412ndl"
+CLIENT_ID = "9gmdflfyxl7skacyvdbzs"
 REDIRECT_URI = "http://localhost:8080/callback"
 RESOURCE = "https://api.omniai.com"
 SCOPE = "openid profile email omniai-api-access" # Kept your 'all' scope and added 'openid' to ensure OIDC flow
