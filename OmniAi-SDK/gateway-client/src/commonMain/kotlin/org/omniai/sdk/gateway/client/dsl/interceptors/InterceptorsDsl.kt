@@ -9,6 +9,7 @@ import org.omniai.sdk.interceptors.circuitBreaker.CircuitBreakerInterceptor
 import org.omniai.sdk.interceptors.circuitBreaker.CircuitBreakerStore
 import org.omniai.sdk.interceptors.circuitBreaker.InMemoryCircuitBreakerStore
 import org.omniai.sdk.interceptors.fallback.FallbackInterceptor
+import org.omniai.sdk.interceptors.routing.RoutingInterceptor
 
 import org.omniai.sdk.gateway.client.dsl.GatewayDsl
 
@@ -47,6 +48,13 @@ class InterceptorsDsl {
     fun circuitBreaker(block: CircuitBreakerBuilder.() -> Unit = {}) {
         val builder = CircuitBreakerBuilder().apply(block)
         use { outbounds -> builder.build(outbounds) }
+    }
+
+    /**
+     * Configures and installs a RoutingInterceptor.
+     */
+    fun routing() {
+        use { outbounds -> RoutingInterceptor(outbounds) }
     }
 
     /**

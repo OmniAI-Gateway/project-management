@@ -86,6 +86,7 @@ suspend fun main() {
                 }
 
                 interceptors {
+                    routing()
                     fallback()
                     if (config.telemetryEnabled) {
                         metrics {
