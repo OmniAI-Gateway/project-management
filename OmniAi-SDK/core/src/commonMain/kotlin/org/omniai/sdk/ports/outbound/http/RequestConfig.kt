@@ -1,6 +1,5 @@
 package org.omniai.sdk.ports.outbound.http
 
-
 data class RequestConfig<T>(
     val url: String,
     val method: HttpMethod = HttpMethod.GET,

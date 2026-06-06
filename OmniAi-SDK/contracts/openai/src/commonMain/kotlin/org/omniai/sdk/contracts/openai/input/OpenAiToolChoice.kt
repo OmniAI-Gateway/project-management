@@ -15,7 +15,7 @@ import kotlinx.serialization.json.JsonPrimitive
 @Serializable(with = OpenAiToolChoiceSerializer::class)
 sealed interface OpenAiToolChoice {
     @Serializable
-    data class Mode(val value: String) : OpenAiToolChoice // "auto" | "none" | "required"
+    data class Mode(val value: String) : OpenAiToolChoice
 
     @Serializable
     data class Function(val type: String = "function", val function: FunctionRef) : OpenAiToolChoice

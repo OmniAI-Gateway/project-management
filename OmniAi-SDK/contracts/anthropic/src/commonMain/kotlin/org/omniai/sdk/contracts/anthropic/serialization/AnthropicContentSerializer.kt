@@ -18,7 +18,9 @@ import org.omniai.sdk.contracts.anthropic.input.ListContentBlock
 import org.omniai.sdk.contracts.anthropic.input.RawText
 
 object AnthropicContentSerializer : KSerializer<AnthropicContent> {
-    override val descriptor: SerialDescriptor = PrimitiveSerialDescriptor("AnthropicContent", PrimitiveKind.STRING)
+
+    override val descriptor: SerialDescriptor =
+        PrimitiveSerialDescriptor("AnthropicContent", PrimitiveKind.STRING)
 
     override fun serialize(encoder: Encoder, value: AnthropicContent) {
 

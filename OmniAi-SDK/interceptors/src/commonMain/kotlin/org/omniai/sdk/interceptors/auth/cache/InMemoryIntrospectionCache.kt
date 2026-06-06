@@ -7,14 +7,6 @@ import org.omniai.sdk.interceptors.auth.interfaces.IntrospectionCache
 import kotlin.time.Duration
 import kotlin.time.TimeSource
 
-/**
- * In-memory implementation of [IntrospectionCache].
- *
- * Uses a bounded map with LRU-like eviction (oldest entry removed when at capacity).
- * Expired entries are lazily removed on access and proactively on capacity pressure.
- *
- * Thread-safety is guaranteed by [Mutex] — all reads and writes are serialised.
- */
 class InMemoryIntrospectionCache(
     positiveCacheTtl: Duration,
     negativeCacheTtl: Duration,
@@ -62,9 +54,6 @@ class InMemoryIntrospectionCache(
         }
     }
 
-    /**
-     * Removes all expired entries. Must only be called while holding [mutex].
-     */
     private fun cleanupExpired() {
         val iterator = cache.entries.iterator()
         while (iterator.hasNext()) {

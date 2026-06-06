@@ -6,14 +6,6 @@ import org.omniai.sdk.interceptors.auth.domain.OpaqueToken
 import org.omniai.sdk.interceptors.auth.domain.PublicKey
 import org.omniai.sdk.interceptors.auth.interfaces.AuthSecurityInfrastructure
 
-/**
- * Facade implementation of [AuthSecurityInfrastructure] that delegates to focused sub-clients:
- * - [JwksClient] — public key management and JWKS rotation
- * - [HttpIntrospectionClient] — opaque token introspection with caching
- *
- * Introspection is optional: if no [introspectionClient] is provided, [introspectToken] returns null,
- * which causes opaque tokens to be rejected by the authenticator.
- */
 class HttpAuthSecurityClient(
     private val jwksClient: JwksClient,
     private val introspectionClient: HttpIntrospectionClient?,

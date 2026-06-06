@@ -10,18 +10,12 @@ import org.omniai.sdk.gateway.client.auth.AuthorizationServerConfig
 import org.omniai.sdk.gateway.client.auth.SecurityConfig
 import org.omniai.sdk.ports.inbound.InboundPort
 
-/**
- * Final immutable configuration produced by the OmniAi DSL.
- */
 data class OmniAiConfig(
     val inbounds: InboundRegistration,
     val execution: ExecutionMode,
     val security: SecurityConfig
 )
 
-/**
- * Runtime graph returned after assembly on the host platform.
- */
 data class OmniAiRuntime(
     val dispatcher: DispatcherPort,
     val metadata: TypedMap = TypedMap()

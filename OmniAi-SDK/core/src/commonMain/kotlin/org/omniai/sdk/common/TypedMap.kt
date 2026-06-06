@@ -2,7 +2,6 @@ package org.omniai.sdk.common
 
 import kotlin.reflect.KClass
 
-
 class TypedMap(private val data: MutableMap<AttributeKey<*>, Any> = mutableMapOf()) {
 
     companion object  {

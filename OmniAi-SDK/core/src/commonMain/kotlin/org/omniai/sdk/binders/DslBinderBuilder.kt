@@ -34,5 +34,4 @@ class DslBinderBuilder {
 
 fun buildDslMetadataBinder(block: DslBinderBuilder.() -> Unit): ConfigurableMetadataBinder {
     return DslBinderBuilder().apply(block).build()
-
 }

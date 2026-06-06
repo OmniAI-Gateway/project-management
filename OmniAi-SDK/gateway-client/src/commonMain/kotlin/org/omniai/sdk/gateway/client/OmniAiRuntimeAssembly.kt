@@ -8,7 +8,6 @@ import org.omniai.sdk.application.pipeline.GatewayPipelineBuilder
 import org.omniai.sdk.application.pipeline.Interceptor
 import org.omniai.sdk.ports.inbound.DispatcherPort
 import org.omniai.sdk.gateway.client.auth.AuthorizationServerConfig
-
 import org.omniai.sdk.interceptors.auth.AuthenticationInterceptor
 import org.omniai.sdk.interceptors.auth.PolicyEnforcerInterceptor
 import org.omniai.sdk.application.pipeline.getInterceptorPriority
@@ -35,8 +34,7 @@ suspend fun OmniAiConfig.startServer(
     onEnd: () -> Unit = {}
 ) {
     val runtime = assemble(httpClient)
-    
-    // Initialize Inbounds and pass them to their registered connectors
+
     inbounds.setups.forEach { setup ->
         val adapter = setup.factory(runtime.dispatcher)
         setup.connect(adapter)
@@ -45,8 +43,7 @@ suspend fun OmniAiConfig.startServer(
     addShutdownHook {
         onEnd()
     }
-    
-    // Once everything is connected and assembled, start the user's server
+
     onStart()
 }
 
@@ -72,9 +69,7 @@ private suspend fun OmniAiConfig.buildInterceptors(
     val resolved = mutableListOf<Interceptor>()
     resolved.addAll(buildAuthorizationInterceptors(security, httpClient))
     resolved += configuredInterceptors
-
     resolved.sortByDescending { getInterceptorPriority(it) }
-
     return resolved
 }
 

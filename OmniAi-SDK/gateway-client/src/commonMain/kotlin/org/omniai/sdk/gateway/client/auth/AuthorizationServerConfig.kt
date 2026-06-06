@@ -1,6 +1,5 @@
 package org.omniai.sdk.gateway.client.auth
 
-
 import org.omniai.sdk.interceptors.auth.interfaces.TokenAuthenticator
 import org.omniai.sdk.interceptors.auth.interfaces.IntrospectionCache
 import kotlin.time.Duration

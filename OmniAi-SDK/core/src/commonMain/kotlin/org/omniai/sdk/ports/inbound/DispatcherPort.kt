@@ -8,11 +8,7 @@ import org.omniai.sdk.domain.requests.CommonRequest
 import org.omniai.sdk.domain.responses.CommonResponse
 import org.omniai.sdk.domain.responses.CommonResponseEvent
 
-/**
- * Core application dispatcher used by inbound adapters to execute domain requests.
- */
 interface DispatcherPort {
     suspend fun generate(request: CommonRequest, attributes: TypedMap): Either<DomainError, CommonResponse>
-
     suspend fun generateStream(request: CommonRequest, attributes: TypedMap): Either<DomainError, Flow<CommonResponseEvent>>
 }

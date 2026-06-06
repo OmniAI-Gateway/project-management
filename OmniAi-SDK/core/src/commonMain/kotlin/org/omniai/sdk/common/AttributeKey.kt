@@ -14,5 +14,4 @@ class AttributeKey<T : Any> @PublishedApi internal constructor(
     override fun toString(): String = "Key($name: ${type.simpleName})"
 }
 
-inline fun <reified T : Any> key(name: String) =
-    AttributeKey(name, T::class)
+inline fun <reified T : Any> key(name: String) = AttributeKey(name, T::class)

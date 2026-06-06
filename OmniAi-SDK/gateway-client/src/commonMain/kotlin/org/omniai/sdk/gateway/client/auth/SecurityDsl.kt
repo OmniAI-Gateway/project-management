@@ -1,4 +1,5 @@
 package org.omniai.sdk.gateway.client.auth
+
 import org.omniai.sdk.interceptors.auth.AuthorizationInputProvider
 import org.omniai.sdk.interceptors.auth.AuthorizationInput
 import org.omniai.sdk.interceptors.auth.Subject
@@ -7,7 +8,6 @@ import org.omniai.sdk.interceptors.auth.Resource
 import org.omniai.sdk.application.pipeline.GatewayContext
 import org.omniai.sdk.interceptors.auth.interfaces.PolicyDecisionPointPort
 import org.omniai.sdk.interceptors.auth.pdp.PassThroughPDP
-
 
 data class SecurityConfig(
     val authentication: AuthorizationServerConfig = AuthorizationServerConfig.None,

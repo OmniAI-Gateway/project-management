@@ -10,7 +10,6 @@ fun bindClientResponseMetadata(context: IncomingContext, headerNames: Set<String
         headerNames.forEach { headerName ->
             header(headerName) bindTo key<String>("http.header.${headerName.lowercase()}")
         }
-
         property("statusCode").bindToInt(key<Int>("http.statusCode"))
         property("url") bindTo key<String>("http.url")
     }

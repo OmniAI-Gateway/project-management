@@ -7,9 +7,6 @@ sealed interface RequestContentPart
 
 sealed interface ResponseContentPart
 
-/**
- * Shared content can flow in both directions (request history and model responses).
- */
 sealed interface SharedContentPart : RequestContentPart, ResponseContentPart
 
 data class TextPart(

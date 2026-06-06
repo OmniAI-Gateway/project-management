@@ -6,9 +6,6 @@ import org.omniai.sdk.common.TypedMap
 import org.omniai.sdk.domain.common.Provider
 import org.omniai.sdk.domain.errors.DomainError
 
-/**
- * Provider-specific inbound contract exposed to client-facing adapters.
- */
 interface InboundPort<in ClientReq, out ClientRes, out ClientEvent> {
     val provider: Provider
 

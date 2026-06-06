@@ -6,6 +6,7 @@ import org.omniai.sdk.gateway.client.dsl.GatewayDsl
 
 @GatewayDsl
 class OutboundsDsl {
+
     internal val values = mutableListOf<OutboundPort>()
 
     fun use(port: OutboundPort) {

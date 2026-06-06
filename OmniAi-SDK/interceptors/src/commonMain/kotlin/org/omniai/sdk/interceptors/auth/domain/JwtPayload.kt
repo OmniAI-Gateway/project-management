@@ -8,14 +8,9 @@ import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 import kotlinx.serialization.json.*
 
-/**
- * DTO representing the payload of a JSON Web Token (JWT).
- * Compliant with RFC 7519 (JSON Web Token).
- */
 @Serializable(with = JwtPayload.JwtPayloadSerializer::class)
 data class JwtPayload(
     // --- Registered Claims (RFC 7519 Section 4.1) ---
-
     // "iss" (Issuer) Claim: Identifies the principal that issued the JWT.
     val issuer: String? = null,
     // "sub" (Subject) Claim: Identifies the principal that is the subject of the JWT.
@@ -44,12 +39,13 @@ data class JwtPayload(
             val jsonDecoder = decoder as? JsonDecoder ?: error("Only supports JSON")
             val jsonObject = jsonDecoder.decodeJsonElement().jsonObject
 
-            // Standard RFC 7519 registered claims
+            // RFC 7519 registered claims
             val registeredClaims = setOf("iss", "sub", "aud", "exp", "nbf", "iat", "jti")
 
             val iss = jsonObject["iss"]?.jsonPrimitive?.contentOrNull
             val sub = jsonObject["sub"]?.jsonPrimitive?.contentOrNull
-            // RFC 7519 §4.1.3: "aud" can be a single string OR an array of strings.
+
+            // RFC 7519
             val aud: List<String>? = jsonObject["aud"]?.let { element ->
                 when (element) {
                     is JsonArray     -> element.mapNotNull { it.jsonPrimitive.contentOrNull }
@@ -61,8 +57,6 @@ data class JwtPayload(
             val nbf = jsonObject["nbf"]?.jsonPrimitive?.longOrNull
             val iat = jsonObject["iat"]?.jsonPrimitive?.longOrNull
             val jti = jsonObject["jti"]?.jsonPrimitive?.contentOrNull
-
-            // Filter out the standard claims to isolate the private ones
             val privateClaims = jsonObject.filterKeys { key -> key !in registeredClaims }
 
             return JwtPayload(iss, sub, aud, exp, nbf, iat, jti, privateClaims)
@@ -74,8 +68,6 @@ data class JwtPayload(
             val jsonObject = buildJsonObject {
                 value.issuer?.let { put("iss", it) }
                 value.subject?.let { put("sub", it) }
-                // Serialize as plain string when single audience (max AS compatibility),
-                // or as a JSON array when multiple audiences are present.
                 value.audience?.let { aud ->
                     when {
                         aud.size == 1 -> put("aud", aud.single())
@@ -86,8 +78,6 @@ data class JwtPayload(
                 value.notBefore?.let { put("nbf", it) }
                 value.issuedAt?.let { put("iat", it) }
                 value.jwtId?.let { put("jti", it) }
-
-                // Inject private claims back into the root level of the JSON payload
                 value.privateClaims.forEach { (key, element) ->
                     put(key, element)
                 }

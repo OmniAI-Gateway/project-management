@@ -8,9 +8,6 @@ import org.omniai.sdk.domain.requests.CommonRequest
 import org.omniai.sdk.domain.responses.CommonResponse
 import org.omniai.sdk.domain.responses.CommonResponseEvent
 
-/**
- * Lightweight dispatcher contract built via DSL so SDK consumers avoid boilerplate classes.
- */
 interface DispatcherAdapter : DispatcherPort
 
 class DispatcherAdapterBuilder {

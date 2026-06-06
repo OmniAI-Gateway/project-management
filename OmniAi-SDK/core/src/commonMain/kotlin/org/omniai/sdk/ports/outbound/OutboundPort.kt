@@ -9,17 +9,11 @@ import org.omniai.sdk.domain.requests.CommonRequest
 import org.omniai.sdk.domain.responses.CommonResponse
 import org.omniai.sdk.domain.responses.CommonResponseEvent
 
-/**
- * Provider strategy for executing outbound calls from the core request model.
- */
 interface OutboundPort {
     val provider: Provider
-
     val model: Model
-
     val key: String
-
+    
     suspend fun generate(request: CommonRequest): Either<DomainError, CommonResponse>
-
     suspend fun generateStream(request: CommonRequest): Either<DomainError, Flow<CommonResponseEvent>>
 }

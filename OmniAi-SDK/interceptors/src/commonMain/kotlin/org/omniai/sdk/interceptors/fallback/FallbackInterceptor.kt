@@ -44,7 +44,6 @@ class FallbackInterceptor(
                 res = context.res
             )
 
-            // if successful or no result, we return
             when (val result = chain.proceed(newContext)) {
                 is PipelineResult.Unary -> return result
                 is PipelineResult.Stream -> return result

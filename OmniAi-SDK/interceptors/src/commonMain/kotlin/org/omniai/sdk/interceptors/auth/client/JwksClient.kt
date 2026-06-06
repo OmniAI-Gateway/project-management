@@ -13,7 +13,6 @@ import org.omniai.sdk.ports.outbound.http.*
 import kotlin.concurrent.Volatile
 import kotlin.time.TimeSource
 
-
 class JwksClient(
     private val config: HttpAuthSecurityClientConfig,
     private val publicKeyCache: PublicKeyCache,
@@ -36,7 +35,6 @@ class JwksClient(
         CoroutineScope(Dispatchers.Default).launch {
             while (true) {
                 delay(config.backgroundJwksRefreshInterval)
-                // No lock — if two coroutines concurrently pass the check, duplicate fetches are tolerated
                 if (cooldownElapsed()) {
                     fetchAndUpdateKeys()
                 }

@@ -9,15 +9,6 @@ import org.omniai.sdk.interceptors.auth.interfaces.IntrospectionCache
 import org.omniai.sdk.interceptors.auth.utils.urlEncode
 import kotlin.io.encoding.Base64
 
-/**
- * Handles opaque token introspection (RFC 7662) with integrated caching.
- *
- * Caching behaviour:
- * - **Positive results** (active=true): cached for `positiveCacheTtl` (min with token `exp`).
- * - **Negative results** (active=false): cached for `negativeCacheTtl` to prevent brute-force / DDoS.
- *
- * The raw token is never passed to the cache — [IntrospectionCache] hashes it internally.
- */
 class HttpIntrospectionClient(
     private val cache: IntrospectionCache,
     private val endpoint: String,
@@ -25,10 +16,6 @@ class HttpIntrospectionClient(
     private val clientSecret: String?,
     private val httpClient: HttpTransportClient,
 ) {
-
-    /**
-     * Introspects [token], returning [IntrospectionResult] when active, or `null` when inactive/error.
-     */
     suspend fun introspect(token: OpaqueToken): IntrospectionResult? {
         val wrapper = OPAQUE(token)
 
