@@ -27,49 +27,6 @@ import kotlin.test.assertIs
 import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.milliseconds
 
-@Serializable
-private data class SampleResponse(val id: Int, val name: String)
-
-@Serializable
-private data class SampleBody(val value: String)
-
-private val testJson = Json {
-    ignoreUnknownKeys = true
-    explicitNulls = false
-    encodeDefaults = false
-}
-
-private fun buildClient(
-    handler: suspend MockRequestHandleScope.(io.ktor.client.request.HttpRequestData) -> HttpResponseData
-): KtorHttpTransportClient {
-    val engine = MockEngine { request -> handler(request) }
-    val httpClient = HttpClient(engine) {
-        install(ContentNegotiation) { json(testJson) }
-        install(SSE)
-    }
-    return KtorHttpTransportClient(
-        client = httpClient,
-        json = testJson,
-        retryDelay = 10.milliseconds   // fast retries for tests
-    )
-}
-
-private fun <V> config(
-    url: String = "https://api.example.com/test",
-    method: HttpMethod = HttpMethod.GET,
-    body: V? = null,
-    tries: Int = 1,
-    queryParams: Map<String, List<String>> = emptyMap(),
-    headers: Map<String, List<String>> = emptyMap()
-) = RequestConfig(
-    url = url,
-    method = method,
-    body = body,
-    numberOfTries = tries,
-    queryParams = queryParams,
-    headers = headers
-)
-
 class KtorHttpTransportClientTest {
     @Test
     fun `execute returns Success with parsed body on 200`() = runTest {
@@ -214,12 +171,10 @@ class KtorHttpTransportClientTest {
                 headers = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString())
             )
         }
-
         sut.execute(
             config<SampleBody>(method = HttpMethod.POST, body = SampleBody("hello")),
             serializer<SampleResponse>()
         )
-
         assertEquals("POST", capturedMethod)
     }
 
@@ -229,9 +184,6 @@ class KtorHttpTransportClientTest {
         val sut = buildClient { request ->
             callCount++
             if (callCount == 1) {
-                // First call: simulate network-level failure by throwing
-                // MockEngine doesn't support IOException directly, so we use
-                // an error response and rely on retry count to validate attempts.
                 respondError(HttpStatusCode.ServiceUnavailable)
             } else {
                 respond(
@@ -241,14 +193,9 @@ class KtorHttpTransportClientTest {
                 )
             }
         }
-
-        // Even without retry on HTTP errors, ensure second call path works
         val result = sut.execute(config<Unit>(tries = 2), serializer<SampleResponse>())
-
-        // First attempt returns ApiError (503); client doesn't retry HTTP errors,
-        // only IOExceptions. Validate the behaviour is deterministic.
         assertIs<HttpCallResult.ApiError>(result)
-        assertEquals(1, callCount) // no retry for HTTP-level errors
+        assertEquals(1, callCount)
     }
 
     @Test
@@ -262,9 +209,51 @@ class KtorHttpTransportClientTest {
                 headers = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString())
             )
         }
-
         sut.execute(config<Unit>(tries = 1), serializer<SampleResponse>())
-
         assertEquals(1, callCount)
     }
 }
+
+
+@Serializable
+private data class SampleResponse(val id: Int, val name: String)
+
+@Serializable
+private data class SampleBody(val value: String)
+
+private val testJson = Json {
+    ignoreUnknownKeys = true
+    explicitNulls = false
+    encodeDefaults = false
+}
+
+private fun buildClient(
+    handler: suspend MockRequestHandleScope.(io.ktor.client.request.HttpRequestData) -> HttpResponseData
+): KtorHttpTransportClient {
+    val engine = MockEngine { request -> handler(request) }
+    val httpClient = HttpClient(engine) {
+        install(ContentNegotiation) { json(testJson) }
+        install(SSE)
+    }
+    return KtorHttpTransportClient(
+        client = httpClient,
+        json = testJson,
+        retryDelay = 10.milliseconds
+    )
+}
+
+private fun <V> config(
+    url: String = "https://api.example.com/test",
+    method: HttpMethod = HttpMethod.GET,
+    body: V? = null,
+    tries: Int = 1,
+    queryParams: Map<String, List<String>> = emptyMap(),
+    headers: Map<String, List<String>> = emptyMap()
+) = RequestConfig(
+    url = url,
+    method = method,
+    body = body,
+    numberOfTries = tries,
+    queryParams = queryParams,
+    headers = headers
+)

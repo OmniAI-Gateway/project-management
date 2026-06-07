@@ -18,25 +18,13 @@ import kotlinx.serialization.json.Json
 import kotlin.test.Test
 import kotlin.test.assertNotNull
 
-/**
- * Tests that [installDefaultTransportPlugins] wires up the three required
- * Ktor plugins (HttpTimeout, ContentNegotiation, SSE).
- *
- * We validate indirectly: if any plugin is missing the client configuration
- * block itself will throw at construction time, which makes the test fail.
- */
 class PlatformHttpClientTest {
 
     private val testJson = Json { ignoreUnknownKeys = true }
 
-    // ---------------------------------------------------------------------------
-    // Plugin installation via installDefaultTransportPlugins
-    // ---------------------------------------------------------------------------
-
     @Test
     fun `installDefaultTransportPlugins installs HttpTimeout plugin`() {
         val client = buildClientWithDefaults()
-        // plugin() returns null when the plugin is absent
         val plugin = client.pluginOrNull(HttpTimeout)
         assertNotNull(plugin, "HttpTimeout should be installed by installDefaultTransportPlugins")
         client.close()
@@ -58,23 +46,13 @@ class PlatformHttpClientTest {
         client.close()
     }
 
-    // ---------------------------------------------------------------------------
-    // Timeout values
-    // ---------------------------------------------------------------------------
-
     @Test
     fun `connectTimeout is set to 10 seconds`() {
         val client = buildClientWithDefaults()
         val plugin = client.pluginOrNull(HttpTimeout)
         assertNotNull(plugin)
-        // HttpTimeout stores config on the plugin; we check via a live request
-        // indirectly — construction without exception validates the value is legal.
         client.close()
     }
-
-    // ---------------------------------------------------------------------------
-    // Content negotiation handles JSON responses
-    // ---------------------------------------------------------------------------
 
     @Test
     fun `client built with defaults can perform a basic GET and receive JSON`() = runTest {
@@ -90,15 +68,10 @@ class PlatformHttpClientTest {
             installDefaultTransportPlugins(testJson)
         }
 
-        // A successful request proves ContentNegotiation + HttpTimeout don't crash.
-        val response = client.config { }   // just access the configuration — no crash = pass
+        val response = client.config { }
         assertNotNull(response)
         client.close()
     }
-
-    // ---------------------------------------------------------------------------
-    // Helper
-    // ---------------------------------------------------------------------------
 
     private fun buildClientWithDefaults(): HttpClient {
         val engine = MockEngine { respond("", HttpStatusCode.OK) }
