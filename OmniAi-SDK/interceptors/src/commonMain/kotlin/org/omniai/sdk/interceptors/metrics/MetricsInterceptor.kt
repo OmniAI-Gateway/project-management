@@ -20,6 +20,14 @@ class MetricsInterceptor(
         metricsPort.histogram(config.defaultLatency.name, "Gateway request latency", "ms")
     } else null
 
+    private val activeRequestsInstrument = if (config.activeRequests.enabled) {
+        metricsPort.upDownCounter(config.activeRequests.name, "Número de requests atualmente em processamento", "1")
+    } else null
+
+    private val ttftInstrument = if (config.ttft.enabled) {
+        metricsPort.histogram(config.ttft.name, "Time to first token for streaming responses", "ms")
+    } else null
+
     private val resolvedCustomMetrics = config.customMetrics.map { metric ->
         val instrument = when (metric.type) {
             InstrumentType.COUNTER -> metricsPort.counter(metric.name, metric.description, metric.unit)
@@ -32,6 +40,12 @@ class MetricsInterceptor(
     override suspend fun handle(context: GatewayContext, chain: InterceptorChain): PipelineResult {
         context.attributes[ATTR_METRICS_START_TIME] = markNow()
 
+        val activeAttrs = mapOf(
+            "provider" to context.request.provider.value,
+            "model" to context.request.model
+        )
+        activeRequestsInstrument?.add(1.0, activeAttrs)
+
         var thrown: Throwable? = null
         val result = try {
             chain.proceed(context)
@@ -41,6 +55,7 @@ class MetricsInterceptor(
         }
 
         if (result == null) {
+            activeRequestsInstrument?.add(-1.0, activeAttrs)
             finalizeContextState(context, STATUS_ERROR, thrown?.let { it::class.simpleName ?: UNKNOWN_EXCEPTION })
             emitMetrics(context, null)
             throw thrown ?: IllegalStateException()
@@ -48,14 +63,30 @@ class MetricsInterceptor(
 
         return when (result) {
             is PipelineResult.Stream -> {
+                var firstTokenEmitted = false
                 val wrapped = result.eventFlow
                     .onEach { event ->
+                        if (!firstTokenEmitted) {
+                            firstTokenEmitted = true
+                            // Record TTFT
+                            val startedAt = context.attributes[ATTR_METRICS_START_TIME]
+                            if (startedAt != null && ttftInstrument != null) {
+                                val ttft = startedAt.elapsedNow().toDouble(DurationUnit.MILLISECONDS)
+                                val ttftAttrs = mapOf(
+                                    "provider" to event.provider.value,
+                                    "model" to event.model.model
+                                )
+                                val globalAttrs = buildGlobalCustomAttributes(context, result)
+                                ttftInstrument.record(ttft, ttftAttrs + globalAttrs)
+                            }
+                        }
                         if (context.attributes[ATTR_STREAM_RES_PROVIDER] == null) {
                             context.attributes[ATTR_STREAM_RES_PROVIDER] = event.provider.value
                             context.attributes[ATTR_STREAM_RES_MODEL] = event.model.model
                         }
                     }
                     .onCompletion { cause ->
+                        activeRequestsInstrument?.add(-1.0, activeAttrs)
                         finalizeContextState(
                             context,
                             status = if (cause == null) STATUS_OK else STATUS_ERROR,
@@ -67,12 +98,14 @@ class MetricsInterceptor(
             }
 
             is PipelineResult.Error -> {
+                activeRequestsInstrument?.add(-1.0, activeAttrs)
                 finalizeContextState(context, STATUS_ERROR, result.error::class.simpleName ?: DOMAIN_ERROR)
                 emitMetrics(context, result)
                 result
             }
             is PipelineResult.Unary,
             is PipelineResult.NoResult -> {
+                activeRequestsInstrument?.add(-1.0, activeAttrs)
                 finalizeContextState(context, STATUS_OK)
                 emitMetrics(context, result)
                 result
@@ -158,4 +191,4 @@ class MetricsInterceptor(
         val ATTR_STREAM_RES_PROVIDER = key<String>("metrics.stream_provider")
         val ATTR_STREAM_RES_MODEL = key<String>("metrics.stream_model")
     }
-}
+}

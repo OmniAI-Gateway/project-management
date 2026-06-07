@@ -5,6 +5,7 @@ import org.omniai.sdk.application.pipeline.Interceptor
 import org.omniai.sdk.application.pipeline.InterceptorChain
 import org.omniai.sdk.application.pipeline.PipelineResult
 import org.omniai.sdk.domain.errors.TooManyRequestsError
+import org.omniai.sdk.interceptors.metrics.MetricsPort
 import org.omniai.sdk.interceptors.ratelimiting.domain.RateLimitResult
 import org.omniai.sdk.interceptors.ratelimiting.policy.RateLimitPolicy
 import org.omniai.sdk.interceptors.ratelimiting.store.RateLimitStore
@@ -22,11 +23,19 @@ import kotlin.time.Duration.Companion.seconds
  * 
  * @property store The storage backend to use for tracking usage.
  * @property policies A list of policies defining how limits are extracted and evaluated.
+ * @property metricsPort Optional metrics port for emitting rate limit rejection metrics.
  */
 class RateLimitInterceptor(
     private val store: RateLimitStore,
-    private val policies: List<RateLimitPolicy<out Any>>
+    private val policies: List<RateLimitPolicy<out Any>>,
+    private val metricsPort: MetricsPort? = null
 ) : Interceptor {
+
+    private val rejectedCounter = metricsPort?.counter(
+        "gateway.ratelimit.rejected",
+        "Requests rejeitados pelo rate limiter",
+        "1"
+    )
 
     override suspend fun handle(context: GatewayContext, chain: InterceptorChain): PipelineResult {
         var maxRetryAfter = Duration.ZERO
@@ -40,6 +49,10 @@ class RateLimitInterceptor(
         }
 
         if (maxRetryAfter > Duration.ZERO) {
+            rejectedCounter?.add(1.0, mapOf(
+                "provider" to context.request.provider.value,
+                "model" to context.request.model
+            ))
             return PipelineResult.Error(
                 TooManyRequestsError(
                     message = "Rate limit exceeded.",
@@ -80,3 +93,4 @@ class RateLimitInterceptor(
         return if (maxRetryAfter > Duration.ZERO) maxRetryAfter else null
     }
 }
+

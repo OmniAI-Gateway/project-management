@@ -11,8 +11,20 @@ data class DefaultLatencyMetricConfig(
     val additionalAttributes: List<MetricsAttributeExtractor> = emptyList()
 )
 
+data class ActiveRequestsConfig(
+    val name: String = "gateway.requests.active",
+    val enabled: Boolean = true
+)
+
+data class TtftConfig(
+    val name: String = "gateway.inference.ttft",
+    val enabled: Boolean = true
+)
+
 data class MetricsInterceptorConfig(
     val defaultLatency: DefaultLatencyMetricConfig = DefaultLatencyMetricConfig(),
+    val activeRequests: ActiveRequestsConfig = ActiveRequestsConfig(),
+    val ttft: TtftConfig = TtftConfig(),
     val attributeExtractors: List<MetricsAttributeExtractor> = emptyList(),
     val customMetrics: List<CustomMetric> = emptyList()
 )

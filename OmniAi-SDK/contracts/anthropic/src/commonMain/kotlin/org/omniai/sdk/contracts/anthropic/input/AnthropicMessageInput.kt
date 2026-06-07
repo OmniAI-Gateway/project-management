@@ -9,7 +9,10 @@ enum class AnthropicRole {
     USER,
 
     @SerialName("assistant")
-    ASSISTANT
+    ASSISTANT,
+
+    @SerialName("system")
+    SYSTEM
 }
 
 @Serializable

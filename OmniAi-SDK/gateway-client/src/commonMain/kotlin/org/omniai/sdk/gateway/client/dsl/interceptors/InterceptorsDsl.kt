@@ -9,6 +9,7 @@ import org.omniai.sdk.interceptors.circuitBreaker.CircuitBreakerInterceptor
 import org.omniai.sdk.interceptors.circuitBreaker.CircuitBreakerStore
 import org.omniai.sdk.interceptors.circuitBreaker.InMemoryCircuitBreakerStore
 import org.omniai.sdk.interceptors.fallback.FallbackInterceptor
+import org.omniai.sdk.interceptors.metrics.MetricsPort
 import org.omniai.sdk.interceptors.routing.RoutingInterceptor
 
 import org.omniai.sdk.gateway.client.dsl.GatewayDsl
@@ -60,8 +61,8 @@ class InterceptorsDsl {
     /**
      * Configures and installs a FallbackInterceptor.
      */
-    fun fallback() {
-        use { outbounds -> FallbackInterceptor(outbounds, DefaultDeniedOutboundsKey) }
+    fun fallback(metricsPort: MetricsPort? = null) {
+        use { outbounds -> FallbackInterceptor(outbounds, DefaultDeniedOutboundsKey, metricsPort) }
     }
 
     internal fun build(outbounds: List<OutboundPort>): List<Interceptor> = 
@@ -73,8 +74,9 @@ class CircuitBreakerBuilder {
     var store: CircuitBreakerStore = InMemoryCircuitBreakerStore()
     var config: CircuitBreakerConfig = CircuitBreakerConfig()
     var deniedOutboundsKey: AttributeKey<Set<String>> = DefaultDeniedOutboundsKey
+    var metricsPort: MetricsPort? = null
 
     internal fun build(outbounds: List<OutboundPort>): CircuitBreakerInterceptor {
-        return CircuitBreakerInterceptor(store, config, deniedOutboundsKey, outbounds)
+        return CircuitBreakerInterceptor(store, config, deniedOutboundsKey, outbounds, metricsPort)
     }
 }

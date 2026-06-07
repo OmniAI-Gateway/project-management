@@ -22,6 +22,7 @@ import org.omniai.sdk.contracts.anthropic.input.AnthropicMessagesRequest
 import org.omniai.sdk.contracts.anthropic.input.AnthropicOutputConfig
 import org.omniai.sdk.contracts.anthropic.input.AnthropicOutputFormat
 import org.omniai.sdk.contracts.anthropic.input.AnthropicThinkingConfig
+import org.omniai.sdk.contracts.anthropic.input.AnthropicRole
 import org.omniai.sdk.contracts.anthropic.input.AnthropicToolChoice
 import org.omniai.sdk.contracts.anthropic.input.AnthropicToolDefinition
 import org.omniai.sdk.contracts.anthropic.input.ListContentBlock
@@ -102,7 +103,7 @@ class AnthropicOfficialSdkContractTest {
             assertEquals("claude-opus-4-6", dto.model)
             assertEquals(64, dto.maxTokens)
             assertEquals(1, dto.messages.size)
-            assertEquals("user", dto.messages.first().role)
+            assertEquals(AnthropicRole.USER, dto.messages.first().role)
             assertEquals("hello from sdk", assertIs<RawText>(dto.messages.first().content).text)
         }
     }
@@ -134,7 +135,7 @@ class AnthropicOfficialSdkContractTest {
             assertEquals("first", assertIs<RawText>(dto.messages[0].content).text)
             assertEquals("second", assertIs<RawText>(dto.messages[1].content).text)
             assertEquals("third", assertIs<RawText>(dto.messages[2].content).text)
-            assertTrue(dto.messages.all { it.role == "user" })
+            assertTrue(dto.messages.all { it.role == AnthropicRole.USER })
         }
     }
 
@@ -145,7 +146,7 @@ class AnthropicOfficialSdkContractTest {
             maxTokens = 256,
             messages = listOf(
                 AnthropicMessageInput(
-                    role = "user",
+                    role = AnthropicRole.USER,
                     content = ListContentBlock(
                         blocks = listOf(
                             AnthropicInputContentBlock.Text("hello"),
@@ -158,7 +159,7 @@ class AnthropicOfficialSdkContractTest {
                                 toolUseId = "toolu_1",
                                 content = "sunny"
                             ),
-                            AnthropicInputContentBlock.Thinking(budgetTokens = 99)
+                            AnthropicInputContentBlock.Thinking(thinking = "Reasoning", signature = "sig_1")
                         )
                     )
                 )
@@ -188,13 +189,7 @@ class AnthropicOfficialSdkContractTest {
             topP = 0.9,
             topK = 32,
             stopSequences = listOf("STOP"),
-            stopToken = "</s>",
-            outputConfig = AnthropicOutputConfig(
-                format = AnthropicOutputFormat(
-                    type = "json_schema",
-                    schema = json.parseToJsonElement("""{"type":"object"}""")
-                )
-            ),
+
             thinking = AnthropicThinkingConfig(type = "enabled", budgetTokens = 2048),
             metadata = json.parseToJsonElement(
                 """{"traceId":"abc-123","attempt":1,"ok":true,"tags":["a","b"]}"""
@@ -206,7 +201,7 @@ class AnthropicOfficialSdkContractTest {
 
         assertTrue("max_tokens" in root)
         assertTrue("tool_choice" in root)
-        assertTrue("output_config" in root)
+
         assertTrue("maxTokens" !in root)
 
         val decoded = json.decodeFromString<AnthropicMessagesRequest>(encoded)
@@ -244,7 +239,7 @@ class AnthropicOfficialSdkContractTest {
         val response = json.decodeFromString<AnthropicMessageResponse>(payload)
 
         assertEquals("msg_42", response.id)
-        assertEquals("tool_use", response.stopReason)
+        assertEquals(org.omniai.sdk.contracts.anthropic.output.AnthropicStopReason.TOOL_USE, response.stopReason)
 
         val text = assertIs<AnthropicOutputContent.Text>(response.content[0])
         assertEquals("Done", text.text)

@@ -62,7 +62,7 @@ private fun initOpenTelemetrySdk(endpoint: String): OpenTelemetry {
     val meterProvider = SdkMeterProvider.builder()
         .registerMetricReader(
             PeriodicMetricReader.builder(metricExporter)
-                .setInterval(Duration.ofSeconds(1))
+                .setInterval(Duration.ofSeconds(10))
                 .build()
         )
         .build()

@@ -87,7 +87,7 @@ suspend fun main() {
 
                 interceptors {
                     routing()
-                    fallback()
+                    fallback(metricsPort = if (config.telemetryEnabled) telemetryRuntime.metricsPort else null)
                     if (config.telemetryEnabled) {
                         metrics {
                             metricsPort = telemetryRuntime.metricsPort
@@ -123,7 +123,14 @@ suspend fun main() {
                             defaultLatency {
                                 enabled = true
                             }
+                            activeRequests {
+                                enabled = true
+                            }
+                            ttft {
+                                enabled = true
+                            }
                             customMetrics {
+                                // --- Existing metrics ---
                                 counter(
                                     name = "gateway.llm.tokens",
                                     description = "Total de tokens consumidos",
@@ -144,6 +151,99 @@ suspend fun main() {
                                     tags { _, result ->
                                         val error = result as? PipelineResult.Error
                                         mapOf("error.message" to (error?.error?.message ?: "unknown"))
+                                    }
+                                }
+
+                                // --- New Tier 1 metrics ---
+
+                                // 1. Request throughput (total requests)
+                                counter(
+                                    name = "gateway.requests.total",
+                                    description = "Total de requests processados pelo gateway",
+                                    unit = "1"
+                                ) {
+                                    value { _, _ -> 1.0 }
+                                    tags { ctx, result ->
+                                        val status = when (result) {
+                                            is PipelineResult.Unary -> "ok"
+                                            is PipelineResult.Stream -> "ok"
+                                            is PipelineResult.Error -> "error"
+                                            else -> "unknown"
+                                        }
+                                        mapOf(
+                                            "status" to status,
+                                            "provider" to ctx.request.provider.value,
+                                            "model" to ctx.request.model
+                                        )
+                                    }
+                                }
+
+                                // 2. Input tokens (for cost analysis)
+                                counter(
+                                    name = "gateway.llm.tokens.input",
+                                    description = "Tokens de input consumidos",
+                                    unit = "{tokens}"
+                                ) {
+                                    value { _, result ->
+                                        (result as? PipelineResult.Unary)?.response?.usage?.inputTokens?.toDouble()
+                                    }
+                                }
+
+                                // 3. Output tokens (for cost analysis)
+                                counter(
+                                    name = "gateway.llm.tokens.output",
+                                    description = "Tokens de output gerados",
+                                    unit = "{tokens}"
+                                ) {
+                                    value { _, result ->
+                                        (result as? PipelineResult.Unary)?.response?.usage?.outputTokens?.toDouble()
+                                    }
+                                }
+
+                                // 4. Request size (messages per request)
+                                histogram(
+                                    name = "gateway.request.size",
+                                    description = "Número de mensagens por request",
+                                    unit = "{messages}"
+                                ) {
+                                    value { ctx, _ ->
+                                        ctx.request.messages.size.toDouble()
+                                    }
+                                }
+
+                                // 5. Finish reason tracking
+                                counter(
+                                    name = "gateway.response.finish_reason",
+                                    description = "Contagem por razão de término da resposta",
+                                    unit = "1"
+                                ) {
+                                    value { _, result ->
+                                        if (result is PipelineResult.Unary && result.response.choices.isNotEmpty()) 1.0 else null
+                                    }
+                                    tags { _, result ->
+                                        val reason = (result as? PipelineResult.Unary)
+                                            ?.response?.choices?.firstOrNull()?.finishReason?.name ?: "unknown"
+                                        mapOf("finish_reason" to reason)
+                                    }
+                                }
+
+                                // 6. Provider errors with detailed breakdown
+                                counter(
+                                    name = "gateway.provider.errors",
+                                    description = "Erros detalhados por provider e tipo de erro",
+                                    unit = "1"
+                                ) {
+                                    value { _, result ->
+                                        if (result is PipelineResult.Error) 1.0 else null
+                                    }
+                                    tags { ctx, result ->
+                                        val error = (result as? PipelineResult.Error)?.error
+                                        mapOf(
+                                            "provider" to ctx.request.provider.value,
+                                            "model" to ctx.request.model,
+                                            "error.code" to (error?.code?.name ?: "UNKNOWN"),
+                                            "error.type" to (error?.let { it::class.simpleName } ?: "Unknown")
+                                        )
                                     }
                                 }
                             }

@@ -64,12 +64,22 @@ class AnthropicOutboundTranslator : OutboundTranslator<AnthropicMessagesRequest,
 
         val providerOptions = domainRequest.providerOptions
 
+        val systemMessagesText = domainRequest.messages
+            .filter { it.role == CommonRole.SYSTEM }
+            .flatMap { it.content }
+            .filterIsInstance<TextPart>()
+            .joinToString("\n") { it.text }
+
+        val combinedSystemText = listOfNotNull(
+            domainRequest.systemPrompt?.text?.takeIf { it.isNotBlank() },
+            systemMessagesText.takeIf { it.isNotBlank() }
+        ).joinToString("\n\n").takeIf { it.isNotBlank() }
+
         return AnthropicMessagesRequest(
             model = domainRequest.model,
             maxTokens = domainRequest.config?.maxTokens ?: 1024,
             messages = domainRequest.messages.filter { it.role != CommonRole.SYSTEM }.map(CommonRequestMessage::toAnthropicMessageInput),
-            system = domainRequest.systemPrompt?.text?.takeIf { it.isNotBlank() }
-                ?.let(::RawText),
+            system = combinedSystemText?.let(::RawText),
             tools = domainRequest.tools.map(CommonTool::toAnthropicToolDefinition).ifEmpty { null },
             toolChoice = domainRequest.toolChoice?.toAnthropicToolChoice(),
             stream = providerOptions.get<Boolean>("stream"),

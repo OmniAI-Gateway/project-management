@@ -6,11 +6,19 @@ import org.omniai.sdk.application.pipeline.Interceptor
 import org.omniai.sdk.application.pipeline.InterceptorChain
 import org.omniai.sdk.application.pipeline.PipelineResult
 import org.omniai.sdk.ports.outbound.OutboundPort
+import org.omniai.sdk.interceptors.metrics.MetricsPort
 
 class FallbackInterceptor(
     private val outbounds: List<OutboundPort>,
-    private val deniedOutboundsKey: AttributeKey<Set<String>>
+    private val deniedOutboundsKey: AttributeKey<Set<String>>,
+    private val metricsPort: MetricsPort? = null
 ) : Interceptor {
+
+    private val fallbackCounter = metricsPort?.counter(
+        "gateway.fallback.activations",
+        "Vezes que o fallback ativou um provider alternativo",
+        "1"
+    )
 
     override suspend fun handle(context: GatewayContext, chain: InterceptorChain): PipelineResult {
         var lastResult: PipelineResult? = null
@@ -24,6 +32,8 @@ class FallbackInterceptor(
         val alternatives = outbounds.filterNot { it === primary }
         
         val sequenceToTry = listOfNotNull(primary) + alternatives
+
+        var isPrimaryFailed = false
 
         for (outbound in sequenceToTry) {
             if (denied.contains(outbound.key)) {
@@ -45,12 +55,35 @@ class FallbackInterceptor(
             )
 
             when (val result = chain.proceed(newContext)) {
-                is PipelineResult.Unary -> return result
-                is PipelineResult.Stream -> return result
+                is PipelineResult.Unary -> {
+                    if (isPrimaryFailed) {
+                        fallbackCounter?.add(1.0, mapOf(
+                            "original.provider" to context.request.provider.value,
+                            "original.model" to context.request.model,
+                            "fallback.provider" to outbound.provider.value,
+                            "fallback.model" to outbound.model.model
+                        ))
+                    }
+                    return result
+                }
+                is PipelineResult.Stream -> {
+                    if (isPrimaryFailed) {
+                        fallbackCounter?.add(1.0, mapOf(
+                            "original.provider" to context.request.provider.value,
+                            "original.model" to context.request.model,
+                            "fallback.provider" to outbound.provider.value,
+                            "fallback.model" to outbound.model.model
+                        ))
+                    }
+                    return result
+                }
                 is PipelineResult.NoResult -> return result
                 is PipelineResult.Error -> {
                     lastResult = result
                     denied.add(outbound.key)
+                    if (outbound === primary) {
+                        isPrimaryFailed = true
+                    }
                 }
             }
         }
@@ -58,3 +91,4 @@ class FallbackInterceptor(
         return lastResult ?: PipelineResult.NoResult
     }
 }
+
