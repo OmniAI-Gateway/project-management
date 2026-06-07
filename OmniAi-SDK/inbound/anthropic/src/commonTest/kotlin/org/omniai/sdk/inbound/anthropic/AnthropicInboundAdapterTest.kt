@@ -10,6 +10,7 @@ import kotlin.test.assertTrue
 import org.omniai.sdk.contracts.anthropic.input.AnthropicInputContentBlock
 import org.omniai.sdk.contracts.anthropic.input.AnthropicMessageInput
 import org.omniai.sdk.contracts.anthropic.input.AnthropicMessagesRequest
+import org.omniai.sdk.contracts.anthropic.input.AnthropicRole
 import org.omniai.sdk.contracts.anthropic.input.ListContentBlock
 import org.omniai.sdk.contracts.anthropic.output.AnthropicStreamEvent
 import org.omniai.sdk.common.Either
@@ -122,7 +123,7 @@ class AnthropicInboundAdapterTest {
 		maxTokens = 128,
 		messages = listOf(
 			AnthropicMessageInput(
-				role = "user",
+				role = AnthropicRole.USER,
 				content = ListContentBlock(
 					blocks = listOf(
 						AnthropicInputContentBlock.Text("hello")

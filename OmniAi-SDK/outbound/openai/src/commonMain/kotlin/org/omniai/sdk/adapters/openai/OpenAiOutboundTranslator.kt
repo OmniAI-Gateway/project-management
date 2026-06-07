@@ -57,7 +57,6 @@ import org.omniai.sdk.domain.responses.ToolCallArgumentsDeltaEvent
 import org.omniai.sdk.domain.responses.ToolCallStartedEvent
 import org.omniai.sdk.domain.responses.UsageReported
 import org.omniai.sdk.domain.responses.ResponseErrored
-import kotlin.text.orEmpty
 
 class OpenAiOutboundTranslator : OutboundTranslator<OpenAiChatCompletionsRequest, OpenAiChatCompletionsResponse, OpenAiEventStream> {
 

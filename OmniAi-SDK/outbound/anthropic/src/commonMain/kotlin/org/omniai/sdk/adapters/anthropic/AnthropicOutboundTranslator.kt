@@ -8,6 +8,7 @@ import org.omniai.sdk.contracts.anthropic.input.AnthropicContent
 import org.omniai.sdk.contracts.anthropic.input.AnthropicInputContentBlock
 import org.omniai.sdk.contracts.anthropic.input.AnthropicMessageInput
 import org.omniai.sdk.contracts.anthropic.input.AnthropicMessagesRequest
+import org.omniai.sdk.contracts.anthropic.input.AnthropicRole
 import org.omniai.sdk.contracts.anthropic.input.AnthropicThinkingConfig
 import org.omniai.sdk.contracts.anthropic.input.AnthropicToolChoice
 import org.omniai.sdk.contracts.anthropic.input.AnthropicToolDefinition
@@ -15,6 +16,7 @@ import org.omniai.sdk.contracts.anthropic.input.ListContentBlock
 import org.omniai.sdk.contracts.anthropic.input.RawText
 import org.omniai.sdk.contracts.anthropic.output.AnthropicMessageResponse
 import org.omniai.sdk.contracts.anthropic.output.AnthropicOutputContent
+import org.omniai.sdk.contracts.anthropic.output.AnthropicStopReason
 import org.omniai.sdk.contracts.anthropic.output.AnthropicStreamDelta
 import org.omniai.sdk.contracts.anthropic.output.AnthropicStreamEvent
 import org.omniai.sdk.contracts.anthropic.output.AnthropicUsage
@@ -65,7 +67,7 @@ class AnthropicOutboundTranslator : OutboundTranslator<AnthropicMessagesRequest,
         return AnthropicMessagesRequest(
             model = domainRequest.model,
             maxTokens = domainRequest.config?.maxTokens ?: 1024,
-            messages = domainRequest.messages.map(CommonRequestMessage::toAnthropicMessageInput),
+            messages = domainRequest.messages.filter { it.role != CommonRole.SYSTEM }.map(CommonRequestMessage::toAnthropicMessageInput),
             system = domainRequest.systemPrompt?.text?.takeIf { it.isNotBlank() }
                 ?.let(::RawText),
             tools = domainRequest.tools.map(CommonTool::toAnthropicToolDefinition).ifEmpty { null },
@@ -75,7 +77,6 @@ class AnthropicOutboundTranslator : OutboundTranslator<AnthropicMessagesRequest,
             topP = domainRequest.config?.topP,
             topK = providerOptions.get<Int>("topK"),
             stopSequences = domainRequest.config?.stopSequences,
-            stopToken = providerOptions.get<String>("stopToken"),
             thinking = providerOptions.get<AnthropicThinkingConfig>("thinking"),
             metadata = providerOptions.get<JsonElement>("metadata")
         )
@@ -106,7 +107,11 @@ class AnthropicOutboundTranslator : OutboundTranslator<AnthropicMessagesRequest,
         providerEvent
             .runningFold(AnthropicEventContext()) { context, event ->
                 val translatedEvent = event.toDomainStreamEvent(context.id,context.model)
-                AnthropicEventContext(translatedEvent.id,translatedEvent.model, translatedEvent)
+                if (translatedEvent != null) {
+                    AnthropicEventContext(translatedEvent.id, translatedEvent.model, translatedEvent)
+                } else {
+                    context.copy(event = null)
+                }
             }
             .mapNotNull { it.event }
 }
@@ -117,7 +122,7 @@ private data class AnthropicEventContext(
     val event: CommonResponseEvent? = null
 )
 
-private fun AnthropicStreamEvent.toDomainStreamEvent(receivedId: String, receivedModel: Model): CommonResponseEvent =
+private fun AnthropicStreamEvent.toDomainStreamEvent(receivedId: String, receivedModel: Model): CommonResponseEvent? =
     when (this) {
         is AnthropicStreamEvent.MessageStart -> ResponseStarted(
             provider = Provider.ANTHROPIC,
@@ -254,13 +259,7 @@ private fun AnthropicStreamEvent.toDomainStreamEvent(receivedId: String, receive
             providerEventType = eventType()
         )
 
-        is AnthropicStreamEvent.Ping -> ResponseStarted(
-            provider = Provider.ANTHROPIC,
-            id = receivedId,
-            model = receivedModel,
-            sequence = 0,
-            providerEventType = eventType()
-        )
+        is AnthropicStreamEvent.Ping -> null
     }
 
 private fun AnthropicStreamEvent.eventType(): String =
@@ -329,6 +328,17 @@ private fun String.toCommonRole(): CommonRole =
         else -> CommonRole.USER
     }
 
+
+private fun String?.toDomainFinishReason(): FinishReason? =
+    when (this) {
+        "end_turn" -> FinishReason.STOP
+        "max_tokens" -> FinishReason.LENGTH
+        "tool_use" -> FinishReason.TOOL_CALL
+        "stop_sequence" -> FinishReason.CONTENT_FILTER
+        null -> null
+        else -> FinishReason.OTHER // É uma boa prática ter um fallback caso a Anthropic adicione novos motivos no futuro
+    }
+
 private fun toDomainContentPart(part: AnthropicOutputContent): ResponseContentPart? =
     when (part) {
         is AnthropicOutputContent.Text -> TextPart(part.text)
@@ -337,7 +347,7 @@ private fun toDomainContentPart(part: AnthropicOutputContent): ResponseContentPa
             functionName = part.name,
             argumentsJson = part.input?.toDomainJsonObject()?.properties.orEmpty()
         )
-        is AnthropicOutputContent.Thinking -> RefusalPart(reason = part.thinking)
+        is AnthropicOutputContent.Thinking -> TextPart(text = part.thinking)
     }
 
 private fun AnthropicUsage.toDomainUsage(): CommonUsage =
@@ -347,22 +357,21 @@ private fun AnthropicUsage.toDomainUsage(): CommonUsage =
         totalTokens = (inputTokens ?: 0) + (outputTokens ?: 0)
     )
 
-private fun String?.toDomainFinishReason(): FinishReason? =
+private fun AnthropicStopReason?.toDomainFinishReason(): FinishReason? =
     when (this) {
-        "end_turn" -> FinishReason.STOP
-        "max_tokens" -> FinishReason.LENGTH
-        "tool_use" -> FinishReason.TOOL_CALL
-        "stop_sequence" -> FinishReason.CONTENT_FILTER
+        AnthropicStopReason.END_TURN -> FinishReason.STOP
+        AnthropicStopReason.MAX_TOKENS -> FinishReason.LENGTH
+        AnthropicStopReason.TOOL_USE -> FinishReason.TOOL_CALL
+        AnthropicStopReason.STOP_SEQUENCE -> FinishReason.CONTENT_FILTER
         null -> null
-        else -> FinishReason.OTHER
     }
 
-private fun CommonRole.toAnthropicRole(): String =
+private fun CommonRole.toAnthropicRole(): AnthropicRole =
     when (this) {
-        CommonRole.SYSTEM -> "assistant"
-        CommonRole.USER -> "user"
-        CommonRole.ASSISTANT -> "assistant"
-        CommonRole.TOOL -> "assistant"
+        CommonRole.SYSTEM -> AnthropicRole.USER
+        CommonRole.USER -> AnthropicRole.USER
+        CommonRole.ASSISTANT -> AnthropicRole.ASSISTANT
+        CommonRole.TOOL -> AnthropicRole.USER
     }
 
 

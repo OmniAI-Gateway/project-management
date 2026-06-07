@@ -3,16 +3,19 @@ package org.omniai.sdk.adapters.anthropic
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
+import org.omniai.sdk.contracts.anthropic.input.AnthropicRole
 import org.omniai.sdk.contracts.anthropic.input.RawText
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import org.omniai.sdk.contracts.anthropic.output.AnthropicMessageResponse
 import org.omniai.sdk.contracts.anthropic.output.AnthropicOutputContent
+import org.omniai.sdk.contracts.anthropic.output.AnthropicStopReason
 import org.omniai.sdk.contracts.anthropic.output.AnthropicStreamEvent
 import org.omniai.sdk.domain.common.CommonRole
 import org.omniai.sdk.domain.common.Provider
 import org.omniai.sdk.domain.common.Model
+import org.omniai.sdk.domain.common.SystemPrompt
 import org.omniai.sdk.domain.common.content.TextPart
 import org.omniai.sdk.domain.requests.CommonRequest
 import org.omniai.sdk.domain.requests.CommonRequestMessage
@@ -33,14 +36,14 @@ class AnthropicAdapterTranslatorTest {
                     content = listOf(TextPart("Hello"))
                 )
             ),
-            systemPrompt = org.omniai.sdk.domain.common.SystemPrompt("Be concise")
+            systemPrompt = SystemPrompt("Be concise")
         )
 
         val anthropic = translator.fromDomain(request)
         assertEquals("claude-3-5-sonnet", anthropic.model)
         assertEquals(RawText("Be concise"), anthropic.system)
         assertEquals(1, anthropic.messages.size)
-        assertEquals("user", anthropic.messages.first().role)
+        assertEquals(AnthropicRole.USER, anthropic.messages.first().role)
     }
 
     @Test
@@ -51,7 +54,7 @@ class AnthropicAdapterTranslatorTest {
             role = "assistant",
             model = "claude-3-5-sonnet",
             content = listOf(AnthropicOutputContent.Text("Done")),
-            stopReason = "end_turn"
+            stopReason = AnthropicStopReason.END_TURN
         )
 
         val domain = translator.toDomain(response)

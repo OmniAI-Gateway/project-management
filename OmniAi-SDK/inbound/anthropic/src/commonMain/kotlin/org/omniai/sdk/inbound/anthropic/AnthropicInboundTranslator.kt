@@ -19,6 +19,8 @@ import org.omniai.sdk.contracts.anthropic.output.AnthropicStreamEvent
 import org.omniai.sdk.contracts.anthropic.output.AnthropicUsage
 import org.omniai.sdk.contracts.anthropic.output.MessageDeltaInfo
 import org.omniai.sdk.common.TypedMap
+import org.omniai.sdk.contracts.anthropic.input.AnthropicRole
+import org.omniai.sdk.contracts.anthropic.output.AnthropicStopReason
 import org.omniai.sdk.ports.inbound.InboundTranslator
 import org.omniai.sdk.domain.common.CommonGenerationConfig
 import org.omniai.sdk.domain.common.CommonRole
@@ -86,7 +88,7 @@ class AnthropicInboundTranslator : InboundTranslator<AnthropicMessagesRequest, A
 			role = firstChoice?.message?.role?.toAnthropicRole() ?: "assistant",
 			model = domainResponse.model,
 			content = firstChoice?.message?.content?.mapNotNull(::toAnthropicContentPart).orEmpty(),
-			stopReason = firstChoice?.finishReason.toAnthropicStopReason(),
+			stopReason = firstChoice?.finishReason.toAnthropicStopReasonAnthropic(),
 			usage = domainResponse.usage?.toAnthropicUsage()
 		)
 	}
@@ -98,7 +100,6 @@ class AnthropicInboundTranslator : InboundTranslator<AnthropicMessagesRequest, A
 private fun commonRequestTypedMapInputs(clientRequest: AnthropicMessagesRequest): TypedMap = TypedMap().apply {
         clientRequest.stream?.let { put("stream", it) }
         clientRequest.topK?.let { put("topK", it) }
-        clientRequest.stopToken?.let { put("stopToken", it) }
         clientRequest.thinking?.let { put("thinking", it) }
         clientRequest.metadata?.let { put("metadata", it) }
     }
@@ -160,6 +161,9 @@ private fun AnthropicContent?.toPlainSystemText(): String? = when (this) {
 }
 
 
+
+
+
 private fun String.toCommonRole(): CommonRole =
 	when (lowercase()) {
 		"user" -> CommonRole.USER
@@ -192,7 +196,7 @@ private fun AnthropicContent.toDomainParts(): List<RequestContentPart> =
 
 private fun AnthropicMessageInput.toDomainMessage(): CommonRequestMessage =
 	CommonRequestMessage(
-		role = role.toCommonRole(),
+		role = role.name.toCommonRole(),
 		content = content.toDomainParts()
 	)
 
@@ -238,6 +242,16 @@ private fun CommonUsage.toAnthropicUsage(): AnthropicUsage = AnthropicUsage(
 	inputTokens = inputTokens,
 	outputTokens = outputTokens
 )
+
+private fun FinishReason?.toAnthropicStopReasonAnthropic(): AnthropicStopReason? =
+    when (this) {
+        FinishReason.STOP -> AnthropicStopReason.END_TURN
+        FinishReason.LENGTH -> AnthropicStopReason.END_TURN
+        FinishReason.TOOL_CALL -> AnthropicStopReason.TOOL_USE
+        FinishReason.CONTENT_FILTER -> AnthropicStopReason.STOP_SEQUENCE
+        FinishReason.OTHER, null -> null
+    }
+
 
 private fun FinishReason?.toAnthropicStopReason(): String? =
 	when (this) {

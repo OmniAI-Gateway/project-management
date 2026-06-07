@@ -20,9 +20,9 @@ sealed interface AnthropicInputContentBlock {
     @Serializable
     @SerialName("tool_use")
     data class ToolUse(
-        val id: String? = null,
+        val id: String,
         val name: String,
-        val input: JsonObject? = null
+        val input: JsonObject
     ) : AnthropicInputContentBlock
 
     @Serializable
@@ -36,8 +36,8 @@ sealed interface AnthropicInputContentBlock {
     @Serializable
     @SerialName("thinking")
     data class Thinking(
-        @SerialName("budget_tokens")
-        val budgetTokens: Int? = null
+        val thinking: String,
+        val signature: String
     ) : AnthropicInputContentBlock
 
 }

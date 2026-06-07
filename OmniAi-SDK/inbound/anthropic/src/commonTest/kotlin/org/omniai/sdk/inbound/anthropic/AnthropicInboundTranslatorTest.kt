@@ -12,6 +12,7 @@ import kotlin.test.assertTrue
 import org.omniai.sdk.contracts.anthropic.input.AnthropicInputContentBlock
 import org.omniai.sdk.contracts.anthropic.input.AnthropicMessageInput
 import org.omniai.sdk.contracts.anthropic.input.AnthropicMessagesRequest
+import org.omniai.sdk.contracts.anthropic.input.AnthropicRole
 import org.omniai.sdk.contracts.anthropic.input.AnthropicToolChoice
 import org.omniai.sdk.contracts.anthropic.input.AnthropicToolDefinition
 import org.omniai.sdk.contracts.anthropic.input.ListContentBlock
@@ -39,7 +40,7 @@ class AnthropicInboundTranslatorTest {
             maxTokens = 256,
             messages = listOf(
                 AnthropicMessageInput(
-                    role = "user",
+                    role = AnthropicRole.USER,
                     content = ListContentBlock(
                         blocks = listOf(
                             AnthropicInputContentBlock.Text(text = "hello"),
@@ -100,7 +101,7 @@ class AnthropicInboundTranslatorTest {
 
         assertEquals("msg_123", response.id)
         assertEquals("assistant", response.role)
-        assertEquals("end_turn", response.stopReason)
+        assertEquals(org.omniai.sdk.contracts.anthropic.output.AnthropicStopReason.END_TURN, response.stopReason)
         assertEquals(1, response.content.size)
         assertEquals(12, response.usage?.inputTokens)
     }

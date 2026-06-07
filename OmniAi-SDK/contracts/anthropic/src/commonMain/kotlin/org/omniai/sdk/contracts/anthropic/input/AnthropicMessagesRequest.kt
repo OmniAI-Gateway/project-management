@@ -22,10 +22,6 @@ data class AnthropicMessagesRequest(
     val topK: Int? = null,
     @SerialName("stop_sequences")
     val stopSequences: List<String>? = null,
-    @SerialName("stop_token")
-    val stopToken: String? = null,
-    @SerialName("output_config")
-    val outputConfig: AnthropicOutputConfig? = null,
     val thinking: AnthropicThinkingConfig? = null,
     val metadata: JsonElement? = null
 )
