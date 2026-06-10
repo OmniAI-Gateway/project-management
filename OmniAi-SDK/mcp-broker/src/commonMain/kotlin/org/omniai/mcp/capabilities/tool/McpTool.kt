@@ -8,9 +8,8 @@ abstract class McpTool<T : Any>(
     val description: String,
     val serializer: KSerializer<T>
 ) {
-    val schema: ToolSchemaDefinition by lazy {
+    open val schema: ToolSchemaDefinition =
         generateToolSchema(serializer.descriptor)
-    }
 
     abstract suspend fun execute(input: T): ToolResult
 }

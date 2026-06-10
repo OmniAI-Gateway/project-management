@@ -5,10 +5,14 @@ import org.omniai.mcp.capabilities.prompt.PromptMessage
 import org.omniai.mcp.capabilities.resource.McpResource
 import org.omniai.mcp.capabilities.resource.ResourceContent
 import org.omniai.mcp.capabilities.tool.McpTool
+import org.omniai.mcp.config.parsing.YamlConfigParser
+import org.omniai.mcp.config.registry.DefaultConfigMapper
+import org.omniai.mcp.config.registry.DynamicToolRegistry
 import org.omniai.mcp.transport.SseTransportConfig
 import org.omniai.mcp.transport.StdioTransportConfig
 import org.omniai.mcp.transport.TransportConfig
 import org.omniai.mcp.transport.WebSocketTransportConfig
+import org.omniai.sdk.ports.outbound.http.HttpTransportClient
 
 class McpServerBuilder {
     var name: String = "mcp-server"
@@ -38,6 +42,27 @@ class McpServerBuilder {
 
     fun prompts(block: PromptBuilder.() -> Unit) {
         PromptBuilder(prompts).apply(block)
+    }
+
+    /**
+     * Load tools and resources dynamically from a YAML configuration string.
+     * Uses the shared [HttpTransportClient] for all HTTP execution.
+     *
+     * @param yamlContent Raw YAML configuration string defining tools and resources.
+     * @param httpClient The HTTP client used to execute tool/resource requests at runtime.
+     */
+    fun loadDynamicConfig(
+        yamlContent: String,
+        httpClient: HttpTransportClient
+    ) {
+        val registry = DynamicToolRegistry(
+            parser = YamlConfigParser(),
+            configMapper = DefaultConfigMapper(),
+            httpClient = httpClient
+        )
+        val result = registry.loadFromYaml(yamlContent)
+        tools.addAll(result.tools)
+        resources.addAll(result.resources)
     }
 
     fun build(): McpServer {
