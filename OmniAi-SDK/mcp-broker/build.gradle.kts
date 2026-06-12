@@ -23,9 +23,11 @@ kotlin {
             implementation(project(":core"))
             implementation(project(":http-client"))
             implementation(libs.kotlinx.serialization.json)
+            implementation(libs.kotlinx.coroutines.core)
             implementation(libs.ktor.client.core)
             implementation(libs.ktor.client.content.negotiation)
             implementation(libs.ktor.serialization.kotlinx.json)
+            implementation(libs.ktor.client.websockets)
         }
 
         jvmMain.dependencies {

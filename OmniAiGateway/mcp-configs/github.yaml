@@ -1,0 +1,24 @@
+tools:
+  - name: "github_zen"
+    description: "Get a random quote from the GitHub design philosophy API"
+    targetUrl: "https://api.github.com/zen"
+    method: "GET"
+    headers:
+      Accept: "text/plain"
+      User-Agent: "OmniAI-MCP-Gateway"
+
+  - name: "github_octocat"
+    description: "Get the ASCII art of Octocat with a message"
+    targetUrl: "https://api.github.com/octocat"
+    method: "GET"
+    headers:
+      Accept: "text/plain"
+      User-Agent: "OmniAI-MCP-Gateway"
+
+contexts:
+  - name: "github_api_info"
+    description: "Documentation about the GitHub API endpoints being used"
+    content: |
+      The OmniAI MCP Gateway exposes simple GitHub endpoints:
+      - /zen: Returns a random design philosophy quote.
+      - /octocat: Returns an ASCII art octocat.
