@@ -17,6 +17,7 @@ tools:
 
 contexts:
   - name: "github_api_info"
+    uri: "context://github-api-info"
     description: "Documentation about the GitHub API endpoints being used"
     content: |
       The OmniAI MCP Gateway exposes simple GitHub endpoints:

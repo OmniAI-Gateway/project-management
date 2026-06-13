@@ -11,8 +11,6 @@ data class ToolConfigDto(
     val description: String? = null,
     val targetUrl: String,
     val method: String = "GET",
-    /** Key-value pairs for headers (e.g. Authorization, Content-Type) */
     val headers: Map<String, String>? = null,
-    /** JSON Schema for the input parameters */
     val inputSchema: Map<String, String>? = null
 )

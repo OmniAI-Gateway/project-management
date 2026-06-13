@@ -18,9 +18,17 @@ import java.io.File
  * It reads YAML configuration files from `mcp-configs` directory and runs as an MCP Server over STDIO.
  */
 fun main() = runBlocking {
-    // We choose 'mcp-configs' folder inside OmniAiGateway project root
-    val configDir = File(System.getProperty("user.dir"), "mcp-configs").absolutePath
-    File(configDir).mkdirs()
+    val originalOut = System.out
+    System.setOut(System.err)
+
+    // Find 'mcp-configs' folder - works whether run from project root or OmniAiGateway subdir
+    val workDir = File(System.getProperty("user.dir"))
+    val configDir = listOf(
+        File(workDir, "OmniAiGateway/mcp-configs"), // running from project root
+        File(workDir, "mcp-configs"),                // running from OmniAiGateway dir
+    ).firstOrNull { it.exists() && it.isDirectory }
+        ?.absolutePath
+        ?: File(workDir, "OmniAiGateway/mcp-configs").also { it.mkdirs() }.absolutePath
 
     val httpClient = HttpClient(OkHttp) {
         install(ContentNegotiation) {
@@ -38,7 +46,7 @@ fun main() = runBlocking {
         transportFactory(McpTransportFactory(httpClient))
         stdio(
             input = System.`in`.asSource().buffered(),
-            output = System.out.asSink().buffered()
+            output = originalOut.asSink().buffered()
         )
     }
 
