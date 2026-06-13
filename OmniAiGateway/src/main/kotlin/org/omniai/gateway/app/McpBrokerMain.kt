@@ -1,4 +1,4 @@
-package org.omniai.mcp
+package org.omniai.gateway.app
 
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.okhttp.OkHttp
@@ -11,21 +11,16 @@ import kotlinx.io.buffered
 import kotlinx.serialization.json.Json
 import org.omniai.mcp.core.mcpGateway
 import org.omniai.mcp.gateway.client.McpTransportFactory
+import java.io.File
 
 /**
- * Entry point for the OmniAI MCP Broker Gateway.
- *
- * Starts the gateway in STDIO mode, reading YAML configuration files
- * from the `gateway-config` directory in the project root.
- *
- * Usage:
- *   ./gradlew :OmniAi-SDK:mcp-broker:run
- *
- * Drop .yaml files into `mcp-broker/gateway-config/` to dynamically
- * register tools, contexts, and external MCP servers.
+ * Standalone entry point to start the MCP Broker inside the OmniAiGateway project.
+ * It reads YAML configuration files from `mcp-configs` directory and runs as an MCP Server over STDIO.
  */
 fun main() = runBlocking {
-    val configDir = System.getProperty("user.dir") + "/gateway-config"
+    // We choose 'mcp-configs' folder inside OmniAiGateway project root
+    val configDir = File(System.getProperty("user.dir"), "mcp-configs").absolutePath
+    File(configDir).mkdirs()
 
     val httpClient = HttpClient(OkHttp) {
         install(ContentNegotiation) {
@@ -37,7 +32,7 @@ fun main() = runBlocking {
     }
 
     val gateway = mcpGateway {
-        info("omniai-gateway", "1.0.0")
+        info("omniai-mcp-broker", "1.0.0")
         configDirectory(configDir)
         httpClient(httpClient)
         transportFactory(McpTransportFactory(httpClient))
