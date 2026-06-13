@@ -4,6 +4,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
+import kotlinx.coroutines.test.runTest
 
 class GatewayPipelineBuilderTest {
 
@@ -31,7 +32,7 @@ class GatewayPipelineBuilderTest {
     // ── install / intercept ───────────────────────────────────────────────────
 
     @Test
-    fun `install adds interceptor that is called during execution`() {
+    fun `install adds interceptor that is called during execution`() = runTest {
         var called = false
         val dispatcher = FakeSuccessDispatcher()
 
@@ -42,15 +43,13 @@ class GatewayPipelineBuilderTest {
             })
         }
 
-        kotlinx.coroutines.test.runTest {
-            pipeline.executeUnary(fakeContext())
-        }
+        pipeline.executeUnary(fakeContext())
 
         assertTrue(called, "Interceptor installed via install() should have been called")
     }
 
     @Test
-    fun `intercept lambda is called during execution`() {
+    fun `intercept lambda is called during execution`() = runTest {
         var called = false
         val dispatcher = FakeSuccessDispatcher()
 
@@ -61,15 +60,13 @@ class GatewayPipelineBuilderTest {
             }
         }
 
-        kotlinx.coroutines.test.runTest {
-            pipeline.executeUnary(fakeContext())
-        }
+        pipeline.executeUnary(fakeContext())
 
         assertTrue(called, "Interceptor registered via intercept{} should have been called")
     }
 
     @Test
-    fun `provider adds interceptor that is called during execution`() {
+    fun `provider adds interceptor that is called during execution`() = runTest {
         var called = false
         val dispatcher = FakeSuccessDispatcher()
 
@@ -80,15 +77,13 @@ class GatewayPipelineBuilderTest {
             })
         }
 
-        kotlinx.coroutines.test.runTest {
-            pipeline.executeUnary(fakeContext())
-        }
+        pipeline.executeUnary(fakeContext())
 
         assertTrue(called, "Interceptor registered via provider() should have been called")
     }
 
     @Test
-    fun `multiple interceptors are all invoked`() {
+    fun `multiple interceptors are all invoked`() = runTest {
         val callLog = mutableListOf<Int>()
         val dispatcher = FakeSuccessDispatcher()
 
@@ -98,10 +93,8 @@ class GatewayPipelineBuilderTest {
             install(Interceptor { ctx, chain -> callLog += 3; chain.proceed(ctx) })
         }
 
-        kotlinx.coroutines.test.runTest {
-            pipeline.executeUnary(fakeContext())
-        }
+        pipeline.executeUnary(fakeContext())
 
-        assertEquals(callLog, listOf(1, 2, 3), "All interceptors should be called in insertion order, got: $callLog")
+        assertEquals(listOf(1, 2, 3), callLog, "All interceptors should be called in insertion order, got: $callLog")
     }
 }
