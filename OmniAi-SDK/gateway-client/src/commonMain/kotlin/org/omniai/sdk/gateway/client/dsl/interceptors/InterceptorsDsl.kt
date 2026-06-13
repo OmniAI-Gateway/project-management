@@ -11,6 +11,8 @@ import org.omniai.sdk.interceptors.circuitBreaker.InMemoryCircuitBreakerStore
 import org.omniai.sdk.interceptors.fallback.FallbackInterceptor
 import org.omniai.sdk.interceptors.metrics.MetricsPort
 import org.omniai.sdk.interceptors.routing.RoutingInterceptor
+import org.omniai.sdk.interceptors.mcpBroker.McpBrokerInterceptor
+import io.modelcontextprotocol.kotlin.sdk.client.Client
 
 import org.omniai.sdk.gateway.client.dsl.GatewayDsl
 
@@ -63,6 +65,20 @@ class InterceptorsDsl {
      */
     fun fallback(metricsPort: MetricsPort? = null) {
         use { outbounds -> FallbackInterceptor(outbounds, DefaultDeniedOutboundsKey, metricsPort) }
+    }
+
+    /**
+     * Installs the [McpBrokerInterceptor].
+     *
+     * This interceptor is responsible for:
+     * 1. Fetching available tools from the MCP Broker and injecting them into the LLM request.
+     * 2. Detecting when the LLM wants to call a tool (FinishReason.TOOL_CALL).
+     * 3. Executing the tool via the MCP Broker and continuing the conversation with the result.
+     *
+     * @param mcpClient The MCP [Client] connected to the in-process MCP Gateway Server.
+     */
+    fun mcpBroker(mcpClient: Client) {
+        use(McpBrokerInterceptor(mcpClient))
     }
 
     internal fun build(outbounds: List<OutboundPort>): List<Interceptor> = 

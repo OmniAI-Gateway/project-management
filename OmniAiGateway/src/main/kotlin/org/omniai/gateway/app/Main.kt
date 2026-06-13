@@ -28,7 +28,9 @@ suspend fun main() {
     val config = loadGatewayConfig()
     val jsonConfig = buildJsonConfig()
     val telemetryRuntime = buildTelemetryRuntime(config)
+    val mcpClient = buildMcpSetup().mcpClient
     val httpClient = KtorHttpTransportClient.default()
+
 
     var ktorRoute: Route? = null
     val server = embeddedServer(
@@ -86,6 +88,8 @@ suspend fun main() {
                 }
 
                 interceptors {
+                    // Instala o interceptor de MCP Tool Calling.
+                    mcpBroker(mcpClient)
                     routing()
                     fallback(metricsPort = if (config.telemetryEnabled) telemetryRuntime.metricsPort else null)
                     if (config.telemetryEnabled) {
