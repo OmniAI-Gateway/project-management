@@ -25,10 +25,10 @@ import kotlinx.serialization.json.contentOrNull
 import org.omniai.sdk.application.pipeline.PipelineResult
 
 suspend fun main() {
+    //val originalOut = System.out
     val config = loadGatewayConfig()
     val jsonConfig = buildJsonConfig()
     val telemetryRuntime = buildTelemetryRuntime(config)
-    val mcpClient = buildMcpSetup().mcpClient
     val httpClient = KtorHttpTransportClient.default()
 
 
@@ -49,6 +49,8 @@ suspend fun main() {
             routing {
                 ktorRoute = this
             }
+            // --- MCP Broker Setup ---
+            //buildMcpSetup(originalOut)
         }
     )
     server.start(wait = false)
@@ -88,8 +90,6 @@ suspend fun main() {
                 }
 
                 interceptors {
-                    // Instala o interceptor de MCP Tool Calling.
-                    mcpBroker(mcpClient)
                     routing()
                     fallback(metricsPort = if (config.telemetryEnabled) telemetryRuntime.metricsPort else null)
                     if (config.telemetryEnabled) {

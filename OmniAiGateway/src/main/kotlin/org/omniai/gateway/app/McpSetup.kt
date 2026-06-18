@@ -2,73 +2,55 @@ package org.omniai.gateway.app
 
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.okhttp.OkHttp
-import io.modelcontextprotocol.kotlin.sdk.client.Client
-import io.modelcontextprotocol.kotlin.sdk.client.StdioClientTransport
-import io.modelcontextprotocol.kotlin.sdk.types.Implementation
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
+import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
+import io.ktor.serialization.kotlinx.json.json
+import io.ktor.server.application.Application
+import io.ktor.server.application.ApplicationStopped
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import kotlinx.io.asSink
 import kotlinx.io.asSource
 import kotlinx.io.buffered
-import org.omniai.mcp.gateway.McpGatewayServer
+import kotlinx.serialization.json.Json
+import org.omniai.mcp.core.mcpGateway
 import org.omniai.mcp.gateway.client.McpTransportFactory
 import java.io.File
-import java.io.PipedInputStream
-import java.io.PipedOutputStream
+import java.io.PrintStream
 
-data class McpSetupResult(
-    val mcpClient: Client
-)
+fun Application.buildMcpSetup(originalOut: PrintStream) {
+    val mcpWorkDir = File(System.getProperty("user.dir"))
+    val mcpConfigDir = listOf(
+        File(mcpWorkDir, "OmniAiGateway/mcp-configs"),
+        File(mcpWorkDir, "mcp-configs")
+    ).firstOrNull { it.exists() && it.isDirectory }?.absolutePath
+        ?: File(mcpWorkDir, "OmniAiGateway/mcp-configs").also { it.mkdirs() }.absolutePath
 
-/**
- * Initializes the in-process MCP setup.
- *
- * Creates a [McpGatewayServer] that reads tool definitions from the `mcp-configs/` directory
- * and connects it to a [Client] via in-memory pipes (no external sockets needed).
- *
- * Both the server and the client are started as background coroutines.
- *
- * @param configDir The path to the directory containing the MCP YAML config files.
- *                  Defaults to `<working-dir>/mcp-configs`.
- * @return A [McpSetupResult] containing the ready-to-use [Client] to pass to interceptors.
- */
-fun buildMcpSetup(
-    configDir: String = File(System.getProperty("user.dir"), "mcp-configs").absolutePath
-): McpSetupResult {
-    // Pipes que ligam in-process o McpGatewayServer ao Client (sem sockets externos)
-    val serverToClientIn = PipedInputStream()
-    val serverToClientOut = PipedOutputStream(serverToClientIn)
-    val clientToServerIn = PipedInputStream()
-    val clientToServerOut = PipedOutputStream(clientToServerIn)
+    val mcpHttpClient = HttpClient(OkHttp) {
+        install(ContentNegotiation) {
+            json(Json {
+                ignoreUnknownKeys = true
+                explicitNulls = false
+            })
+        }
+    }
 
-    val mcpHttpClient = HttpClient(OkHttp)
+    val mcpGatewayServer = mcpGateway {
+        info("omniai-mcp-broker", "1.0.0")
+        configDirectory(mcpConfigDir)
+        httpClient(mcpHttpClient)
+        transportFactory(McpTransportFactory(mcpHttpClient))
+        stdio(
+            input = System.`in`.asSource().buffered(),
+            output = originalOut.asSink().buffered()
+        )
+    }
 
-    // O servidor MCP que lê os YAMLs da pasta mcp-configs/
-    val mcpGatewayServer = McpGatewayServer(
-        name = "omniai-gateway",
-        version = "1.0.0",
-        configDirectory = configDir,
-        httpClient = mcpHttpClient,
-        transportFactory = McpTransportFactory(mcpHttpClient),
-        stdioInput = clientToServerIn.asSource().buffered(),
-        stdioOutput = serverToClientOut.asSink().buffered()
-    )
+    launch {
+        mcpGatewayServer.start()
+    }
 
-    // O cliente MCP que o interceptor vai usar para listar e chamar ferramentas
-    val mcpClient = Client(
-        clientInfo = Implementation(name = "omniai-gateway-client", version = "1.0.0")
-    )
-    val mcpTransport = StdioClientTransport(
-        input = serverToClientIn.asSource().buffered(),
-        output = clientToServerOut.asSink().buffered()
-    )
-
-    // Arrancar o servidor e o cliente MCP em background
-    val mcpScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-    mcpScope.launch { mcpGatewayServer.start() }
-    mcpScope.launch { mcpClient.connect(mcpTransport) }
-
-    return McpSetupResult(mcpClient = mcpClient)
+    environment.monitor.subscribe(ApplicationStopped) {
+        runBlocking { mcpGatewayServer.stop() }
+        mcpHttpClient.close()
+    }
 }

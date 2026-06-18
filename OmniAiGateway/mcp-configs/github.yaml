@@ -15,6 +15,14 @@ tools:
       Accept: "text/plain"
       User-Agent: "OmniAI-MCP-Gateway"
 
+  - name: "github_meta"
+    description: "Get GitHub API meta information, including official IP ranges and SSH keys"
+    targetUrl: "https://api.github.com/meta"
+    method: "GET"
+    headers:
+        Accept: "application/json"
+        User-Agent: "OmniAI-MCP-Gateway"
+
 contexts:
   - name: "github_api_info"
     uri: "context://github-api-info"
