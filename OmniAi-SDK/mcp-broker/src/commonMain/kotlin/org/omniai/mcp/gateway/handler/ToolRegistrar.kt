@@ -27,7 +27,10 @@ class ToolRegistrar(
                 description = tool.description ?: "No description",
                 inputSchema = inputSchema
             ) { request ->
-                val arguments = request.params.arguments?.mapValues { it.value } ?: emptyMap()
+                val arguments = request.params.arguments?.mapValues { 
+                    val value = it.value
+                    if (value is JsonPrimitive && value.isString) value.content else value 
+                } ?: emptyMap()
                 try {
                     val result = restToolExecutor.execute(tool, arguments)
                     CallToolResult(content = listOf(TextContent(result)))
@@ -42,13 +45,18 @@ class ToolRegistrar(
     }
 
     private fun buildToolSchema(tool: BrokerTool): ToolSchema {
+        val schema = tool.inputSchema
         val properties = buildJsonObject {
-            tool.inputSchema?.forEach { (paramName, paramType) ->
+            schema?.forEach { (paramName, paramType) ->
                 put(paramName, buildJsonObject {
                     put("type", JsonPrimitive(paramType))
                 })
             }
         }
-        return ToolSchema(properties = properties)
+        val requiredList = schema?.keys?.toList()
+        return ToolSchema(
+            properties = properties,
+            required = requiredList
+        )
     }
 }
