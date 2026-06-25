@@ -45,18 +45,25 @@ class ToolRegistrar(
     }
 
     private fun buildToolSchema(tool: BrokerTool): ToolSchema {
-        val schema = tool.inputSchema
+        val allSchemas = (tool.pathSchema ?: emptyMap()) +
+                         (tool.querySchema ?: emptyMap()) +
+                         (tool.bodySchema ?: emptyMap())
+
         val properties = buildJsonObject {
-            schema?.forEach { (paramName, paramType) ->
-                put(paramName, buildJsonObject {
-                    put("type", JsonPrimitive(paramType))
-                })
+            allSchemas.forEach { (paramName, paramValue) ->
+                if (paramValue is JsonPrimitive && paramValue.isString) {
+                    put(paramName, buildJsonObject {
+                        put("type", paramValue)
+                    })
+                } else {
+                    put(paramName, paramValue)
+                }
             }
         }
-        val requiredList = schema?.keys?.toList()
+        val requiredList = allSchemas.keys.toList()
         return ToolSchema(
             properties = properties,
-            required = requiredList
+            required = requiredList.takeIf { it.isNotEmpty() }
         )
     }
 }

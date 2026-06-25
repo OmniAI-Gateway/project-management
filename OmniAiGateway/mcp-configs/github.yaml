@@ -30,7 +30,7 @@ tools:
     headers:
       Accept: "application/json"
       User-Agent: "OmniAI-MCP-Gateway"
-    inputSchema:
+    pathSchema:
       username: "string"
 
   - name: "github_render_markdown"
@@ -40,8 +40,32 @@ tools:
     headers:
       Accept: "text/html"
       User-Agent: "OmniAI-MCP-Gateway"
-    inputSchema:
+    bodySchema:
       text: "string"
+
+  - name: "test_url_vs_body"
+    description: "Ferramenta para testar a separação de URL e Body com tipos complexos (números, booleanos e objetos)."
+    targetUrl: "https://postman-echo.com/post?meu_id_no_url={test_id}"
+    method: "POST"
+    headers:
+      Accept: "application/json"
+      User-Agent: "OmniAI-MCP-Gateway"
+    pathSchema:
+      test_id: "string"
+    querySchema:
+      filtro: "string"
+    bodySchema:
+      mensagem: "string"
+      idade: "number"
+      opcoes:
+        type: "object"
+        properties:
+          notificar:
+            type: "boolean"
+          preferencias:
+            type: "array"
+            items:
+              type: "string"
 
 contexts:
   - name: "github_api_info"

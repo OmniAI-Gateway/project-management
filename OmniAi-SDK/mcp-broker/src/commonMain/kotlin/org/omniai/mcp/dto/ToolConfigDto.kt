@@ -1,6 +1,7 @@
 package org.omniai.mcp.dto
 
 import kotlinx.serialization.Serializable
+import net.mamoe.yamlkt.YamlMap
 
 /**
  * DTO for configuring an external REST API as an MCP Tool.
@@ -12,5 +13,7 @@ data class ToolConfigDto(
     val targetUrl: String,
     val method: String = "GET",
     val headers: Map<String, String>? = null,
-    val inputSchema: Map<String, String>? = null
+    val pathSchema: YamlMap? = null,
+    val querySchema: YamlMap? = null,
+    val bodySchema: YamlMap? = null
 )
