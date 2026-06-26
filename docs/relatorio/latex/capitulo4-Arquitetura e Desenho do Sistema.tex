@@ -10,47 +10,52 @@ Esta separação entre \textbf{OmniAI SDK} e \textbf{OmniAI Gateway} constitui u
 
 \begin{figure}[H]
     \centering
+    \resizebox{\textwidth}{!}{%
     \begin{tikzpicture}[
-        node distance=1.2cm and 2.0cm,
-        box/.style={rectangle, draw, rounded corners, align=center, text width=4.0cm, minimum height=1.2cm, inner sep=5pt, thick},
-        inner/.style={rectangle, draw, rounded corners, align=center, text width=4.5cm, minimum height=1.0cm, fill=white, inner sep=5pt, thick},
-        sdk/.style={rectangle, draw, rounded corners, align=center, text width=4.5cm, minimum height=1.0cm, fill=gray!20, inner sep=5pt, thick},
-        group/.style={rectangle, draw, rounded corners, dashed, inner sep=15pt},
-        arrow/.style={-Latex, thick},
-        internal-arrow/.style={-Latex, thick, dashed, gray}
+        node distance=1.2cm and 1.2cm,
+        box/.style={rectangle, draw, rounded corners, align=center, text width=3.8cm, minimum height=1.2cm, inner sep=5pt, thick},
+        clientsBox/.style={box, text width=2.5cm},
+        entryBox/.style={box, text width=2.0cm},
+        sdkBox/.style={box, minimum width=6.0cm, text width=5.5cm, fill=blue!10, minimum height=1.2cm},
+        interceptorBox/.style={box, minimum width=2.4cm, text width=2.4cm, minimum height=0.8cm, fill=white},
+        group/.style={rectangle, draw, rounded corners, inner sep=15pt, thick},
+        arrow/.style={-Latex, thick}
     ]
         % --- CLIENTS ---
-        \node[box] (clients) {External Clients\\ \footnotesize{(e.g., REST Client, Applications)}};
+        \node[clientsBox] (clients) {Clientes Externos\\ \footnotesize{(Aplicações, REST)}};
 
-        % --- OMNIAI GATEWAY (Instance) ---
-        \node[inner, right=1.5cm of clients, yshift=1.5cm] (config) {\textbf{Gateway} Instance};
-        \node[inner, below=0.6cm of config] (ktor) {\textbf{Gateway} \textbf{HTTP} Endpoints};
-        \node[sdk, below=0.6cm of ktor] (sdk) {\textbf{OmniAI SDK}\\ \footnotesize{(Core, DSL, Pipeline, Adapters)}};
+        % --- GATEWAY INTERNAL COMPONENTS ---
+        \node[entryBox, right=1.2cm of clients] (entry) {Endpoints\\HTTP};
+        \node[sdkBox, right=0.6cm of entry] (sdk) {\textbf{OmniAI SDK}\\ \footnotesize{(Core, DSL, Pipeline, Adapters)}};
 
-        % Internal logical arrows
-        \draw[internal-arrow] (config.south) -- (ktor.north);
-        \draw[internal-arrow] (ktor.south) -- (sdk.north);
+        \draw[arrow] (entry.east) -- (sdk.west);
 
-        % The "fit" group wraps the internal blocks
-        \node[group, fit=(config)(ktor)(sdk), label={[align=center]above:\textbf{Application: OmniAI Gateway}}] (gatewayGroup) {};
+        % Interceptors on top of SDK
+        \node[interceptorBox, above=0.8cm of sdk, xshift=-1.4cm] (int1) {Interceptor 1};
+        \node[interceptorBox, above=0.8cm of sdk, xshift=1.4cm] (int2) {Interceptor 2};
 
-        % --- RIGHT SIDE (Agnostic / Conceptual) ---
-        \node[box, right=2.0cm of ktor] (providers) {Inference Providers\\ \footnotesize{(e.g., \textbf{OpenAI}, \textbf{Anthropic}, \textbf{Gemini})}};
-        \node[box, above=0.6cm of providers] (auth) {\textit{Authorization Server}\\ \footnotesize{(\textbf{OIDC} / \textbf{OAuth2} Protocol)}};
-        \node[box, below=0.6cm of providers] (telemetry) {Observability \& Telemetry\\ \footnotesize{(\textbf{OpenTelemetry Protocol})}};
+        \draw[arrow] (int1.south) -- (int1.south |- sdk.north);
+        \draw[arrow] (int2.south) -- (int2.south |- sdk.north);
 
-        % --- EXTERNAL CONNECTIONS ---
-        % Group Input
+        % Grouping them in "Aplicação Gateway"
+        \node[group, fit=(entry)(sdk)(int1)(int2), label={[align=center, font=\bfseries]above:Aplicação: OmniAI Gateway}] (gatewayGroup) {};
+
         \draw[arrow] (clients.east) -- (gatewayGroup.west);
 
-        % Group Outputs (Using a fork point to avoid overlapping the dashed border)
-        \coordinate (fork) at ([xshift=0.8cm]gatewayGroup.east);
+        % --- RIGHT SIDE (External Services) ---
+        \node[box, right=1.2cm of gatewayGroup] (providers) {Fornecedores de Inferência\\ \footnotesize{(OpenAI, Anthropic, Gemini)}};
+        \node[box, above=0.6cm of providers] (auth) {\textit{Servidor de Autorização}\\ \footnotesize{(OIDC / OAuth2)}};
+        \node[box, below=0.6cm of providers] (telemetry) {Observabilidade e Telemetria\\ \footnotesize{(OpenTelemetry)}};
+
+        % Outputs
+        \coordinate (fork) at ([xshift=0.5cm]gatewayGroup.east);
         \draw[thick] (gatewayGroup.east) -- (fork);
         \draw[arrow] (fork) |- (auth.west);
         \draw[arrow] (fork) -- (providers.west);
         \draw[arrow] (fork) |- (telemetry.west);
 
-    \end{tikzpicture}
+    \end{tikzpicture}%
+    }
     \caption{Arquitetura de Alto Nível: O \textbf{OmniAI SDK} utilizado para instanciar uma \textbf{OmniAI Gateway}, abstraindo integrações externas padronizadas.}
     \label{fig:top-level}
 \end{figure}

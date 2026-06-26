@@ -951,7 +951,7 @@ security {
 }
     \end{lstlisting}
 
-    \subsection{Interceptor de Rate Limiting}
+    \subsection{Interceptor de \textit{Rate Limiting} }
     O \texttt{RateLimitInterceptor} aplica limites de utilização antes da chamada ao fornecedor. Numa AI \textbf{Gateway}, este mecanismo tem dois objetivos principais: proteger o sistema contra abuso ou tráfego excessivo e controlar custos associados a chamadas de inferência. A limitação de taxa é uma estratégia comum para impor um teto de ações repetidas num intervalo temporal, reduzindo abuso de APIs, força bruta e carga excessiva \cite{cloudflare_rate_limiting}.
 
     A importância deste \textit{interceptor} é maior do que numa API tradicional, porque cada pedido pode representar custo financeiro direto, consumo de quotas externas e ocupação prolongada de ligações em \textit{streaming}. Sem \textit{rate limiting}, um cliente mal configurado, uma automação em ciclo ou um utilizador abusivo pode saturar a \textbf{Gateway}, esgotar quotas nos fornecedores e degradar o serviço para clientes legítimos. O \textit{interceptor} permite aplicar justiça operacional: cada cliente, plano, modelo ou fornecedor pode ter limites próprios.
@@ -973,7 +973,7 @@ interceptors {
 }
     \end{lstlisting}
 
-    \subsection{Interceptor de Circuit Breaker}
+    \subsection{Interceptor de \textit{Circuit Breaker}}
     O \texttt{CircuitBreakerInterceptor} protege a \textbf{Gateway} contra chamadas repetidas a um \textit{outbound} em falha. O padrão de \textit{circuit breaker} é usado para lidar com falhas em serviços remotos, evitando insistir numa dependência que está indisponível e dando tempo para recuperação \cite{microsoft_circuit_breaker,itau_circuit_breaker,treinaweb_circuit_breaker}. Numa \textbf{Gateway} de IA, esta proteção é especialmente útil porque fornecedores externos podem falhar por indisponibilidade, \textit{timeouts}, quotas ou erros 5xx.
 
     A alternativa simples seria repetir pedidos até obter sucesso. Essa abordagem é perigosa quando o fornecedor está realmente indisponível: as tentativas acumulam latência, ocupam threads ou corrotinas, aumentam custos e podem agravar a falha no serviço externo. O \textit{circuit breaker} foi criado para evitar esse comportamento. Quando a falha ultrapassa um limiar, o circuito abre e a \textbf{Gateway} passa a falhar rapidamente aquele destino, libertando recursos e permitindo que mecanismos como \textit{fallback} escolham outro \textit{outbound}.
@@ -997,7 +997,7 @@ interceptors {
 }
     \end{lstlisting}
 
-    \subsection{Interceptor de Fallback}
+    \subsection{Interceptor de \textit{Fallback}}
     O \texttt{FallbackInterceptor} permite tentar alternativas quando a chamada principal falha. Em sistemas de IA, \textit{fallback} ao nível de modelo ou fornecedor é relevante porque falhas nas APIs de inferência fornecidas pelas LLMs são um cenário frequente em produção: rate limits, indisponibilidade, quotas, \textit{timeouts} ou modelos descontinuados podem impedir a resposta do fornecedor principal \cite{ai_fallback_tombas,portkey_fallback}. Um \textit{gateway} é o ponto certo para esta política, porque conhece os \textit{outbounds} configurados e consegue trocar de destino sem exigir alterações no cliente.
 
     A decisão de colocar \textit{fallback} na \textbf{Gateway}, e não nos clientes, reduz duplicação e melhora controlo operacional. Se cada aplicação cliente implementasse a sua própria lógica de \textit{fallback}, seria necessário repetir regras de prioridade, tratamento de erros, mapeamento de contratos e métricas em vários pontos. Ao centralizar a política, o \textbf{SDK} consegue manter o mesmo contrato de entrada e decidir internamente que fornecedor ou modelo alternativo deve ser tentado. Isto é particularmente útil quando o cliente usa um contrato compatível com \textbf{Anthropic} ou \textbf{OpenAI}, mas a \textbf{Gateway} pode executar a chamada noutro \textit{provider} configurado.
@@ -1017,7 +1017,7 @@ interceptors {
 }
     \end{lstlisting}
 
-    \subsection{Interceptor de Logging e Tracing}
+    \subsection{Interceptor de \textit{Logging} e \textit{Tracing}}
     O \texttt{RequestLoggingInterceptor} regista fornecedor, modelo, sucesso, erro e conclusão de streams através da abstração \texttt{GatewayLogger}. No \textit{target} \textbf{JVM} pode ser ligado a \textbf{SLF4J}; no \textit{target} \textbf{JavaScript} pode usar consola ou outra integração. O objetivo é garantir visibilidade mínima mesmo quando a telemetria completa não está ativa.
 
     O \textit{logging} foi mantido separado das métricas porque responde a perguntas diferentes. Métricas mostram tendências agregadas, como latência média ou número de erros; \textit{logs} ajudam a explicar um pedido concreto. Numa \textbf{Gateway} de IA, esta distinção também tem impacto de privacidade: o objetivo é registar metadados operacionais, e não despejar \textit{prompts}, respostas completas ou \textit{tokens} sensíveis nos \textit{logs}.
