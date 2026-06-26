@@ -1,0 +1,115 @@
+\chapter{MCP Broker e Ferramentas Externas}
+
+O \textbf{MCP Broker} surge como uma extensão natural da \textbf{Gateway}: deixar de a tratar apenas como um ponto de entrada para inferência e aproximá-la de uma \textit{gateway} de IA mais completa. Em muitos cenários, um modelo só consegue produzir uma resposta útil se puder consultar recursos externos, chamar ferramentas ou executar ações controladas. É nesse espaço que entra o \textbf{Model Context Protocol (MCP)}.
+
+O que foi concretamente implementado neste módulo é uma \textbf{MCP Gateway} funcional: um servidor MCP autónomo que lê ficheiros de configuração \textbf{YAML} de forma declarativa, regista automaticamente as ferramentas neles descritas, e expõe-as a qualquer cliente MCP compatível, como o \textbf{MCP Inspector}. Com isto, a Gateway deixa de ser apenas um \textit{proxy} de inferência e passa a ser uma infraestrutura de IA mais completa: consegue não só encaminhar pedidos de geração de texto, como também disponibilizar ferramentas externas a modelos e clientes de forma organizada, centralizada e sem necessidade de alterar código para adicionar novas integrações.
+
+A implementação assenta em duas bibliotecas principais: \texttt{io.modelcontextprotocol:kotlin-sdk} (versão 0.8.3) \cite{mcp_kotlin_sdk}, que fornece o servidor MCP, os tipos do protocolo e os transportes suportados (\textit{stdio}, SSE, WebSocket); e \texttt{net.mamoe.yamlkt} (versão 0.13.0) \cite{yamlkt_ref}, que é responsável por desserializar os ficheiros YAML de configuração em objetos Kotlin de forma declarativa. O cliente HTTP utilizado para comunicar com as APIs externas é o \textbf{Ktor} \cite{ktor_ref}.
+
+
+\section{Visão Geral do Sistema}
+
+A Figura~\ref{fig:mcp-gateway-flow} sintetiza o papel da Gateway neste módulo, evidenciando os dois papéis que desempenha em simultâneo: é \textbf{Servidor MCP} para o cliente (Inspector ou Claude) e é \textbf{cliente HTTP} para as APIs externas.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[
+    node distance=2cm and 3.5cm,
+    box/.style={rectangle, draw=black!80, thick, rounded corners=4pt, minimum width=3.4cm, minimum height=1.1cm, align=center, font=\small},
+    arrow/.style={->, >=stealth, thick},
+    dasharrow/.style={->, >=stealth, dashed, thick, draw=gray!80}
+]
+
+\node[box] (yaml) {Ficheiros \textbf{YAML}\\(\texttt{mcp-configs/})};
+
+\node[box, right=3.0cm of yaml] (gateway) {\textbf{MCP Gateway}\\Servidor MCP};
+
+\node[box, above right=1.2cm and 2.6cm of gateway] (client) {\textbf{MCP Inspector}};
+
+\node[box, below right=1.2cm and 2.6cm of gateway] (api) {API Externa\\(GitHub, Postman\ldots)};
+
+% Arranque
+\draw[arrow] (yaml) -- node[above, font=\scriptsize, align=center]{pipeline de arranque\\(parse + map + registo)} (gateway);
+
+% Protocolo MCP
+\draw[arrow] (gateway) to[bend left=15] node[above, sloped, font=\scriptsize]{\texttt{tools/list} (JSON Schema)} (client);
+\draw[arrow] (client) to[bend left=15] node[below, sloped, font=\scriptsize]{\texttt{tools/call} (argumentos)} (gateway);
+
+% HTTP
+\draw[dasharrow] (gateway) to[bend right=15] node[above, sloped, font=\scriptsize]{pedido HTTP (Ktor)} (api);
+\draw[dasharrow] (api) to[bend right=15] node[below, sloped, font=\scriptsize]{resposta JSON} (gateway);
+
+\end{tikzpicture}
+\caption{Visão geral da MCP Gateway: registo de ferramentas via YAML e execução de pedidos HTTP a APIs externas.}
+\label{fig:mcp-gateway-flow}
+\end{figure}
+
+
+\section{Descrição das Ferramentas em YAML}
+
+A configuração das ferramentas é feita em ficheiros \textbf{YAML} colocados na pasta \texttt{mcp-configs/}. Cada ferramenta é descrita de forma declarativa, sem escrever código: basta indicar o nome, a descrição, o URL de destino, o método HTTP, os cabeçalhos, e os \textit{schemas} de entrada. Para permitir um roteamento preciso dos argumentos, o \textit{schema} de entrada está dividido em três secções distintas:
+
+\begin{itemize}
+    \item \textbf{\texttt{pathSchema}}: parâmetros que são substituídos diretamente no URL, através de \textit{placeholders} do tipo \texttt{\{chave\}}.
+    \item \textbf{\texttt{querySchema}}: parâmetros que são acrescentados ao URL como \textit{query string} (ex: \texttt{?filtro=activo}).
+    \item \textbf{\texttt{bodySchema}}: parâmetros que são enviados no corpo do pedido HTTP como JSON, suportando tipos complexos como objetos aninhados, arrays, números e booleanos.
+\end{itemize}
+
+O exemplo seguinte ilustra uma ferramenta que utiliza simultaneamente os três tipos de \textit{schema}:
+
+\begin{lstlisting}[caption={Exemplo de ferramenta com os três tipos de schema.}]
+tools:
+  - name: "test_url_vs_body"
+    description: "Ferramenta de teste com path, query e body."
+    targetUrl: "https://postman-echo.com/post?id={test_id}"
+    method: "POST"
+    headers:
+      Accept: "application/json"
+    pathSchema:
+      test_id: "string"
+    querySchema:
+      filtro: "string"
+    bodySchema:
+      mensagem: "string"
+      idade: "number"
+      opcoes:
+        type: "object"
+        properties:
+          notificar:
+            type: "boolean"
+\end{lstlisting}
+
+\section{Pipeline de Transformação: do YAML ao Servidor MCP}
+
+Quando a Gateway arranca, percorre um pipeline de transformação bem definido que começa nos ficheiros YAML e termina no registo das ferramentas no servidor MCP:
+
+\begin{enumerate}
+    \item \textbf{Leitura do YAML (\texttt{YamlConfigParser})}: A classe \texttt{YamlConfigParser} lê todos os ficheiros YAML presentes na pasta de configuração e utiliza a biblioteca \texttt{yamlkt} para os desserializar em objetos \texttt{ToolConfigDto}. Estes objetos são estruturas de dados simples que espelham diretamente a estrutura do ficheiro YAML, incluindo os \textit{schemas} parciais representados como \texttt{YamlMap}.
+
+    \item \textbf{Mapeamento para o Domínio (\texttt{ConfigMapper})}: O \texttt{ConfigMapper} converte cada \texttt{ToolConfigDto} num \texttt{BrokerTool}, que é o objeto de domínio central do módulo. É nesta fase que os \textit{schemas} em bruto do tipo \texttt{YamlMap} são transformados em \texttt{JsonObject} tipados do Kotlin, através de uma função de conversão recursiva. Esta função preserva os tipos reais de cada valor: inteiros permanecem inteiros, booleanos permanecem booleanos, e estruturas aninhadas como objetos e arrays são convertidas fielmente — sem o erro comum de coagir todos os valores para \textit{strings}.
+
+    \item \textbf{Registo no Servidor MCP (\texttt{ToolRegistrar})}: O \texttt{ToolRegistrar} pega em cada \texttt{BrokerTool} e regista-o no servidor MCP. Para cada ferramenta, constrói um \textbf{JSON Schema} unificado, fundindo os três \textit{schemas} parciais (\texttt{pathSchema}, \texttt{querySchema} e \texttt{bodySchema}) numa única estrutura \texttt{inputSchema} no formato \textbf{JSON Schema} padrão — o mesmo utilizado pelo OpenAPI e compreendido nativamente pelos modelos de linguagem. Este \textit{schema} unificado é o que o cliente MCP usa para descobrir os campos de cada ferramenta e desenhar o formulário de invocação.
+
+    \item \textbf{Abertura do Canal de Comunicação}: A Gateway estabelece uma sessão de transporte \textbf{Stdio} (\texttt{StdioServerTransport}), ficando bloqueada à espera de mensagens do cliente MCP. Toda a comunicação do protocolo MCP flui por este canal.
+\end{enumerate}
+
+\section{Fluxo de Execução: do Cliente à API Externa}
+
+Após o arranque, a Gateway aguarda a ligação de um cliente MCP. A interação completa resume-se a apenas duas mensagens de protocolo:
+
+\begin{itemize}
+    \item \textbf{\texttt{tools/list}}: O cliente pede a lista de ferramentas disponíveis. A biblioteca MCP responde automaticamente com o JSON Schema de todas as ferramentas registadas. O cliente usa esta informação para descobrir as ferramentas e os seus parâmetros — sem mais nenhum pedido à Gateway.
+
+    \item \textbf{\texttt{tools/call}}: Quando o utilizador decide invocar uma ferramenta e envia os argumentos preenchidos, a biblioteca MCP interceta a mensagem, identifica a ferramenta pelo nome e invoca o bloco de execução registado pelo \texttt{ToolRegistrar}. Este bloco delega a execução ao \texttt{RestToolExecutor}.
+\end{itemize}
+
+O \texttt{RestToolExecutor} é o componente que efetua o roteamento dos argumentos e a execução do pedido HTTP. Recebe os argumentos enviados pelo cliente e o \texttt{BrokerTool} correspondente, e distribui cada argumento pelo destino correto com base nos \textit{schemas} declarados:
+
+\begin{itemize}
+    \item Argumentos do \texttt{pathSchema} são substituídos nos \textit{placeholders} \texttt{\{chave\}} do URL.
+    \item Argumentos do \texttt{querySchema} são anexados ao URL como parâmetros de \textit{query string}.
+    \item Argumentos do \texttt{bodySchema} são serializados para JSON e enviados no corpo do pedido HTTP, com preservação fiel dos tipos de dados.
+\end{itemize}
+
+O pedido HTTP é executado pelo \textbf{Ktor}, e a resposta da API externa percorre o caminho inverso até ser devolvida ao cliente MCP que iniciou a invocação.
+
