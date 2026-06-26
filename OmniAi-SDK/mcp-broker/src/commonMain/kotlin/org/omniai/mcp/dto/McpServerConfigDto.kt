@@ -9,10 +9,8 @@ import kotlinx.serialization.Serializable
 data class McpServerConfigDto(
     val name: String,
     val transport: TransportType,
-    // Used for STDIO
     val command: String? = null,
     val args: List<String> = emptyList(),
-    // Used for SSE/WebSocket
     val url: String? = null
 ) {
     @Serializable

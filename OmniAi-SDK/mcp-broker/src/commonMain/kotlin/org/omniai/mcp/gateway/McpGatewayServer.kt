@@ -8,7 +8,9 @@ import io.modelcontextprotocol.kotlin.sdk.types.Implementation
 import io.modelcontextprotocol.kotlin.sdk.types.ServerCapabilities
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.launch
 import kotlinx.io.Sink
 import kotlinx.io.Source
@@ -82,12 +84,16 @@ class McpGatewayServer(
 
         println("[McpGatewayServer] '$name' v$version started, watching '$configDirectory' for config changes")
 
-        // Start transport — blocks until session ends
+        // Start transport and block until the session ends (stdin closes or error)
         val transport = StdioServerTransport(
             stdioInput ?: error("No Input provided for Stdio transport"),
             stdioOutput ?: error("No Output provided for Stdio transport")
         )
         server.createSession(transport)
+
+        // Keep this coroutine alive until cancelled (i.e. until stdin closes and
+        // the shutdown hook fires gateway.stop())
+        awaitCancellation()
     }
 
     suspend fun stop() {

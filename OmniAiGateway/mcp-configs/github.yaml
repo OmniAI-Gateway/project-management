@@ -15,8 +15,61 @@ tools:
       Accept: "text/plain"
       User-Agent: "OmniAI-MCP-Gateway"
 
+  - name: "github_meta"
+    description: "Get GitHub API meta information, including official IP ranges and SSH keys"
+    targetUrl: "https://api.github.com/meta"
+    method: "GET"
+    headers:
+        Accept: "application/json"
+        User-Agent: "OmniAI-MCP-Gateway"
+
+  - name: "github_user_info"
+    description: "Get public information about a specific GitHub user"
+    targetUrl: "https://api.github.com/users/{username}"
+    method: "GET"
+    headers:
+      Accept: "application/json"
+      User-Agent: "OmniAI-MCP-Gateway"
+    pathSchema:
+      username: "string"
+
+  - name: "github_render_markdown"
+    description: "Render a markdown string into HTML using GitHub's markdown API"
+    targetUrl: "https://api.github.com/markdown"
+    method: "POST"
+    headers:
+      Accept: "text/html"
+      User-Agent: "OmniAI-MCP-Gateway"
+    bodySchema:
+      text: "string"
+
+  - name: "test_url_vs_body"
+    description: "Ferramenta para testar a separação de URL e Body com tipos complexos (números, booleanos e objetos)."
+    targetUrl: "https://postman-echo.com/post?meu_id_no_url={test_id}"
+    method: "POST"
+    headers:
+      Accept: "application/json"
+      User-Agent: "OmniAI-MCP-Gateway"
+    pathSchema:
+      test_id: "string"
+    querySchema:
+      filtro: "string"
+    bodySchema:
+      mensagem: "string"
+      idade: "number"
+      opcoes:
+        type: "object"
+        properties:
+          notificar:
+            type: "boolean"
+          preferencias:
+            type: "array"
+            items:
+              type: "string"
+
 contexts:
   - name: "github_api_info"
+    uri: "context://github-api-info"
     description: "Documentation about the GitHub API endpoints being used"
     content: |
       The OmniAI MCP Gateway exposes simple GitHub endpoints:

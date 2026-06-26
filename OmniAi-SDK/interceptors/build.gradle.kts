@@ -20,6 +20,7 @@ kotlin {
             api(project(":core"))
             api(project(":pipeline-engine"))
             implementation(libs.kotlinx.serialization.json)
+            api("io.modelcontextprotocol:kotlin-sdk:0.8.3")
 
         }
 

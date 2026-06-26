@@ -29,6 +29,7 @@ kotlin {
             implementation(project(":outbound:openai"))
             implementation(project(":outbound:anthropic"))
             implementation(project(":outbound:gemini"))
+            api("io.modelcontextprotocol:kotlin-sdk:0.8.3")
         }
 
         commonTest.dependencies {

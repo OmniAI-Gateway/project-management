@@ -25,10 +25,12 @@ import kotlinx.serialization.json.contentOrNull
 import org.omniai.sdk.application.pipeline.PipelineResult
 
 suspend fun main() {
+    //val originalOut = System.out
     val config = loadGatewayConfig()
     val jsonConfig = buildJsonConfig()
     val telemetryRuntime = buildTelemetryRuntime(config)
     val httpClient = KtorHttpTransportClient.default()
+
 
     var ktorRoute: Route? = null
     val server = embeddedServer(
@@ -47,6 +49,8 @@ suspend fun main() {
             routing {
                 ktorRoute = this
             }
+            // --- MCP Broker Setup ---
+            //buildMcpSetup(originalOut)
         }
     )
     server.start(wait = false)
