@@ -9,20 +9,21 @@ import kotlinx.io.asSink
 import kotlinx.io.asSource
 import kotlinx.io.buffered
 import kotlinx.serialization.json.Json
-import org.omniai.mcp.core.mcpGateway
-import org.omniai.mcp.gateway.client.McpTransportFactory
+import org.omniai.mcp.client.McpClientTransportFactory
+import org.omniai.mcp.core.mcpBroker
+import org.omniai.mcp.server.ServerTransportConfig
 
 /**
- * Entry point for the OmniAI MCP Broker Gateway.
+ * Entry point for the OmniAI MCP Broker.
  *
- * Starts the gateway in STDIO mode, reading YAML configuration files
+ * Starts the broker in STDIO mode, reading YAML configuration files
  * from the `gateway-config` directory in the project root.
  *
  * Usage:
  *   ./gradlew :OmniAi-SDK:mcp-broker:run
  *
  * Drop .yaml files into `mcp-broker/gateway-config/` to dynamically
- * register tools, contexts, and external MCP servers.
+ * register tools, contexts, and external MCP clients.
  */
 fun main() = runBlocking {
     val configDir = System.getProperty("user.dir") + "/gateway-config"
@@ -36,21 +37,29 @@ fun main() = runBlocking {
         }
     }
 
-    val gateway = mcpGateway {
-        info("omniai-gateway", "1.0.0")
+    val broker = mcpBroker {
+        info("omniai-broker", "1.0.0")
         configDirectory(configDir)
         httpClient(httpClient)
-        transportFactory(McpTransportFactory(httpClient))
-        stdio(
-            input = System.`in`.asSource().buffered(),
-            output = System.out.asSink().buffered()
+        clientTransportFactory(McpClientTransportFactory(httpClient))
+        serverTransport(
+            ServerTransportConfig.Stdio(
+                input = System.`in`.asSource().buffered(),
+                output = System.out.asSink().buffered()
+            )
+        )
+        serverTransport(
+            ServerTransportConfig.Sse(port = 8080, path = "/sse")
+        )
+        serverTransport(
+            ServerTransportConfig.WebSocket(port = 8080, path = "/ws")
         )
     }
 
     Runtime.getRuntime().addShutdownHook(Thread {
-        runBlocking { gateway.stop() }
+        runBlocking { broker.stop() }
         httpClient.close()
     })
 
-    gateway.start()
+    broker.start()
 }

@@ -9,15 +9,16 @@ import kotlinx.io.asSink
 import kotlinx.io.asSource
 import kotlinx.io.buffered
 import kotlinx.serialization.json.Json
-import org.omniai.mcp.core.mcpGateway
-import org.omniai.mcp.gateway.client.McpTransportFactory
+import org.omniai.mcp.client.McpClientTransportFactory
+import org.omniai.mcp.core.mcpBroker
+import org.omniai.mcp.server.ServerTransportConfig
 import java.io.File
 
 /**
  * Standalone entry point to start the MCP Broker inside the OmniAiGateway project.
  * It reads YAML configuration files from `mcp-configs` directory and runs as an MCP Server over STDIO.
  */
-fun main() = runBlocking {
+fun standaloneBrokerMain() = runBlocking {
     val originalOut = System.out
     System.setOut(System.err)
 
@@ -39,21 +40,31 @@ fun main() = runBlocking {
         }
     }
 
-    val gateway = mcpGateway {
+    val broker = mcpBroker {
         info("omniai-mcp-broker", "1.0.0")
         configDirectory(configDir)
         httpClient(httpClient)
-        transportFactory(McpTransportFactory(httpClient))
-        stdio(
-            input = System.`in`.asSource().buffered(),
-            output = originalOut.asSink().buffered()
+        clientTransportFactory(McpClientTransportFactory(httpClient))
+        
+        serverTransport(
+            ServerTransportConfig.Stdio(
+                input = System.`in`.asSource().buffered(),
+                output = originalOut.asSink().buffered()
+            )
+        )
+        // Standalone porta 8080 pois a gateway principal não está a correr
+        serverTransport(
+            ServerTransportConfig.Sse(port = 8080, path = "/sse")
+        )
+        serverTransport(
+            ServerTransportConfig.WebSocket(port = 8080, path = "/ws")
         )
     }
 
     Runtime.getRuntime().addShutdownHook(Thread {
-        runBlocking { gateway.stop() }
+        runBlocking { broker.stop() }
         httpClient.close()
     })
 
-    gateway.start()
+    broker.start()
 }

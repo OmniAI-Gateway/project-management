@@ -25,7 +25,7 @@ import kotlinx.serialization.json.contentOrNull
 import org.omniai.sdk.application.pipeline.PipelineResult
 
 suspend fun main() {
-    //val originalOut = System.out
+    val originalOut = System.out
     val config = loadGatewayConfig()
     val jsonConfig = buildJsonConfig()
     val telemetryRuntime = buildTelemetryRuntime(config)
@@ -50,7 +50,7 @@ suspend fun main() {
                 ktorRoute = this
             }
             // --- MCP Broker Setup ---
-            //buildMcpSetup(originalOut)
+            buildMcpSetup(originalOut)
         }
     )
     server.start(wait = false)

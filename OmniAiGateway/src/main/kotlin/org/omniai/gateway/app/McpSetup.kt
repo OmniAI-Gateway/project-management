@@ -12,8 +12,9 @@ import kotlinx.io.asSink
 import kotlinx.io.asSource
 import kotlinx.io.buffered
 import kotlinx.serialization.json.Json
-import org.omniai.mcp.core.mcpGateway
-import org.omniai.mcp.gateway.client.McpTransportFactory
+import org.omniai.mcp.client.McpClientTransportFactory
+import org.omniai.mcp.core.mcpBroker
+import org.omniai.mcp.server.ServerTransportConfig
 import java.io.File
 import java.io.PrintStream
 
@@ -34,23 +35,32 @@ fun Application.buildMcpSetup(originalOut: PrintStream) {
         }
     }
 
-    val mcpGatewayServer = mcpGateway {
+    val mcpBrokerServer = mcpBroker {
         info("omniai-mcp-broker", "1.0.0")
         configDirectory(mcpConfigDir)
         httpClient(mcpHttpClient)
-        transportFactory(McpTransportFactory(mcpHttpClient))
-        stdio(
-            input = System.`in`.asSource().buffered(),
-            output = originalOut.asSink().buffered()
+        clientTransportFactory(McpClientTransportFactory(mcpHttpClient))
+        
+        serverTransport(
+            ServerTransportConfig.Stdio(
+                input = System.`in`.asSource().buffered(),
+                output = originalOut.asSink().buffered()
+            )
+        )
+        serverTransport(
+            ServerTransportConfig.Sse(port = 8081, path = "/sse")
+        )
+        serverTransport(
+            ServerTransportConfig.WebSocket(port = 8081, path = "/ws")
         )
     }
 
     launch {
-        mcpGatewayServer.start()
+        mcpBrokerServer.start()
     }
 
     environment.monitor.subscribe(ApplicationStopped) {
-        runBlocking { mcpGatewayServer.stop() }
+        runBlocking { mcpBrokerServer.stop() }
         mcpHttpClient.close()
     }
 }
