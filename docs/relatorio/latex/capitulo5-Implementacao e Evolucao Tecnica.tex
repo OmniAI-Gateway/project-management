@@ -1039,13 +1039,13 @@ interceptors {
 }
     \end{lstlisting}
 
-\subsection{\textbf{MCP Broker} e Ferramentas Externas}
+\subsection{MCP Broker e Ferramentas Externas}
 
 O \textbf{MCP Broker} surge como uma extensão natural da \textbf{Gateway}: deixar de a tratar apenas como um ponto de entrada para inferência e aproximá-la de uma \textit{gateway} de IA mais completa. Em muitos cenários, um modelo só consegue produzir uma resposta útil se puder consultar recursos externos, chamar ferramentas ou executar ações controladas. É nesse espaço que entra o \textbf{Model Context Protocol (MCP)}.
 
 O que foi concretamente implementado neste módulo é uma \textbf{MCP Gateway} funcional: um servidor MCP autónomo que lê ficheiros de configuração \textbf{YAML} de forma declarativa, regista automaticamente as ferramentas neles descritas, e expõe-as a qualquer cliente MCP compatível, como o \textbf{MCP Inspector}. Com isto, a Gateway deixa de ser apenas um \textit{proxy} de inferência e passa a ser uma infraestrutura de IA mais completa: consegue não só encaminhar pedidos de geração de texto, como também disponibilizar ferramentas externas a modelos e clientes de forma organizada, centralizada e sem necessidade de alterar código para adicionar novas integrações.
 
-A implementação assenta em duas bibliotecas principais: \texttt{io.modelcontextprotocol:kotlin-sdk} (versão 0.8.3), que fornece o servidor MCP, os tipos do protocolo e os transportes suportados (\textit{stdio}, SSE, WebSocket); e \texttt{net.mamoe.yamlkt} (versão 0.13.0), que é responsável por desserializar os ficheiros YAML de configuração em objetos Kotlin de forma declarativa. O cliente HTTP utilizado para comunicar com as APIs externas é o \textbf{Ktor}.
+A implementação assenta em duas bibliotecas principais: \texttt{io.modelcontextprotocol:kotlin-sdk} (versão 0.8.3) \cite{mcp_kotlin_sdk}, que fornece o servidor MCP, os tipos do protocolo e os transportes suportados (\textit{stdio}, SSE, WebSocket); e \texttt{net.mamoe.yamlkt} (versão 0.13.0) \cite{yamlkt_ref}, que é responsável por desserializar os ficheiros YAML de configuração em objetos Kotlin de forma declarativa. O cliente HTTP utilizado para comunicar com as APIs externas é o \textbf{Ktor} \cite{ktor_ref}.
 
 \subsubsection{Descrição das Ferramentas em YAML}
 
