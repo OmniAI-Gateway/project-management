@@ -1,14 +1,14 @@
 
     \chapter{Implementação e Evolução Técnica}
 
-    \section{Stack Tecnológica e Metodologias}
+    \section{Tecnologias e Metodologias Utilizadas}
     O \textbf{OmniAI SDK} foi desenvolvido em \textbf{Kotlin Multiplatform} \cite{kmp_ref} com \textit{targets} \textbf{JVM} e \textbf{JavaScript}/\textbf{Node.js}. A escolha de \textbf{KMP} permite partilhar o domínio, os contratos, as portas, os \textit{adapters} principais e parte da lógica geral entre plataformas, mantendo implementações específicas quando o ambiente o exige \cite{kotlin_multiplatform}. A serialização dos contratos é baseada em \textbf{Kotlinx Serialization} \cite{serialization_ref}, o que facilita a definição explícita dos modelos JSON que foram estudados anteriormente.
 
     O \textit{core} do \textbf{OmniAI SDK} é estritamente agnóstico em relação a \textit{frameworks} web e mecanismos de transporte \textbf{HTTP}. Contudo, para fornecer uma solução imediatamente utilizável, o projeto inclui módulos oficiais de integração baseados na \textit{framework} \textbf{Ktor} \cite{ktor_ref}. Estes módulos opcionais oferecem implementações de referência tanto para a execução de pedidos aos fornecedores (\textit{client-side}) como para a exposição das rotas da \textbf{Gateway} (\textit{server-side}). A \textbf{OmniAI Gateway} instanciada como Prova de Conceito (PoC) tira partido destas implementações prontas a usar. No entanto, a adoção do \textbf{OmniAI SDK} não obriga ao uso do \textbf{Ktor} a arquitetura garante que qualquer o utilizador possa descartar estes módulos e implementar os adaptadores de rede utilizando a tecnologia da sua preferência, como o Spring por exemplo, entre outros.
 
     As ferramentas de desenvolvimento incluíram Git, IntelliJ IDEA, o cliente \textbf{HTTP} do IDE para pedidos REST, \textbf{Docker} Compose para \textbf{Logto} \cite{logto_docs}, \textbf{PostgreSQL} \cite{postgresql_ref}, \textbf{OpenTelemetry Collector} \cite{opentelemetry_what_is}, \textbf{Prometheus} \cite{prometheus_ref} e \textbf{Grafana} \cite{grafana_ref}, além de clientes reais como \textbf{Claude Code} e SDKs oficiais dos fornecedores. Também foram usados assistentes de apoio, como \textbf{Gemini} no \textit{browser} e agentes de programação como o Antigravity e Codex, para pesquisa, comparação de documentação e aceleração de tarefas, mantendo a validação no código, nos testes e nos cenários executados. Foi criada uma \textit{pipeline} de \textbf{Continuous Integration} (CI) \cite{CI_ref}    existente executa \texttt{./gradlew clean build} como passo evolutivo, está prevista a criação de uma \textit{pipeline} de \textbf{Continuous Deployment} (CD) para publicar as versões do nosso \textit{Software Development Kit},o \textbf{OmniAI SDK} em \textbf{Maven} e \textbf{NPM}.
 
-    \section{A Primeira Iteração da \textbf{Gateway}}
+    \section{A Primeira Iteração da \textit{\textbf{Gateway}}}
 
     A primeira iteração do projeto consistiu numa \textbf{Gateway} \textbf{HTTP} construída diretamente, responsável por receber pedidos de clientes e encaminhá-los para fornecedores de inferência. Esta fase foi útil para validar rapidamente a viabilidade da solução, testar pedidos reais e compreender diferenças práticas entre as diferentes API's dos fornecedores, neste caso da \textbf{OpenAI} \cite{openai_api}, \textbf{Anthropic}\cite{anthropic_api} e \textbf{Gemini}\cite{google_gemini_api}.
 
@@ -26,7 +26,7 @@ Esta abordagem permite que uma instanciação simples de uma \textbf{OmniAI Gate
 
 Desta forma, o \textbf{OmniAI SDK} desacopla a lógica funcional da infraestrutura de persistência e sincronização, permitindo que diferentes implementações da \textbf{OmniAI Gateway} evoluam de ambientes locais e monolíticos para arquiteturas distribuídas de forma transparente.
 
-\section{Decisões de Desenho e Alternativas Descartadas}
+\section{Decisões de Desenho e Alternativas Consideradas}
 
 A análise de \textit{trade-offs} partiu de três critérios principais: preservar a estabilidade da versão demonstrável, manter o \textbf{OmniAI SDK} reutilizável e extensível independentemente da aplicação final e evitar que funcionalidades experimentais introduzissem acoplamento excessivo no domínio comum.
 
@@ -56,7 +56,7 @@ Esta alteração teve impacto direto na modularidade da arquitetura. Os \textit{
 
 Na prática, esta separação permitiu preservar o \textbf{SDK} como uma fundação independente do \textit{Proof of Concept}, reutilizável na construção de outras \textit{gateways}, runtimes ou integrações futuras. A \texttt{OmniAiGateway} desenvolvida neste projeto representa, assim, apenas uma configuração concreta dessa infraestrutura arquitetural, utilizada para validar a abordagem proposta e demonstrar a viabilidade do modelo definido.
 
-    \section{Implementação da Camada \textbf{HTTP}: \texttt{gateway-ktor-server}}
+    \section{Implementação da Camada \textbf{HTTP}}
     \label{sec:gateway-ktor-server}
 
     A camada de exposição \textbf{HTTP} da \textbf{Gateway} é implementada no módulo \texttt{gateway-ktor-server}. Este módulo estabelece a ponte entre o servidor web (\textbf{Ktor}) e os \textit{inbound adapters} do domínio, garantindo que o núcleo do sistema permanece agnóstico em relação à tecnologia de transporte de entrada.

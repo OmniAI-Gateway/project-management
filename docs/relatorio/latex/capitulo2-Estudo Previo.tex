@@ -306,7 +306,7 @@ Enquanto a \textbf{OpenAI} \cite{openai_structured_outputs} e a \textbf{Anthropi
 
   Do ponto de vista técnico, o estudo permitiu concluir que as três APIs partilham um conjunto de conceitos fundamentais, como as mensagens, papéis, ferramentas, \textit{streaming} e contabilização de \textit{tokens}, mas implementam-nos de formas estruturalmente diferentes. As diferenças manifestam-se na nomenclatura dos campos, na organização hierárquica do JSON, na localização dos parâmetros de configuração e nos mecanismos de ativação de funcionalidades como \textit{streaming} e raciocínio. Contudo, apesar destas similaridades conceituais, ainda existem campos proprietários em cada API de fornecedor de inferência. Esta análise permitiu perceber que uma abstração que pretenda cobrir estes três fornecedores precisa de ir além de uma simples tradução de nomes, exigindo uma compreensão das diferenças semânticas e estruturais observadas nos pedidos e respostas reais.
   
-\section{\textbf{Model Context Protocol (MCP)}}
+\section{O protocolo MCP}
 
 O \textbf{Model Context Protocol (MCP)} é um protocolo aberto criado para uniformizar a forma como aplicações de Inteligência Artificial acedem a ferramentas, dados e outras fontes de contexto \cite{mcp_protocol}. Antes do surgimento do \textbf{MCP}, a integração destes recursos era normalmente realizada através de mecanismos específicos de cada aplicação ou fornecedor, resultando em soluções pouco reutilizáveis e difíceis de manter.
 
