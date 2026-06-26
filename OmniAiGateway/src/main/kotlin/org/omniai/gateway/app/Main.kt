@@ -49,7 +49,7 @@ suspend fun main() {
             routing {
                 ktorRoute = this
             }
-            // --- MCP Broker Setup ---
+
             buildMcpSetup(originalOut)
         }
     )

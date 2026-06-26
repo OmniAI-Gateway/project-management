@@ -6,6 +6,7 @@ import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.serialization.kotlinx.json.json
 import io.ktor.server.application.Application
 import io.ktor.server.application.ApplicationStopped
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.io.asSink
@@ -41,12 +42,12 @@ fun Application.buildMcpSetup(originalOut: PrintStream) {
         httpClient(mcpHttpClient)
         clientTransportFactory(McpClientTransportFactory(mcpHttpClient))
         
-        serverTransport(
-            ServerTransportConfig.Stdio(
-                input = System.`in`.asSource().buffered(),
-                output = originalOut.asSink().buffered()
-            )
-        )
+//        serverTransport(
+//            ServerTransportConfig.Stdio(
+//                input = System.`in`.asSource().buffered(),
+//                output = originalOut.asSink().buffered()
+//            )
+//        )
         serverTransport(
             ServerTransportConfig.Sse(port = 8081, path = "/sse")
         )
@@ -55,7 +56,7 @@ fun Application.buildMcpSetup(originalOut: PrintStream) {
         )
     }
 
-    launch {
+    launch{
         mcpBrokerServer.start()
     }
 
