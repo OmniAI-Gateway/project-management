@@ -200,7 +200,7 @@ Esta arquitetura permite adaptar o comportamento da camada \textbf{HTTP} ao cont
     \label{fig:translator-arch}
 \end{figure}
 
-    \section{Translators de Entrada (Inbound)}
+    \section{Tradutores de Entrada (Inbound)}
 
 Os \textit{Inbound Translators} são responsáveis por converter os contratos específicos de cada fornecedor de inferência para o modelo de domínio comum do \textbf{OmniAI SDK} e por realizar o processo inverso na geração de respostas.
 Além da tradução de pedidos e respostas completas, estes componentes também adaptam eventos incrementais de \textit{streaming} para o formato esperado por cada API.
@@ -492,7 +492,7 @@ No sentido inverso, a resposta do domínio comum é convertida para o formato \t
     \caption{Mapeamento Inbound: Eventos \textbf{SSE} \textbf{Gemini} (\texttt{fromDomainEvent})}
 \end{table}
 
-    \section{Translators de Saída (Outbound)}
+    \section{Tradutores de Saída (Outbound)}
 
     Os \textit{Outbound Translators} ligam o modelo de domínio comum do \textbf{OmniAI SDK} às APIs externas usadas pelo \textit{gateway}. No envio, constroem o pedido nativo de cada fornecedor a partir de um \texttt{CommonRequest}. Na receção, fazem o percurso inverso: convertem respostas completas e eventos de \textit{streaming} \textbf{SSE} para \texttt{CommonResponse} e \texttt{CommonResponseEvent}. As opções que pertencem ao domínio comum ficam explícitas no contrato comum, enquanto detalhes específicos de cada fornecedor são preservados através de \texttt{providerOptions}.
 

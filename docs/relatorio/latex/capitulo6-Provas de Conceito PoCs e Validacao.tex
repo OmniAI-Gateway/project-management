@@ -1,4 +1,4 @@
-    \chapter{Proof of Concepts e Validação}
+    \chapter{Provas de Conceito e Validação}
 
     \section{Validação do \textit{Proof of Concept} da \textbf{OmniAI Gateway}}
     A validação principal da arquitetura foi efetuada através da aplicação \texttt{OmniAiGateway}, nomeadamente a instanciação de uma \textbf{OmniAiGateway} como um \textit{Proof of Concept} (PoC) que integra o \textbf{OmniAI SDK} via \textit{composite build}, conforme detalhado anteriormente. Esta aplicação é responsável por carregar o ficheiro de configuração \texttt{application.conf}, resolver as variáveis de ambiente necessárias, instanciar o \texttt{KtorHttpTransportClient} e configurar os respetivos \textit{outbounds}. Adicionalmente, assegura a ativação dos módulos de segurança e telemetria, a inicialização do \textit{runtime} do \textit{Software Development Kit} e a exposição de \textit{endpoints} \textbf{HTTP} compatíveis com as APIs da \textbf{OpenAI} \cite{openai_api}, \textbf{Anthropic} \cite{anthropic_api} e \textbf{Gemini} \cite{google_gemini_api}.
