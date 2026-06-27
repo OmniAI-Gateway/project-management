@@ -5,21 +5,14 @@ import io.ktor.client.engine.okhttp.OkHttp
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.serialization.kotlinx.json.json
 import io.ktor.server.application.Application
-import io.ktor.server.application.ApplicationStopped
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
-import kotlinx.io.asSink
-import kotlinx.io.asSource
-import kotlinx.io.buffered
 import kotlinx.serialization.json.Json
 import org.omniai.mcp.client.McpClientTransportFactory
 import org.omniai.mcp.core.mcpBroker
 import org.omniai.mcp.server.ServerTransportConfig
 import java.io.File
-import java.io.PrintStream
 
-fun Application.buildMcpSetup(originalOut: PrintStream) {
+
+suspend fun Application.buildMcpSetup() {
     val mcpWorkDir = File(System.getProperty("user.dir"))
     val mcpConfigDir = listOf(
         File(mcpWorkDir, "OmniAiGateway/mcp-configs"),
@@ -42,6 +35,8 @@ fun Application.buildMcpSetup(originalOut: PrintStream) {
         httpClient(mcpHttpClient)
         clientTransportFactory(McpClientTransportFactory(mcpHttpClient))
         
+        application(this@buildMcpSetup)
+        
 //        serverTransport(
 //            ServerTransportConfig.Stdio(
 //                input = System.`in`.asSource().buffered(),
@@ -49,19 +44,17 @@ fun Application.buildMcpSetup(originalOut: PrintStream) {
 //            )
 //        )
         serverTransport(
-            ServerTransportConfig.Sse(port = 8081, path = "/sse")
+            ServerTransportConfig.Sse(path = "/sse")
         )
-        serverTransport(
-            ServerTransportConfig.WebSocket(port = 8081, path = "/ws")
-        )
+//        serverTransport(
+//            ServerTransportConfig.WebSocket( path = "/ws")
+//        )
     }
 
-    launch{
-        mcpBrokerServer.start()
-    }
+    mcpBrokerServer.start()
 
-    environment.monitor.subscribe(ApplicationStopped) {
-        runBlocking { mcpBrokerServer.stop() }
-        mcpHttpClient.close()
-    }
+//    environment.monitor.subscribe(ApplicationStopped) {
+//        runBlocking { mcpBrokerServer.stop() }
+//        mcpHttpClient.close()
+//    }
 }

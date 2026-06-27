@@ -1,6 +1,8 @@
 package org.omniai.mcp.core
 
 import io.ktor.client.HttpClient
+import io.ktor.server.application.Application
+import io.ktor.server.engine.ApplicationEngineFactory
 import org.omniai.mcp.client.ClientTransportFactory
 import org.omniai.mcp.client.McpClientManager
 import org.omniai.mcp.config.mapping.ConfigMapper
@@ -26,12 +28,17 @@ class McpBrokerBuilder {
     private var clientTransportFactory: ClientTransportFactory? = null
     private var configParser: ConfigParser = YamlConfigParser()
     private val serverTransports = mutableListOf<ServerTransportConfig>()
+    private var engineFactory: ApplicationEngineFactory<*, *>? = null
+    private var application: Application? = null
 
     fun info(name: String, version: String) {
         this.name = name
         this.version = version
     }
 
+    fun application(application: Application){
+        this.application = application
+    }
     fun configDirectory(path: String) {
         this.configDirectory = path
     }
@@ -51,6 +58,10 @@ class McpBrokerBuilder {
     fun serverTransport(transport: ServerTransportConfig) {
         this.serverTransports.add(transport)
     }
+    
+    fun serverEngine(factory: ApplicationEngineFactory<*, *>) {
+        this.engineFactory = factory
+    }
 
     fun build(): McpBroker {
         val http = httpClient ?: error("HttpClient must be provided via httpClient(...)")
@@ -61,7 +72,8 @@ class McpBrokerBuilder {
         val brokerServer = BrokerServer(
             name = name,
             version = version,
-            transports = serverTransports.toList()
+            transports = serverTransports.toList(),
+            application = application
         )
 
         val configWatcher = ConfigDirectoryWatcher(configDirectory)

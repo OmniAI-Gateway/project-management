@@ -4,6 +4,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.awaitCancellation
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import org.omniai.mcp.client.McpClientManager
 import org.omniai.mcp.config.mapping.ConfigMapper
@@ -28,6 +29,7 @@ import org.omniai.mcp.server.BrokerServer
  * - Hot-reloading when YAML files change in the config directory
  */
 class McpBroker(
+    private val onStop : () -> Unit = {},
     private val brokerServer: BrokerServer,
     private val configParser: ConfigParser,
     private val configMapper: ConfigMapper,
@@ -50,20 +52,15 @@ class McpBroker(
                 reloadConfig(newYamls)
             }
         }
-
         println("[McpBroker] Starting broker server...")
-
-        // Start the server transports
         brokerServer.start()
-
-        // Keep this coroutine alive until cancelled
-        awaitCancellation()
     }
 
     suspend fun stop() {
         configWatcher.stopWatching()
         clientManager.disconnectAll()
-        brokerServer.stop()
+        scope.cancel()
+        onStop()
         println("[McpBroker] Broker stopped")
     }
 

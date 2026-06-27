@@ -20,7 +20,6 @@ sealed class ServerTransportConfig {
      * SSE (Server-Sent Events) transport - exposes the broker via HTTP SSE endpoint.
      */
     data class Sse(
-        val port: Int = 8080,
         val path: String = "/sse"
     ) : ServerTransportConfig()
 
@@ -28,7 +27,6 @@ sealed class ServerTransportConfig {
      * WebSocket transport - exposes the broker via WebSocket endpoint.
      */
     data class WebSocket(
-        val port: Int = 8080,
         val path: String = "/ws"
     ) : ServerTransportConfig()
 }
