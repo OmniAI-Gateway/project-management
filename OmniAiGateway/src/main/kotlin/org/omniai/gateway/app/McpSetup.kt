@@ -44,7 +44,10 @@ suspend fun Application.buildMcpSetup() {
 //            )
 //        )
         serverTransport(
-            ServerTransportConfig.Sse(path = "/sse")
+            ServerTransportConfig.SSE(path = "/sse")
+        )
+        serverTransport(
+            ServerTransportConfig.StreamableHttp(path = "/mcp")
         )
 //        serverTransport(
 //            ServerTransportConfig.WebSocket( path = "/ws")

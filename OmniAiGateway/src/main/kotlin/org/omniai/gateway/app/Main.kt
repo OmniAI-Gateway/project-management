@@ -22,8 +22,6 @@ suspend fun main() {
     val jsonConfig = buildJsonConfig()
     val telemetryRuntime = buildTelemetryRuntime(config)
     val httpClient = KtorHttpTransportClient.default()
-
-
     var ktorRoute: Route? = null
     val server = embeddedServer(
         factory = CIO,

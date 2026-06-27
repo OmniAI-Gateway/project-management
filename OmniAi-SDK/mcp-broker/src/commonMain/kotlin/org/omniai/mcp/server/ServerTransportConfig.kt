@@ -17,9 +17,16 @@ sealed class ServerTransportConfig {
     ) : ServerTransportConfig()
 
     /**
-     * SSE (Server-Sent Events) transport - exposes the broker via HTTP SSE endpoint.
+     * Streamable HTTP transport - exposes the broker via HTTP Streamable endpoint.
      */
-    data class Sse(
+    data class StreamableHttp(
+        val path: String = "/mcp"
+    ) : ServerTransportConfig()
+
+    /**
+     * SSE transport - exposes the broker via SSE endpoint.
+     */
+    data class SSE(
         val path: String = "/sse"
     ) : ServerTransportConfig()
 

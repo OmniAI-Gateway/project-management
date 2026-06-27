@@ -37,7 +37,10 @@ internal suspend fun loadTokenAuthenticator(
                 is HttpCallResult.ApiError -> throw RuntimeException(
                     "Falha no Discovery: ${result.toDomainError(Provider("auth-server")).message}"
                 )
-                else -> throw RuntimeException("Erro inesperado no Discovery de OIDC")
+                is HttpCallResult.NetworkError -> throw RuntimeException(
+                    "Network Error no Discovery de OIDC: ${result.exception.message}", result.exception
+                )
+                else -> throw RuntimeException("Erro inesperado no Discovery de OIDC: $result")
             }
 
             val infraConfig = HttpAuthSecurityClientConfig(

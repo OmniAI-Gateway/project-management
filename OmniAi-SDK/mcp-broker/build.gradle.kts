@@ -6,7 +6,7 @@ plugins {
 description = "SDK mcp-broker"
 group = "org.omniai.sdk.services"
 
-val mcp_version = "0.8.3"
+val mcp_version = "0.13.0"
 
 kotlin {
     jvm()
@@ -19,6 +19,7 @@ kotlin {
     sourceSets {
         commonMain.dependencies {
             implementation("io.modelcontextprotocol:kotlin-sdk:$mcp_version")
+            implementation("io.modelcontextprotocol:kotlin-sdk-server:$mcp_version")
             implementation("net.mamoe.yamlkt:yamlkt:0.13.0")
             implementation(project(":core"))
             implementation(project(":http-client"))

@@ -18,7 +18,7 @@ dependencies {
     implementation("org.omniai.sdk.gateway.ktor:gateway-ktor-server")
     implementation("org.omniai.sdk.services:mcp-broker:1.0.0-SNAPSHOT")
     implementation("io.modelcontextprotocol:kotlin-sdk:0.8.3")
-    implementation(platform("io.ktor:ktor-bom:3.2.3"))
+    implementation(platform("io.ktor:ktor-bom:3.4.3"))
     implementation("io.ktor:ktor-server-core")
     implementation("io.ktor:ktor-server-netty")
     implementation("io.ktor:ktor-server-cio")

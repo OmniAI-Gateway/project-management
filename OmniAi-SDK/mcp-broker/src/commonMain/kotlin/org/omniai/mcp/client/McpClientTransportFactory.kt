@@ -1,6 +1,8 @@
 package org.omniai.mcp.client
 
 import io.ktor.client.HttpClient
+import io.modelcontextprotocol.kotlin.sdk.client.ReconnectionOptions
+import io.modelcontextprotocol.kotlin.sdk.client.StreamableHttpClientTransport
 import io.modelcontextprotocol.kotlin.sdk.client.SseClientTransport
 import io.modelcontextprotocol.kotlin.sdk.client.StdioClientTransport
 import io.modelcontextprotocol.kotlin.sdk.client.WebSocketClientTransport
@@ -9,6 +11,7 @@ import kotlinx.io.Sink
 import kotlinx.io.Source
 import org.omniai.mcp.domain.model.McpClientConfig
 import org.omniai.mcp.domain.model.TransportType
+import kotlin.time.Duration
 
 /**
  * Expected function to launch a subprocess for STDIO communication.
@@ -18,7 +21,7 @@ expect fun launchStdioProcess(command: String, args: List<String>): Pair<Source,
 
 /**
  * Factory for creating MCP client transports based on server configuration.
- * Fully KMP compatible, uses Ktor for SSE and WebSocket.
+ * Fully KMP compatible, uses Ktor for Streamable HTTP and WebSocket.
  */
 class McpClientTransportFactory(
     private val httpClient: HttpClient
@@ -36,6 +39,17 @@ class McpClientTransportFactory(
                     ?: error("SSE transport requires a 'url' in server config '${config.name}'")
                 SseClientTransport(client = httpClient, urlString = url)
             }
+            TransportType.STREAMABLE_HTTP -> {
+                val url = config.url
+                    ?: error("Streamable HTTP transport requires a 'url' in server config '${config.name}'")
+                StreamableHttpClientTransport(
+                    client = httpClient, 
+                    url = url, 
+                    reconnectionOptions = ReconnectionOptions(
+                        initialReconnectionDelay = Duration.parse("5s")
+                    )
+                )
+            }
             TransportType.WEBSOCKET -> {
                 val url = config.url
                     ?: error("WebSocket transport requires a 'url' in server config '${config.name}'")
@@ -44,3 +58,4 @@ class McpClientTransportFactory(
         }
     }
 }
+
