@@ -13,12 +13,14 @@ import org.omniai.mcp.domain.model.McpClientConfig
 class McpClientConnection(
     private val config: McpClientConfig,
     private val transportFactory: ClientTransportFactory,
-    private val client: Client = Client(
-        clientInfo = Implementation(
-            name = "omniai-broker-client",
-            version = "1.0.0"
-        )
-    )
+    private val client: Client =
+        Client(
+            clientInfo =
+                Implementation(
+                    name = "omniai-broker-client",
+                    version = "1.0.0",
+                ),
+        ),
 ) {
     val serverName: String get() = config.name
 
@@ -45,7 +47,10 @@ class McpClientConnection(
     /**
      * Calls a tool on the remote MCP server and returns the result.
      */
-    suspend fun callTool(toolName: String, arguments: Map<String, Any?>): CallToolResult {
+    suspend fun callTool(
+        toolName: String,
+        arguments: Map<String, Any?>,
+    ): CallToolResult {
         check(connected) { "Not connected to server '${config.name}'" }
         return client.callTool(toolName, arguments)
     }

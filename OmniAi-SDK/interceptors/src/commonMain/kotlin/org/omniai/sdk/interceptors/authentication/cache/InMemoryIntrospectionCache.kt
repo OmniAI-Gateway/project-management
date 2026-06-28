@@ -12,7 +12,6 @@ class InMemoryIntrospectionCache(
     negativeCacheTtl: Duration,
     private val maxCapacity: Int = 1000,
 ) : IntrospectionCache(positiveCacheTtl, negativeCacheTtl) {
-
     private data class CacheEntry(
         val result: IntrospectionResult,
         val expiresAt: TimeSource.Monotonic.ValueTimeMark,
@@ -21,7 +20,11 @@ class InMemoryIntrospectionCache(
     private val cache = mutableMapOf<String, CacheEntry>()
     private val mutex = Mutex()
 
-    override suspend fun store(hashedKey: String, result: IntrospectionResult, ttl: Duration) {
+    override suspend fun store(
+        hashedKey: String,
+        result: IntrospectionResult,
+        ttl: Duration,
+    ) {
         mutex.withLock {
             if (cache.size >= maxCapacity && !cache.containsKey(hashedKey)) {
                 cleanupExpired()
@@ -29,10 +32,11 @@ class InMemoryIntrospectionCache(
                     cache.keys.firstOrNull()?.let { cache.remove(it) }
                 }
             }
-            cache[hashedKey] = CacheEntry(
-                result = result,
-                expiresAt = TimeSource.Monotonic.markNow() + ttl,
-            )
+            cache[hashedKey] =
+                CacheEntry(
+                    result = result,
+                    expiresAt = TimeSource.Monotonic.markNow() + ttl,
+                )
         }
     }
 
@@ -57,7 +61,11 @@ class InMemoryIntrospectionCache(
     private fun cleanupExpired() {
         val iterator = cache.entries.iterator()
         while (iterator.hasNext()) {
-            if (iterator.next().value.expiresAt.hasPassedNow()) {
+            if (iterator
+                    .next()
+                    .value.expiresAt
+                    .hasPassedNow()
+            ) {
                 iterator.remove()
             }
         }

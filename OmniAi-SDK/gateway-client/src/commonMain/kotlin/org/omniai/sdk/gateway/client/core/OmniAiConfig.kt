@@ -2,11 +2,8 @@ package org.omniai.sdk.gateway.client.core
 
 import org.omniai.sdk.application.pipeline.Interceptor
 import org.omniai.sdk.common.TypedMap
-import org.omniai.sdk.domain.common.Provider
-import org.omniai.sdk.gateway.client.auth.AuthorizationServerConfig
 import org.omniai.sdk.gateway.client.auth.SecurityConfig
 import org.omniai.sdk.ports.inbound.DispatcherPort
-import org.omniai.sdk.ports.inbound.InboundConnector
 import org.omniai.sdk.ports.inbound.InboundPort
 import org.omniai.sdk.ports.outbound.OutboundPort
 

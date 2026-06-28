@@ -6,8 +6,7 @@ description = "Root aggregator for composite builds"
 
 val includedBuilds = listOf("OmniAi-SDK", "OmniAiGateway")
 
-fun dependsOnIncluded(taskName: String) =
-    includedBuilds.map { gradle.includedBuild(it).task(":$taskName") }
+fun dependsOnIncluded(taskName: String) = includedBuilds.map { gradle.includedBuild(it).task(":$taskName") }
 
 tasks.named("clean") {
     group = "build orchestration"

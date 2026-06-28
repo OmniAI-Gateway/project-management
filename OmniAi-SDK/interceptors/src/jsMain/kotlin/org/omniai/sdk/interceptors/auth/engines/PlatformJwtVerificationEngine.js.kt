@@ -1,8 +1,8 @@
 package org.omniai.sdk.interceptors.auth.engines
 
 import kotlinx.coroutines.await
-import org.omniai.sdk.interceptors.auth.domain.AuthenticationDecision
 import org.omniai.sdk.interceptors.auth.domain.AuthValidationResult
+import org.omniai.sdk.interceptors.auth.domain.AuthenticationDecision
 import org.omniai.sdk.interceptors.auth.domain.DecodedJwt
 import org.omniai.sdk.interceptors.auth.domain.PublicKey
 import org.omniai.sdk.interceptors.auth.domain.TokenValidationParams
@@ -13,24 +13,31 @@ import kotlin.js.Promise
 @JsModule("jose")
 @JsNonModule
 external object JoseLib {
-    fun jwtVerify(token: String, key: dynamic, options: dynamic): Promise<dynamic>
+    fun jwtVerify(
+        token: String,
+        key: dynamic,
+        options: dynamic,
+    ): Promise<dynamic>
 
-    fun importSPKI(spki: String, alg: String): Promise<dynamic>
+    fun importSPKI(
+        spki: String,
+        alg: String,
+    ): Promise<dynamic>
 }
 
 actual class PlatformJwtVerificationEngine actual constructor() : JwtVerificationEngine {
-
     actual override suspend fun verify(
         token: DecodedJwt,
         publicKey: PublicKey,
-        params: TokenValidationParams?
+        params: TokenValidationParams?,
     ): AuthenticationDecision {
         return try {
-            val pemKey = """
-            -----BEGIN PUBLIC KEY-----
-            ${publicKey.key.value} 
-            -----END PUBLIC KEY-----
-        """.trimIndent()
+            val pemKey =
+                """
+                -----BEGIN PUBLIC KEY-----
+                ${publicKey.key.value} 
+                -----END PUBLIC KEY-----
+                """.trimIndent()
 
             val alg = if (publicKey.algorithm == "RSA") "RS256" else publicKey.algorithm
 
@@ -50,5 +57,4 @@ actual class PlatformJwtVerificationEngine actual constructor() : JwtVerificatio
             AuthenticationDecision.Deny("Erro na validação JS (jose): ${e.message}")
         }
     }
-
 }

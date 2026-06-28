@@ -1,9 +1,6 @@
 package org.omniai.sdk.gateway.client.dsl
 
 import org.omniai.sdk.application.pipeline.Interceptor
-import org.omniai.sdk.ports.inbound.InboundConnector
-import org.omniai.sdk.ports.inbound.DispatcherPort
-import org.omniai.sdk.ports.outbound.OutboundPort
 import org.omniai.sdk.contracts.anthropic.input.AnthropicMessagesRequest
 import org.omniai.sdk.contracts.anthropic.output.AnthropicMessageResponse
 import org.omniai.sdk.contracts.anthropic.output.AnthropicStreamEvent
@@ -12,9 +9,12 @@ import org.omniai.sdk.contracts.gemini.output.GeminiGenerateContentResponse
 import org.omniai.sdk.contracts.openai.input.OpenAiChatCompletionsRequest
 import org.omniai.sdk.contracts.openai.output.OpenAiChatCompletionsResponse
 import org.omniai.sdk.gateway.client.core.OmniAiConfig
-import org.omniai.sdk.gateway.client.extensions.inbounds.openAi
 import org.omniai.sdk.gateway.client.extensions.inbounds.anthropic
 import org.omniai.sdk.gateway.client.extensions.inbounds.gemini
+import org.omniai.sdk.gateway.client.extensions.inbounds.openAi
+import org.omniai.sdk.ports.inbound.DispatcherPort
+import org.omniai.sdk.ports.inbound.InboundConnector
+import org.omniai.sdk.ports.outbound.OutboundPort
 import kotlin.js.JsExport
 import kotlin.js.JsName
 
@@ -25,7 +25,7 @@ import kotlin.js.JsName
  */
 @JsExport
 class JsOmniAiConfig internal constructor(
-    internal val config: OmniAiConfig
+    internal val config: OmniAiConfig,
 )
 
 /**
@@ -75,9 +75,7 @@ class JsOmniAiGatewayBuilder {
 
     // Note: authorizationServer builder could be added here in a similar way
 
-    fun build(): JsOmniAiConfig {
-        return JsOmniAiConfig(dsl.build())
-    }
+    fun build(): JsOmniAiConfig = JsOmniAiConfig(dsl.build())
 }
 
 @JsExport
@@ -86,17 +84,23 @@ class JsInboundsBuilder {
     internal val setups = mutableListOf<(org.omniai.sdk.gateway.client.dsl.inbounds.InboundsDsl) -> Unit>()
 
     fun openAi(connector: dynamic) {
-        val typedConnector = connector.unsafeCast<InboundConnector<OpenAiChatCompletionsRequest, OpenAiChatCompletionsResponse, OpenAiChatCompletionsResponse>>()
+        val typedConnector =
+            connector
+                .unsafeCast<InboundConnector<OpenAiChatCompletionsRequest, OpenAiChatCompletionsResponse, OpenAiChatCompletionsResponse>>()
         setups.add { dsl -> dsl.openAi(typedConnector) }
     }
 
     fun anthropic(connector: dynamic) {
-        val typedConnector = connector.unsafeCast<InboundConnector<AnthropicMessagesRequest, AnthropicMessageResponse, AnthropicStreamEvent>>()
+        val typedConnector =
+            connector
+                .unsafeCast<InboundConnector<AnthropicMessagesRequest, AnthropicMessageResponse, AnthropicStreamEvent>>()
         setups.add { dsl -> dsl.anthropic(typedConnector) }
     }
 
     fun gemini(connector: dynamic) {
-        val typedConnector = connector.unsafeCast<InboundConnector<GeminiGenerateContentRequest, GeminiGenerateContentResponse, GeminiGenerateContentResponse>>()
+        val typedConnector =
+            connector
+                .unsafeCast<InboundConnector<GeminiGenerateContentRequest, GeminiGenerateContentResponse, GeminiGenerateContentResponse>>()
         setups.add { dsl -> dsl.gemini(typedConnector) }
     }
 }

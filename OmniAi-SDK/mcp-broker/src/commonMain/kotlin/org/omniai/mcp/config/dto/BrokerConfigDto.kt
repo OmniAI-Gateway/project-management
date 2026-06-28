@@ -10,5 +10,5 @@ import kotlinx.serialization.Serializable
 data class BrokerConfigDto(
     val tools: List<ToolConfigDto> = emptyList(),
     val contexts: List<ContextConfigDto> = emptyList(),
-    val mcpServers: List<McpClientConfigDto> = emptyList()
+    val mcpServers: List<McpClientConfigDto> = emptyList(),
 )

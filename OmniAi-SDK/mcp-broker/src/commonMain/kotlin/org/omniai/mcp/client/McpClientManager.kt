@@ -7,7 +7,7 @@ import org.omniai.mcp.domain.model.McpClientConfig
  * Provides a registry of active connections, keyed by server name.
  */
 class McpClientManager(
-    private val transportFactory: ClientTransportFactory
+    private val transportFactory: ClientTransportFactory,
 ) {
     private val connections = mutableMapOf<String, McpClientConnection>()
 

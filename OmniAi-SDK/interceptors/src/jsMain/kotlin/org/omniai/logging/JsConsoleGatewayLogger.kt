@@ -3,22 +3,33 @@ package org.omniai.logging
 import org.omniai.sdk.interceptors.logger.GatewayLogger
 
 class JsConsoleGatewayLogger(
-    private val name: String = "gateway"
+    private val name: String = "gateway",
 ) : GatewayLogger {
-
-    override fun info(message: String, vararg args: Any?) {
+    override fun info(
+        message: String,
+        vararg args: Any?,
+    ) {
         console.info(format(message, args))
     }
 
-    override fun warn(message: String, vararg args: Any?) {
+    override fun warn(
+        message: String,
+        vararg args: Any?,
+    ) {
         console.warn(format(message, args))
     }
 
-    override fun error(message: String, vararg args: Any?) {
+    override fun error(
+        message: String,
+        vararg args: Any?,
+    ) {
         console.error(format(message, args))
     }
 
-    private fun format(message: String, args: Array<out Any?>): String {
+    private fun format(
+        message: String,
+        args: Array<out Any?>,
+    ): String {
         var formatted = message
         args.forEach { arg ->
             val replacement = stringifyArg(arg)
@@ -31,9 +42,10 @@ class JsConsoleGatewayLogger(
         return "[$name] $formatted"
     }
 
-    private fun stringifyArg(arg: Any?): String = when (arg) {
-        null -> "null"
-        is Throwable -> arg.stackTraceToString()
-        else -> arg.toString()
-    }
+    private fun stringifyArg(arg: Any?): String =
+        when (arg) {
+            null -> "null"
+            is Throwable -> arg.stackTraceToString()
+            else -> arg.toString()
+        }
 }

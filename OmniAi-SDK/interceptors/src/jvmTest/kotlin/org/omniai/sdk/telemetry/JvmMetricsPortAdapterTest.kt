@@ -5,7 +5,6 @@ import kotlin.test.Test
 import kotlin.test.assertSame
 
 class JvmMetricsPortAdapterTest {
-
     @Test
     fun `counter instruments are reused`() {
         val adapter = JvmMetricsPortAdapter(OpenTelemetry.noop())

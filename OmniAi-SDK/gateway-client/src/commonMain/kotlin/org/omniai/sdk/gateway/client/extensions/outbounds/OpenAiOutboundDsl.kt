@@ -1,18 +1,20 @@
 package org.omniai.sdk.gateway.client.extensions.outbounds
 
-import org.omniai.sdk.ports.outbound.http.HttpTransportClient
-import org.omniai.sdk.ports.outbound.OutboundPort
-import org.omniai.sdk.gateway.client.dsl.outbounds.OutboundsDsl
 import org.omniai.sdk.adapters.openai.OpenAiOutboundAdapter
 import org.omniai.sdk.domain.common.Model
+import org.omniai.sdk.gateway.client.dsl.outbounds.OutboundsDsl
+import org.omniai.sdk.ports.outbound.OutboundPort
+import org.omniai.sdk.ports.outbound.http.HttpTransportClient
 
 data class OpenAiOutboundConfig(
     val key: String,
     val models: List<String>,
-    val baseUrl: String? = null
+    val baseUrl: String? = null,
 )
 
-class OpenAiOutboundBuilder(private val httpClient: HttpTransportClient) {
+class OpenAiOutboundBuilder(
+    private val httpClient: HttpTransportClient,
+) {
     private val configurations = mutableListOf<OpenAiOutboundConfig>()
     private var currentBaseUrl: String? = null
 
@@ -20,7 +22,10 @@ class OpenAiOutboundBuilder(private val httpClient: HttpTransportClient) {
         currentBaseUrl = url
     }
 
-    fun apiKey(key: String, block: ModelMappingBuilder.() -> Unit) {
+    fun apiKey(
+        key: String,
+        block: ModelMappingBuilder.() -> Unit,
+    ) {
         val mapping = ModelMappingBuilder().apply(block).build()
         configurations.add(OpenAiOutboundConfig(key, mapping, currentBaseUrl))
         currentBaseUrl = null
@@ -36,15 +41,15 @@ class OpenAiOutboundBuilder(private val httpClient: HttpTransportClient) {
                             model = Model(modelName),
                             apiKey = config.key,
                             baseUrl = config.baseUrl,
-                            transportClient = httpClient
+                            transportClient = httpClient,
                         )
                     } else {
                         OpenAiOutboundAdapter(
                             model = Model(modelName),
                             apiKey = config.key,
-                            transportClient = httpClient
+                            transportClient = httpClient,
                         )
-                    }
+                    },
                 )
             }
         }
@@ -62,7 +67,10 @@ class ModelMappingBuilder {
     internal fun build(): List<String> = selectedModels.toList()
 }
 
-fun OutboundsDsl.openAI(httpClient: HttpTransportClient, block: OpenAiOutboundBuilder.() -> Unit) {
+fun OutboundsDsl.openAI(
+    httpClient: HttpTransportClient,
+    block: OpenAiOutboundBuilder.() -> Unit,
+) {
     val builder = OpenAiOutboundBuilder(httpClient).apply(block)
     builder.buildPorts().forEach { use(it) }
 }
