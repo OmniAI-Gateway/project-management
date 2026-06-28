@@ -25,7 +25,7 @@ fun defaultKtorRequestMetadataBinder(): ConfigurableMetadataBinder =
 
 internal class KtorIncomingContext(
     private val call: ApplicationCall,
-    private val clientIp: String?
+    private val clientIp: String?,
 ) : IncomingContext {
     override fun getHeader(key: String): String? = call.request.headers[key]
 
@@ -33,27 +33,28 @@ internal class KtorIncomingContext(
 
     override fun getPathParam(key: String): String? = call.parameters[key]
 
-    override fun getProperty(key: String): String? = when (key) {
-        "clientIp" -> clientIp
-        else -> null
-    }
+    override fun getProperty(key: String): String? =
+        when (key) {
+            "clientIp" -> clientIp
+            else -> null
+        }
 }
 
 internal fun ApplicationCall.extractClientIp(): String? {
-    val xForwardedFor = request.headers["X-Forwarded-For"]
-        ?.substringBefore(',')
-        ?.trim()
-        ?.takeIf { it.isNotBlank() }
+    val xForwardedFor =
+        request.headers["X-Forwarded-For"]
+            ?.substringBefore(',')
+            ?.trim()
+            ?.takeIf { it.isNotBlank() }
 
     if (xForwardedFor != null) return xForwardedFor
 
-    val xRealIp = request.headers["X-Real-IP"]
-        ?.trim()
-        ?.takeIf { it.isNotBlank() }
+    val xRealIp =
+        request.headers["X-Real-IP"]
+            ?.trim()
+            ?.takeIf { it.isNotBlank() }
 
     if (xRealIp != null) return xRealIp
 
     return request.local.remoteHost.takeIf { it.isNotBlank() }
 }
-
-
