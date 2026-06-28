@@ -9,6 +9,7 @@ import io.ktor.server.routing.Route
 import io.ktor.server.routing.routing
 import io.ktor.server.sse.SSE
 import io.ktor.utils.io.CancellationException
+import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.GlobalScope.coroutineContext
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.awaitCancellation
@@ -16,6 +17,7 @@ import kotlinx.coroutines.launch
 import org.omniai.sdk.core.http.KtorHttpTransportClient
 import org.omniai.sdk.gateway.client.dsl.omniAiGateway
 import org.omniai.sdk.gateway.client.startServer
+
 
 suspend fun main() {
     val config = loadGatewayConfig()

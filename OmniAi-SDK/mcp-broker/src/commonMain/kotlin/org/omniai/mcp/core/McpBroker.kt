@@ -49,7 +49,12 @@ class McpBroker(
         // Start watcher for hot-reload
         configWatcher.startWatching { newYamls ->
             scope.launch {
-                reloadConfig(newYamls)
+                try {
+                    reloadConfig(newYamls)
+                }catch (e: Exception){
+                    e.printStackTrace()
+                    throw  e
+                }
             }
         }
         println("[McpBroker] Starting broker server...")
