@@ -28,4 +28,3 @@ ktor-client-websockets = { module = "io.ktor:ktor-client-websockets", version.re
 [plugins]
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
-
