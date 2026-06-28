@@ -4,5 +4,5 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class AnthropicOutputConfig(
-    val format: AnthropicOutputFormat? = null
+    val format: AnthropicOutputFormat? = null,
 )

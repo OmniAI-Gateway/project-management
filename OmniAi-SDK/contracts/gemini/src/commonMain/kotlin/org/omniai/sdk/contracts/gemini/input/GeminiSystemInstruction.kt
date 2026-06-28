@@ -4,6 +4,5 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class GeminiSystemInstruction(
-    val parts: List<GeminiPart>
+    val parts: List<GeminiPart>,
 )
-

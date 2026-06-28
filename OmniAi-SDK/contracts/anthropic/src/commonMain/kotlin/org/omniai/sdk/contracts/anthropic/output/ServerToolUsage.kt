@@ -6,5 +6,5 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class ServerToolUsage(
     @SerialName("web_search_requests")
-    val webSearchRequests: Int
+    val webSearchRequests: Int,
 )

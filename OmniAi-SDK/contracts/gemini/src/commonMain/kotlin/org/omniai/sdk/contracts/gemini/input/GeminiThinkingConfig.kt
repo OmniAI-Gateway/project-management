@@ -6,5 +6,5 @@ import kotlinx.serialization.Serializable
 data class GeminiThinkingConfig(
     val includeThoughts: Boolean? = null,
     val includeThoughtSignature: Boolean? = null,
-    val thinkingLevel: String? = null
+    val thinkingLevel: String? = null,
 )

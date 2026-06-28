@@ -10,6 +10,3 @@ data class OpenAiMessageOutput(
     val content: String? = null,
     val role: String,
 )
-
-
-

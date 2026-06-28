@@ -6,5 +6,5 @@ import kotlinx.serialization.json.JsonObject
 @Serializable
 data class GeminiFunctionCall(
     val name: String,
-    val args: JsonObject? = null
+    val args: JsonObject? = null,
 )

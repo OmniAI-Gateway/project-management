@@ -8,6 +8,5 @@ data class GeminiGenerateContentResponse(
     val usageMetadata: GeminiUsageMetadata? = null,
     val modelVersion: String? = null,
     val responseId: String? = null,
-    val promptFeedback: GeminiPromptFeedback? = null
+    val promptFeedback: GeminiPromptFeedback? = null,
 )
-

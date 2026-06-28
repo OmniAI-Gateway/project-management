@@ -5,5 +5,5 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class GeminiInlineData(
     val mimeType: String,
-    val data: String
+    val data: String,
 )

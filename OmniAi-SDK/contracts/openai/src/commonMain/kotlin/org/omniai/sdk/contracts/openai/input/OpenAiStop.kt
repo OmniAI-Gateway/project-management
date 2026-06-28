@@ -15,18 +15,26 @@ import kotlinx.serialization.json.JsonPrimitive
 @Serializable(with = OpenAiStopSerializer::class)
 sealed interface OpenAiStop {
     @Serializable
-    data class Single(val value: String) : OpenAiStop
+    data class Single(
+        val value: String,
+    ) : OpenAiStop
 
     @Serializable
-    data class Multiple(val values: List<String>) : OpenAiStop
+    data class Multiple(
+        val values: List<String>,
+    ) : OpenAiStop
 }
 
 object OpenAiStopSerializer : KSerializer<OpenAiStop> {
     override val descriptor: SerialDescriptor = buildClassSerialDescriptor("OpenAiStop")
 
-    override fun serialize(encoder: Encoder, value: OpenAiStop) {
-        val jsonEncoder = encoder as? JsonEncoder
-            ?: throw SerializationException("OpenAiStopSerializer only works with JSON")
+    override fun serialize(
+        encoder: Encoder,
+        value: OpenAiStop,
+    ) {
+        val jsonEncoder =
+            encoder as? JsonEncoder
+                ?: throw SerializationException("OpenAiStopSerializer only works with JSON")
         when (value) {
             is OpenAiStop.Single -> jsonEncoder.encodeJsonElement(JsonPrimitive(value.value))
             is OpenAiStop.Multiple -> jsonEncoder.encodeJsonElement(JsonArray(value.values.map(::JsonPrimitive)))
@@ -34,8 +42,9 @@ object OpenAiStopSerializer : KSerializer<OpenAiStop> {
     }
 
     override fun deserialize(decoder: Decoder): OpenAiStop {
-        val jsonDecoder = decoder as? JsonDecoder
-            ?: throw SerializationException("OpenAiStopSerializer only works with JSON")
+        val jsonDecoder =
+            decoder as? JsonDecoder
+                ?: throw SerializationException("OpenAiStopSerializer only works with JSON")
         return when (val element = jsonDecoder.decodeJsonElement()) {
             is JsonPrimitive -> {
                 if (!element.isString) {
@@ -44,16 +53,23 @@ object OpenAiStopSerializer : KSerializer<OpenAiStop> {
                 OpenAiStop.Single(element.content)
             }
 
-            is JsonArray -> OpenAiStop.Multiple(element.map { jsonElement ->
-                val primitive = jsonElement as? JsonPrimitive
-                    ?: throw SerializationException("Expected stop array items to be strings")
-                if (!primitive.isString) {
-                    throw SerializationException("Expected stop array items to be strings")
-                }
-                primitive.content
-            })
+            is JsonArray -> {
+                OpenAiStop.Multiple(
+                    element.map { jsonElement ->
+                        val primitive =
+                            jsonElement as? JsonPrimitive
+                                ?: throw SerializationException("Expected stop array items to be strings")
+                        if (!primitive.isString) {
+                            throw SerializationException("Expected stop array items to be strings")
+                        }
+                        primitive.content
+                    },
+                )
+            }
 
-            else -> throw SerializationException("Expected stop to be a string or an array of strings")
+            else -> {
+                throw SerializationException("Expected stop to be a string or an array of strings")
+            }
         }
     }
 }

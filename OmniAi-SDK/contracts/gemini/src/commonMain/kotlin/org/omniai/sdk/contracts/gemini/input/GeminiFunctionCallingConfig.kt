@@ -5,5 +5,5 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class GeminiFunctionCallingConfig(
     val mode: String,
-    val allowedFunctionNames: List<String>? = null
+    val allowedFunctionNames: List<String>? = null,
 )

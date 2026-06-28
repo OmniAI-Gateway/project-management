@@ -12,11 +12,11 @@ enum class AnthropicRole {
     ASSISTANT,
 
     @SerialName("system")
-    SYSTEM
+    SYSTEM,
 }
 
 @Serializable
 data class AnthropicMessageInput(
     val role: AnthropicRole,
-    val content: AnthropicContent
+    val content: AnthropicContent,
 )

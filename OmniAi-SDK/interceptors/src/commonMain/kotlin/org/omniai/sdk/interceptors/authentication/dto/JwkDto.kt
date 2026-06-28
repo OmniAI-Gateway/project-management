@@ -4,7 +4,7 @@ import kotlinx.serialization.Serializable
 import org.omniai.sdk.interceptors.auth.domain.Base64
 import org.omniai.sdk.interceptors.auth.domain.Kid
 import org.omniai.sdk.interceptors.auth.domain.PublicKey
-import org.omniai.sdk.interceptors.auth.utils.generateRsaPublicKeyBase64
+import org.omniai.sdk.interceptors.auth.utils.GenerateRsaPublicKeyBase64
 
 /**
  * DTO representing a single JSON Web Key (JWK).
@@ -38,7 +38,7 @@ data class JwkDto(
             "RSA" -> {
                 if (n == null || e == null) return null
 
-                val base64Key = generateRsaPublicKeyBase64(n, e) ?: return null
+                val base64Key = GenerateRsaPublicKeyBase64(n, e) ?: return null
 
                 Kid(kid) to
                     PublicKey(

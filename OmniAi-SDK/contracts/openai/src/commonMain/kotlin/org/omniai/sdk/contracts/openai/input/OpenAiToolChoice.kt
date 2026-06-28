@@ -15,10 +15,15 @@ import kotlinx.serialization.json.JsonPrimitive
 @Serializable(with = OpenAiToolChoiceSerializer::class)
 sealed interface OpenAiToolChoice {
     @Serializable
-    data class Mode(val value: String) : OpenAiToolChoice
+    data class Mode(
+        val value: String,
+    ) : OpenAiToolChoice
 
     @Serializable
-    data class Function(val type: String = "function", val function: FunctionRef) : OpenAiToolChoice
+    data class Function(
+        val type: String = "function",
+        val function: FunctionRef,
+    ) : OpenAiToolChoice
 }
 
 @Serializable
@@ -29,21 +34,31 @@ data class FunctionRef(
 object OpenAiToolChoiceSerializer : KSerializer<OpenAiToolChoice> {
     override val descriptor: SerialDescriptor = buildClassSerialDescriptor("OpenAiToolChoice")
 
-    override fun serialize(encoder: Encoder, value: OpenAiToolChoice) {
-        val jsonEncoder = encoder as? JsonEncoder
-            ?: throw SerializationException("OpenAiToolChoiceSerializer only works with JSON")
+    override fun serialize(
+        encoder: Encoder,
+        value: OpenAiToolChoice,
+    ) {
+        val jsonEncoder =
+            encoder as? JsonEncoder
+                ?: throw SerializationException("OpenAiToolChoiceSerializer only works with JSON")
         when (value) {
-            is OpenAiToolChoice.Mode -> jsonEncoder.encodeJsonElement(JsonPrimitive(value.value))
-            is OpenAiToolChoice.Function -> jsonEncoder.encodeSerializableValue(
-                OpenAiToolChoice.Function.serializer(),
-                value,
-            )
+            is OpenAiToolChoice.Mode -> {
+                jsonEncoder.encodeJsonElement(JsonPrimitive(value.value))
+            }
+
+            is OpenAiToolChoice.Function -> {
+                jsonEncoder.encodeSerializableValue(
+                    OpenAiToolChoice.Function.serializer(),
+                    value,
+                )
+            }
         }
     }
 
     override fun deserialize(decoder: Decoder): OpenAiToolChoice {
-        val jsonDecoder = decoder as? JsonDecoder
-            ?: throw SerializationException("OpenAiToolChoiceSerializer only works with JSON")
+        val jsonDecoder =
+            decoder as? JsonDecoder
+                ?: throw SerializationException("OpenAiToolChoiceSerializer only works with JSON")
         return when (val element = jsonDecoder.decodeJsonElement()) {
             is JsonPrimitive -> {
                 if (!element.isString) {
@@ -52,8 +67,13 @@ object OpenAiToolChoiceSerializer : KSerializer<OpenAiToolChoice> {
                 OpenAiToolChoice.Mode(element.content)
             }
 
-            is JsonObject -> jsonDecoder.json.decodeFromJsonElement(OpenAiToolChoice.Function.serializer(), element)
-            else -> throw SerializationException("Expected tool_choice to be a string or object")
+            is JsonObject -> {
+                jsonDecoder.json.decodeFromJsonElement(OpenAiToolChoice.Function.serializer(), element)
+            }
+
+            else -> {
+                throw SerializationException("Expected tool_choice to be a string or object")
+            }
         }
     }
 }

@@ -12,4 +12,3 @@ data class OpenAiUsage(
     @SerialName("prompt_tokens")
     val promptTokens: Int? = null,
 )
-

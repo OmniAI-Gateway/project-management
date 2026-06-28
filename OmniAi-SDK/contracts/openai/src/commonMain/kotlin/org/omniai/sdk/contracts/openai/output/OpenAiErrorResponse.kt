@@ -6,4 +6,3 @@ import kotlinx.serialization.Serializable
 data class OpenAiErrorResponse(
     val error: OpenAiError,
 )
-

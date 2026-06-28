@@ -9,13 +9,12 @@ data class CapturedRequest(
     val method: String,
     val path: String,
     val headers: Headers,
-    val body: String
+    val body: String,
 )
 
 class LocalHttpMockServer(
-    private val responseBody: String
+    private val responseBody: String,
 ) : AutoCloseable {
-
     private val server = HttpServer.create(InetSocketAddress("127.0.0.1", 0), 0)
     private val executor = Executors.newSingleThreadExecutor()
 
@@ -32,12 +31,13 @@ class LocalHttpMockServer(
         server.executor = executor
         server.createContext("/") { exchange ->
             val body = exchange.requestBody.bufferedReader().use { it.readText() }
-            lastRequest = CapturedRequest(
-                method = exchange.requestMethod,
-                path = exchange.requestURI.path,
-                headers = exchange.requestHeaders,
-                body = body
-            )
+            lastRequest =
+                CapturedRequest(
+                    method = exchange.requestMethod,
+                    path = exchange.requestURI.path,
+                    headers = exchange.requestHeaders,
+                    body = body,
+                )
             exchange.responseHeaders.add("Content-Type", "application/json")
             exchange.sendResponseHeaders(200, responseBody.toByteArray().size.toLong())
             exchange.responseBody.use { it.write(responseBody.toByteArray()) }
@@ -45,7 +45,6 @@ class LocalHttpMockServer(
     }
 
     fun start() = server.start()
-
 
     override fun close() {
         server.stop(0)

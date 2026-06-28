@@ -11,5 +11,5 @@ data class GeminiGenerationConfig(
     val topK: Int? = null,
     val thinkingConfig: GeminiThinkingConfig? = null,
     val responseMimeType: String? = null,
-    val responseJsonSchema: JsonObject? = null
+    val responseJsonSchema: JsonObject? = null,
 )

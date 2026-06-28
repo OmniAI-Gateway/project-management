@@ -10,6 +10,5 @@ data class GeminiPart(
     @SerialName("thought_signature")
     val thoughtSignature: String? = "skip_thought_signature_validator",
     val functionCall: GeminiFunctionCall? = null,
-    val functionResponse: GeminiFunctionResponse? = null
+    val functionResponse: GeminiFunctionResponse? = null,
 )
-

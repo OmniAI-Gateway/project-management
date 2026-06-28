@@ -9,6 +9,5 @@ data class GeminiUsageMetadata(
     val totalTokenCount: Int? = null,
     val thoughtsTokenCount: Int? = null,
     val promptTokensDetails: List<GeminiTokenDetail>? = null,
-    val candidatesTokensDetails: List<GeminiTokenDetail>? = null
+    val candidatesTokensDetails: List<GeminiTokenDetail>? = null,
 )
-

@@ -5,6 +5,5 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class GeminiTokenDetail(
     val modality: String,
-    val tokenCount: Int
+    val tokenCount: Int,
 )
-

@@ -14,7 +14,7 @@ data class AnthropicMessageResponse(
     val stopReason: AnthropicStopReason? = null,
     @SerialName("stop_sequence")
     val stopSequence: String? = null,
-    val usage: AnthropicUsage? = null
+    val usage: AnthropicUsage? = null,
 )
 
 @Serializable
@@ -29,5 +29,5 @@ enum class AnthropicStopReason {
     STOP_SEQUENCE,
 
     @SerialName("tool_use")
-    TOOL_USE
+    TOOL_USE,
 }

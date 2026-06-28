@@ -7,6 +7,5 @@ import kotlinx.serialization.json.JsonObject
 data class GeminiTool(
     val functionDeclarations: List<GeminiFunctionDeclaration>? = null,
     val googleSearch: JsonObject? = null,
-    val urlContext: JsonObject? = null
+    val urlContext: JsonObject? = null,
 )
-

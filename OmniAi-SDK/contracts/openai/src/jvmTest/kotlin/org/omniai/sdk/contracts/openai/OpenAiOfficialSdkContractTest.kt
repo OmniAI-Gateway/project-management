@@ -7,12 +7,6 @@ import com.openai.models.chat.completions.ChatCompletionCreateParams
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertFailsWith
-import kotlin.test.assertIs
-import kotlin.test.assertNotNull
-import kotlin.test.assertTrue
 import org.omniai.sdk.contracts.openai.input.FunctionRef
 import org.omniai.sdk.contracts.openai.input.OpenAiChatCompletionsRequest
 import org.omniai.sdk.contracts.openai.input.OpenAiFunctionDefinition
@@ -29,28 +23,38 @@ import org.omniai.sdk.contracts.openai.output.OpenAiDelta
 import org.omniai.sdk.contracts.openai.output.OpenAiErrorResponse
 import org.omniai.sdk.contracts.openai.output.OpenAiMessageOutput
 import org.omniai.sdk.testutils.LocalHttpMockServer
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
+import kotlin.test.assertIs
+import kotlin.test.assertNotNull
+import kotlin.test.assertTrue
 
 class OpenAiOfficialSdkContractTest {
-
-    private val json = Json {
-        ignoreUnknownKeys = false
-        encodeDefaults = true
-    }
+    private val json =
+        Json {
+            ignoreUnknownKeys = false
+            encodeDefaults = true
+        }
 
     @Test
     fun `official SDK request maps to OpenAI request DTO`() {
         LocalHttpMockServer(responseBody = completionResponseJson("pong")).use { server ->
             server.start()
 
-            val client: OpenAIClient = OpenAIOkHttpClient.builder()
-                .apiKey("test-key")
-                .baseUrl(server.baseUrl)
-                .build()
+            val client: OpenAIClient =
+                OpenAIOkHttpClient
+                    .builder()
+                    .apiKey("test-key")
+                    .baseUrl(server.baseUrl)
+                    .build()
 
-            val params = ChatCompletionCreateParams.builder()
-                .model(ChatModel.GPT_5_2)
-                .addUserMessage("ping from sdk")
-                .build()
+            val params =
+                ChatCompletionCreateParams
+                    .builder()
+                    .model(ChatModel.GPT_5_2)
+                    .addUserMessage("ping from sdk")
+                    .build()
 
             client.chat().completions().create(params)
 
@@ -73,17 +77,21 @@ class OpenAiOfficialSdkContractTest {
         LocalHttpMockServer(responseBody = completionResponseJson("ok")).use { server ->
             server.start()
 
-            val client: OpenAIClient = OpenAIOkHttpClient.builder()
-                .apiKey("test-key")
-                .baseUrl(server.baseUrl)
-                .build()
+            val client: OpenAIClient =
+                OpenAIOkHttpClient
+                    .builder()
+                    .apiKey("test-key")
+                    .baseUrl(server.baseUrl)
+                    .build()
 
-            val params = ChatCompletionCreateParams.builder()
-                .model(ChatModel.GPT_5_2)
-                .addUserMessage("first")
-                .addUserMessage("second")
-                .addUserMessage("third")
-                .build()
+            val params =
+                ChatCompletionCreateParams
+                    .builder()
+                    .model(ChatModel.GPT_5_2)
+                    .addUserMessage("first")
+                    .addUserMessage("second")
+                    .addUserMessage("third")
+                    .build()
 
             client.chat().completions().create(params)
 
@@ -100,60 +108,69 @@ class OpenAiOfficialSdkContractTest {
 
     @Test
     fun `request DTO round-trips all input objects`() {
-        val request = OpenAiChatCompletionsRequest(
-            model = "gpt-5.2",
-            messages = listOf(
-                OpenAiMessageInput(role = "system", content = "Be concise"),
-                OpenAiMessageInput(role = "user", content = "What is weather?"),
-                OpenAiMessageInput(
-                    role = "assistant",
-                    toolCalls = listOf(
-                        OpenAiToolCall(
-                            id = "call_1",
-                            index = 0,
-                            function = OpenAiToolCallFunction(
-                                name = "get_weather",
-                                arguments = "{\"city\":\"Lisbon\"}"
-                            )
-                        )
-                    )
-                ),
-                OpenAiMessageInput(role = "tool", toolCallId = "call_1", content = "sunny")
-            ),
-            temperature = 0.4,
-            maxTokens = 120,
-            topP = 0.8,
-            stop = OpenAiStop.Multiple(listOf("STOP_A", "STOP_B")),
-            frequencyPenalty = 0.1,
-            presencePenalty = 0.2,
-            n = 2,
-            stream = false,
-            seed = 42,
-            user = "user-123",
-            logitBias = mapOf("42" to 3),
-            logProbs = true,
-            topLogProbs = 2,
-            responseFormat = OpenAiResponseFormat(
-                type = "json_schema",
-                jsonSchema = OpenAiJsonSchema(
-                    name = "weather_reply",
-                    strict = true,
-                    schema = json.parseToJsonElement("""{"type":"object"}""").jsonObject
-                )
-            ),
-            tools = listOf(
-                OpenAiTool(
-                    function = OpenAiFunctionDefinition(
-                        name = "get_weather",
-                        description = "Gets weather",
-                        parameters = json.parseToJsonElement("""{"type":"object"}""").jsonObject
-                    )
-                )
-            ),
-            toolChoice = OpenAiToolChoice.Function(
-                function = FunctionRef(name = "get_weather")
+        val request =
+            OpenAiChatCompletionsRequest(
+                model = "gpt-5.2",
+                messages =
+                    listOf(
+                        OpenAiMessageInput(role = "system", content = "Be concise"),
+                        OpenAiMessageInput(role = "user", content = "What is weather?"),
+                        OpenAiMessageInput(
+                            role = "assistant",
+                            toolCalls =
+                                listOf(
+                                    OpenAiToolCall(
+                                        id = "call_1",
+                                        index = 0,
+                                        function =
+                                            OpenAiToolCallFunction(
+                                                name = "get_weather",
+                                                arguments = "{\"city\":\"Lisbon\"}",
+                                            ),
+                                    ),
+                                ),
+                        ),
+                        OpenAiMessageInput(role = "tool", toolCallId = "call_1", content = "sunny"),
+                    ),
+                temperature = 0.4,
+                maxTokens = 120,
+                topP = 0.8,
+                stop = OpenAiStop.Multiple(listOf("STOP_A", "STOP_B")),
+                frequencyPenalty = 0.1,
+                presencePenalty = 0.2,
+                n = 2,
+                stream = false,
+                seed = 42,
+                user = "user-123",
+                logitBias = mapOf("42" to 3),
+                logProbs = true,
+                topLogProbs = 2,
+                responseFormat =
+                    OpenAiResponseFormat(
+                        type = "json_schema",
+                        jsonSchema =
+                            OpenAiJsonSchema(
+                                name = "weather_reply",
+                                strict = true,
+                                schema = json.parseToJsonElement("""{"type":"object"}""").jsonObject,
+                            ),
+                    ),
+                tools =
+                    listOf(
+                        OpenAiTool(
+                            function =
+                                OpenAiFunctionDefinition(
+                                    name = "get_weather",
+                                    description = "Gets weather",
+                                    parameters = json.parseToJsonElement("""{"type":"object"}""").jsonObject,
+                                ),
+                        ),
+                    ),
+                toolChoice =
+                    OpenAiToolChoice.Function(
+                        function = FunctionRef(name = "get_weather"),
+                    ),
             )
-        )
 
         val encoded = json.encodeToString(request)
         val root = json.parseToJsonElement(encoded).jsonObject
@@ -168,12 +185,13 @@ class OpenAiOfficialSdkContractTest {
 
     @Test
     fun `stop and tool_choice serializers support all expected forms`() {
-        val stopSingle = OpenAiChatCompletionsRequest(
-            model = "gpt-5.2",
-            messages = listOf(OpenAiMessageInput(role = "user", content = "hi")),
-            stop = OpenAiStop.Single("DONE"),
-            toolChoice = OpenAiToolChoice.Mode("auto")
-        )
+        val stopSingle =
+            OpenAiChatCompletionsRequest(
+                model = "gpt-5.2",
+                messages = listOf(OpenAiMessageInput(role = "user", content = "hi")),
+                stop = OpenAiStop.Single("DONE"),
+                toolChoice = OpenAiToolChoice.Mode("auto"),
+            )
 
         val encoded = json.encodeToString(stopSingle)
         val decoded = json.decodeFromString<OpenAiChatCompletionsRequest>(encoded)
@@ -306,4 +324,3 @@ class OpenAiOfficialSdkContractTest {
         }
         """.trimIndent()
 }
-

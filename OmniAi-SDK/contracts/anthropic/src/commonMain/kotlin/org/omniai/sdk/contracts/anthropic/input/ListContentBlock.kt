@@ -4,5 +4,5 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class ListContentBlock(
-    val blocks: List<AnthropicInputContentBlock>
+    val blocks: List<AnthropicInputContentBlock>,
 ) : AnthropicContent

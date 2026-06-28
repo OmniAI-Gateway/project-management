@@ -7,5 +7,5 @@ import kotlinx.serialization.Serializable
 data class OpenAiResponseFormat(
     val type: String,
     @SerialName("json_schema")
-    val jsonSchema: OpenAiJsonSchema? = null
+    val jsonSchema: OpenAiJsonSchema? = null,
 )

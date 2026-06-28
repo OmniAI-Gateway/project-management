@@ -6,6 +6,5 @@ import kotlinx.serialization.Serializable
 data class GeminiResponsePart(
     val text: String? = null,
     val thoughtSignature: String? = null,
-    val functionCall: GeminiFunctionCall? = null
+    val functionCall: GeminiFunctionCall? = null,
 )
-

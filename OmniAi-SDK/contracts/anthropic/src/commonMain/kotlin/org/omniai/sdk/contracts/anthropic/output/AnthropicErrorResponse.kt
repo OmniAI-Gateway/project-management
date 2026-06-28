@@ -7,4 +7,3 @@ data class AnthropicErrorResponse(
     val type: String,
     val error: AnthropicError,
 )
-

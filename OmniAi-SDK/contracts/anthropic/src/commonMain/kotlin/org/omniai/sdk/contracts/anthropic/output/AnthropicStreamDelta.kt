@@ -9,30 +9,28 @@ import kotlinx.serialization.json.JsonClassDiscriminator
 @OptIn(ExperimentalSerializationApi::class)
 @JsonClassDiscriminator("type")
 sealed interface AnthropicStreamDelta {
-
     @Serializable
     @SerialName("text_delta")
     data class TextDelta(
-        val text: String
+        val text: String,
     ) : AnthropicStreamDelta
 
     @Serializable
     @SerialName("thinking_delta")
     data class ThinkingDelta(
-        val thinking: String
+        val thinking: String,
     ) : AnthropicStreamDelta
 
     @Serializable
     @SerialName("signature_delta")
     data class SignatureDelta(
-        val signature: String
+        val signature: String,
     ) : AnthropicStreamDelta
 
     @Serializable
     @SerialName("input_json_delta")
     data class InputJsonDelta(
         @SerialName("partial_json")
-        val partialJson: String
+        val partialJson: String,
     ) : AnthropicStreamDelta
-
 }

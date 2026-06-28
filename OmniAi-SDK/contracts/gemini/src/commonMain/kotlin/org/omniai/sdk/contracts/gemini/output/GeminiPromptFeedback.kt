@@ -5,6 +5,5 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class GeminiPromptFeedback(
     val blockReason: String? = null,
-    val safetyRatings: List<GeminiSafetyRating>? = null
+    val safetyRatings: List<GeminiSafetyRating>? = null,
 )
-

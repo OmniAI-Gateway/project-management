@@ -29,4 +29,3 @@ data class GeminiErrorDetail(
 data class GeminiErrorMetadata(
     val service: String,
 )
-

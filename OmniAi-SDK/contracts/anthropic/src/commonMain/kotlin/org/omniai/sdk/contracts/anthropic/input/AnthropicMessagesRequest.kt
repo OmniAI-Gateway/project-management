@@ -23,5 +23,5 @@ data class AnthropicMessagesRequest(
     @SerialName("stop_sequences")
     val stopSequences: List<String>? = null,
     val thinking: AnthropicThinkingConfig? = null,
-    val metadata: JsonElement? = null
+    val metadata: JsonElement? = null,
 )

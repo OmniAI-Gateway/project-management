@@ -8,5 +8,5 @@ data class MessageDeltaInfo(
     @SerialName("stop_reason")
     val stopReason: String? = null,
     @SerialName("stop_sequence")
-    val stopSequence: String? = null
+    val stopSequence: String? = null,
 )

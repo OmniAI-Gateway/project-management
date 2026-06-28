@@ -7,5 +7,5 @@ import kotlinx.serialization.json.JsonObject
 data class GeminiFunctionDeclaration(
     val name: String,
     val description: String,
-    val parameters: JsonObject
+    val parameters: JsonObject,
 )

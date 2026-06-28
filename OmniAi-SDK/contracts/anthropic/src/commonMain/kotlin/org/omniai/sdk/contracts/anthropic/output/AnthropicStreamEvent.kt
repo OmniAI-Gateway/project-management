@@ -9,11 +9,10 @@ import kotlinx.serialization.json.JsonClassDiscriminator
 @OptIn(ExperimentalSerializationApi::class)
 @JsonClassDiscriminator("type")
 sealed interface AnthropicStreamEvent {
-
     @Serializable
     @SerialName("message_start")
     data class MessageStart(
-        val message: AnthropicMessageResponse
+        val message: AnthropicMessageResponse,
     ) : AnthropicStreamEvent
 
     @Serializable
@@ -21,27 +20,27 @@ sealed interface AnthropicStreamEvent {
     data class ContentBlockStart(
         val index: Int,
         @SerialName("content_block")
-        val contentBlock: AnthropicOutputContent
+        val contentBlock: AnthropicOutputContent,
     ) : AnthropicStreamEvent
 
     @Serializable
     @SerialName("content_block_delta")
     data class ContentBlockDelta(
         val index: Int,
-        val delta: AnthropicStreamDelta
+        val delta: AnthropicStreamDelta,
     ) : AnthropicStreamEvent
 
     @Serializable
     @SerialName("content_block_stop")
     data class ContentBlockStop(
-        val index: Int
+        val index: Int,
     ) : AnthropicStreamEvent
 
     @Serializable
     @SerialName("message_delta")
     data class MessageDelta(
         val delta: MessageDeltaInfo,
-        val usage: AnthropicUsage? = null
+        val usage: AnthropicUsage? = null,
     ) : AnthropicStreamEvent
 
     @Serializable
@@ -55,7 +54,6 @@ sealed interface AnthropicStreamEvent {
     @Serializable
     @SerialName("error")
     data class Error(
-        val error: AnthropicError
+        val error: AnthropicError,
     ) : AnthropicStreamEvent
-
 }

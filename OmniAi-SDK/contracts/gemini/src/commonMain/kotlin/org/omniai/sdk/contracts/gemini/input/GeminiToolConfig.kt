@@ -4,6 +4,5 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class GeminiToolConfig(
-    val functionCallingConfig: GeminiFunctionCallingConfig? = null
+    val functionCallingConfig: GeminiFunctionCallingConfig? = null,
 )
-

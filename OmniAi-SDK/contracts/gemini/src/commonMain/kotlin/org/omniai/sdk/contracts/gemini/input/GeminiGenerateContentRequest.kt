@@ -11,7 +11,7 @@ data class GeminiGenerateContentRequest(
     val tools: List<GeminiTool>? = null,
     val toolConfig: GeminiToolConfig? = null,
     val generationConfig: GeminiGenerationConfig? = null,
-    val model: String? = null
+    val model: String? = null,
 ) {
     fun injectModel(model: String) = copy(model = model)
 }

@@ -14,5 +14,5 @@ data class AnthropicUsage(
     @SerialName("cache_read_input_tokens")
     val cacheReadInputTokens: Int? = null,
     @SerialName("server_tool_use")
-    val serverToolUse: ServerToolUsage? = null
+    val serverToolUse: ServerToolUsage? = null,
 )

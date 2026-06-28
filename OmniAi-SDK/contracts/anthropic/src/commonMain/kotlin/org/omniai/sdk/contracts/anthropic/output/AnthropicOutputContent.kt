@@ -10,18 +10,17 @@ import kotlinx.serialization.json.JsonObject
 @OptIn(ExperimentalSerializationApi::class)
 @JsonClassDiscriminator("type")
 sealed interface AnthropicOutputContent {
-
     @Serializable
     @SerialName("text")
     data class Text(
-        val text: String
+        val text: String,
     ) : AnthropicOutputContent
 
     @Serializable
     @SerialName("thinking")
     data class Thinking(
         val thinking: String,
-        val signature: String? = null
+        val signature: String? = null,
     ) : AnthropicOutputContent
 
     @Serializable
@@ -29,7 +28,6 @@ sealed interface AnthropicOutputContent {
     data class ToolUse(
         val id: String,
         val name: String,
-        val input: JsonObject? = null
+        val input: JsonObject? = null,
     ) : AnthropicOutputContent
-
 }

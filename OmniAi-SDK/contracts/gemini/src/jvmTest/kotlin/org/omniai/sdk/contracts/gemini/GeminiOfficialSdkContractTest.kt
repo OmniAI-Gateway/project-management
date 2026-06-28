@@ -6,14 +6,8 @@ import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertFailsWith
-import kotlin.test.assertIs
-import kotlin.test.assertNotNull
-import kotlin.test.assertTrue
+import org.junit.Assert.assertTrue
 import org.omniai.sdk.contracts.gemini.input.GeminiContent
-import org.omniai.sdk.contracts.gemini.input.GeminiFunctionCall as GeminiInputFunctionCall
 import org.omniai.sdk.contracts.gemini.input.GeminiFunctionCallingConfig
 import org.omniai.sdk.contracts.gemini.input.GeminiFunctionDeclaration
 import org.omniai.sdk.contracts.gemini.input.GeminiFunctionResponse
@@ -25,34 +19,46 @@ import org.omniai.sdk.contracts.gemini.input.GeminiSystemInstruction
 import org.omniai.sdk.contracts.gemini.input.GeminiThinkingConfig
 import org.omniai.sdk.contracts.gemini.input.GeminiTool
 import org.omniai.sdk.contracts.gemini.input.GeminiToolConfig
-import org.omniai.sdk.contracts.gemini.output.GeminiFunctionCall as GeminiOutputFunctionCall
 import org.omniai.sdk.contracts.gemini.output.GeminiErrorResponse
 import org.omniai.sdk.contracts.gemini.output.GeminiGenerateContentResponse
 import org.omniai.sdk.contracts.gemini.output.GeminiResponsePart
 import org.omniai.sdk.testutils.LocalHttpMockServer
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
+import kotlin.test.assertIs
+import kotlin.test.assertNotNull
+import org.omniai.sdk.contracts.gemini.input.GeminiFunctionCall as GeminiInputFunctionCall
+import org.omniai.sdk.contracts.gemini.output.GeminiFunctionCall as GeminiOutputFunctionCall
 
 class GeminiOfficialSdkContractTest {
-
-    private val json = Json {
-        ignoreUnknownKeys = false
-        encodeDefaults = true
-    }
+    private val json =
+        Json {
+            ignoreUnknownKeys = false
+            encodeDefaults = true
+        }
 
     @Test
     fun `official SDK request maps to Gemini request DTO`() {
         LocalHttpMockServer(responseBody = sdkResponseJson("pong")).use { server ->
             server.start()
 
-            val client = Client.builder()
-                .apiKey("test-key")
-                .httpOptions(HttpOptions.builder().baseUrl(server.baseUrl).build())
-                .build()
+            val client =
+                Client
+                    .builder()
+                    .apiKey("test-key")
+                    .httpOptions(HttpOptions.builder().baseUrl(server.baseUrl).build())
+                    .build()
 
             client.models.generateContent("gemini-2.5-flash", "ping from sdk", null)
 
             val captured = assertNotNull(server.capturedRequest)
             val requestDto = json.decodeFromString<GeminiGenerateContentRequest>(captured.body)
-            val firstPart = requestDto.contents.first().parts.first()
+            val firstPart =
+                requestDto.contents
+                    .first()
+                    .parts
+                    .first()
 
             assertEquals("POST", captured.method)
             assertTrue(captured.path.contains(":generateContent"))
@@ -65,71 +71,86 @@ class GeminiOfficialSdkContractTest {
 
     @Test
     fun `request DTO round-trips all input objects`() {
-        val request = GeminiGenerateContentRequest(
-            contents = listOf(
-                GeminiContent(
-                    role = "user",
-                    parts = listOf(
-                        GeminiPart(text = "What is weather?"),
-                        GeminiPart(
-                            inlineData = GeminiInlineData(
-                                mimeType = "text/plain",
-                                data = "SGVsbG8="
-                            )
+        val request =
+            GeminiGenerateContentRequest(
+                contents =
+                    listOf(
+                        GeminiContent(
+                            role = "user",
+                            parts =
+                                listOf(
+                                    GeminiPart(text = "What is weather?"),
+                                    GeminiPart(
+                                        inlineData =
+                                            GeminiInlineData(
+                                                mimeType = "text/plain",
+                                                data = "SGVsbG8=",
+                                            ),
+                                    ),
+                                    GeminiPart(
+                                        functionCall =
+                                            GeminiInputFunctionCall(
+                                                name = "get_weather",
+                                                args = json.parseToJsonElement("""{"city":"Lisbon","days":2}""").jsonObject,
+                                            ),
+                                    ),
+                                    GeminiPart(
+                                        functionResponse =
+                                            GeminiFunctionResponse(
+                                                name = "get_weather",
+                                                response = json.parseToJsonElement("""{"forecast":"sunny","confidence":99}""").jsonObject,
+                                            ),
+                                    ),
+                                ),
                         ),
-                        GeminiPart(
-                            functionCall = GeminiInputFunctionCall(
-                                name = "get_weather",
-                                args = json.parseToJsonElement("""{"city":"Lisbon","days":2}""").jsonObject
-                            )
-                        ),
-                        GeminiPart(
-                            functionResponse = GeminiFunctionResponse(
-                                name = "get_weather",
-                                response = json.parseToJsonElement("""{"forecast":"sunny","confidence":99}""").jsonObject
-                            )
-                        )
-                    )
-                )
-            ),
-            systemInstruction = GeminiSystemInstruction(
-                parts = listOf(GeminiPart(text = "Be concise"))
-            ),
-            tools = listOf(
-                GeminiTool(
-                    functionDeclarations = listOf(
-                        GeminiFunctionDeclaration(
-                            name = "get_weather",
-                            description = "Gets weather",
-                            parameters = json.parseToJsonElement(
-                                """{"type":"object","properties":{"city":{"type":"string"}}}"""
-                            ).jsonObject
-                        )
                     ),
-                    googleSearch = json.parseToJsonElement("""{"enabled":true}""").jsonObject,
-                    urlContext = json.parseToJsonElement("""{"enabled":true}""").jsonObject
-                )
-            ),
-            toolConfig = GeminiToolConfig(
-                functionCallingConfig = GeminiFunctionCallingConfig(
-                    mode = "ANY",
-                    allowedFunctionNames = listOf("get_weather")
-                )
-            ),
-            generationConfig = GeminiGenerationConfig(
-                stopSequences = listOf("STOP"),
-                temperature = 0.4,
-                topP = 0.9,
-                topK = 32,
-                thinkingConfig = GeminiThinkingConfig(
-                    includeThoughts = true,
-                    includeThoughtSignature = true,
-                    thinkingLevel = "HIGH"
-                ),
-                responseMimeType = "application/json",
-                responseJsonSchema = json.parseToJsonElement("""{"type":"object","strict":true}""").jsonObject
+                systemInstruction =
+                    GeminiSystemInstruction(
+                        parts = listOf(GeminiPart(text = "Be concise")),
+                    ),
+                tools =
+                    listOf(
+                        GeminiTool(
+                            functionDeclarations =
+                                listOf(
+                                    GeminiFunctionDeclaration(
+                                        name = "get_weather",
+                                        description = "Gets weather",
+                                        parameters =
+                                            json
+                                                .parseToJsonElement(
+                                                    """{"type":"object","properties":{"city":{"type":"string"}}}""",
+                                                ).jsonObject,
+                                    ),
+                                ),
+                            googleSearch = json.parseToJsonElement("""{"enabled":true}""").jsonObject,
+                            urlContext = json.parseToJsonElement("""{"enabled":true}""").jsonObject,
+                        ),
+                    ),
+                toolConfig =
+                    GeminiToolConfig(
+                        functionCallingConfig =
+                            GeminiFunctionCallingConfig(
+                                mode = "ANY",
+                                allowedFunctionNames = listOf("get_weather"),
+                            ),
+                    ),
+                generationConfig =
+                    GeminiGenerationConfig(
+                        stopSequences = listOf("STOP"),
+                        temperature = 0.4,
+                        topP = 0.9,
+                        topK = 32,
+                        thinkingConfig =
+                            GeminiThinkingConfig(
+                                includeThoughts = true,
+                                includeThoughtSignature = true,
+                                thinkingLevel = "HIGH",
+                            ),
+                        responseMimeType = "application/json",
+                        responseJsonSchema = json.parseToJsonElement("""{"type":"object","strict":true}""").jsonObject,
+                    ),
             )
-        )
 
         val encoded = json.encodeToString(request)
         val root = json.parseToJsonElement(encoded).jsonObject
@@ -186,12 +207,29 @@ class GeminiOfficialSdkContractTest {
         assertEquals(15, response.usageMetadata?.totalTokenCount)
         assertEquals("NONE", response.promptFeedback?.blockReason)
 
-        val firstPart = response.candidates.first().content?.parts?.get(0)
+        val firstPart =
+            response.candidates
+                .first()
+                .content
+                ?.parts
+                ?.get(0)
         assertEquals("Done", assertIs<GeminiResponsePart>(firstPart).text)
 
-        val functionCall = response.candidates.first().content?.parts?.get(1)?.functionCall
+        val functionCall =
+            response.candidates
+                .first()
+                .content
+                ?.parts
+                ?.get(1)
+                ?.functionCall
         assertEquals("get_weather", assertIs<GeminiOutputFunctionCall>(functionCall).name)
-        assertEquals("Lisbon", functionCall.args?.get("city")?.jsonPrimitive?.content)
+        assertEquals(
+            "Lisbon",
+            functionCall.args
+                ?.get("city")
+                ?.jsonPrimitive
+                ?.content,
+        )
     }
 
     @Test
@@ -221,12 +259,25 @@ class GeminiOfficialSdkContractTest {
             """.trimIndent()
 
         val request = json.decodeFromString<GeminiGenerateContentRequest>(payload)
-        val args = request.contents.first().parts.first().functionCall?.args ?: error("missing args")
+        val args =
+            request.contents
+                .first()
+                .parts
+                .first()
+                .functionCall
+                ?.args ?: error("missing args")
 
         assertEquals("true", args["ok"]?.jsonPrimitive?.content)
         assertEquals(3L, args["attempt"]?.jsonPrimitive?.content?.toLong())
         assertEquals(0.75, args["ratio"]?.jsonPrimitive?.content?.toDouble())
-        assertEquals("v", args["nested"]?.jsonObject?.get("k")?.jsonPrimitive?.content)
+        assertEquals(
+            "v",
+            args["nested"]
+                ?.jsonObject
+                ?.get("k")
+                ?.jsonPrimitive
+                ?.content,
+        )
     }
 
     @Test
@@ -281,8 +332,18 @@ class GeminiOfficialSdkContractTest {
 
         assertEquals(429, error.error.code)
         assertEquals("RESOURCE_EXHAUSTED", error.error.status)
-        assertEquals("RATE_LIMIT_EXCEEDED", error.error.details.first().reason)
-        assertEquals("generativelanguage.googleapis.com", error.error.details.first().metadata.service)
+        assertEquals(
+            "RATE_LIMIT_EXCEEDED",
+            error.error.details
+                .first()
+                .reason,
+        )
+        assertEquals(
+            "generativelanguage.googleapis.com",
+            error.error.details
+                .first()
+                .metadata.service,
+        )
     }
 
     private fun sdkResponseJson(text: String): String =
@@ -303,4 +364,3 @@ class GeminiOfficialSdkContractTest {
         }
         """.trimIndent()
 }
-

@@ -6,5 +6,5 @@ import kotlinx.serialization.json.JsonElement
 @Serializable
 data class AnthropicOutputFormat(
     val type: String,
-    val schema: JsonElement? = null
+    val schema: JsonElement? = null,
 )
