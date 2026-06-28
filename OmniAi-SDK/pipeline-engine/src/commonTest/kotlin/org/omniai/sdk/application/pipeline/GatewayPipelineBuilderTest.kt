@@ -23,11 +23,6 @@ class GatewayPipelineBuilderTest {
         )
     }
 
-    @Test
-    fun `build succeeds when dispatcher is installed`() {
-        val pipeline = buildPipeline()
-        assertTrue(pipeline is GatewayPipeline)
-    }
 
     // ── install / intercept ───────────────────────────────────────────────────
 

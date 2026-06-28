@@ -9,7 +9,6 @@ import io.ktor.server.routing.Route
 import io.ktor.server.routing.routing
 import io.ktor.server.sse.SSE
 import io.ktor.utils.io.CancellationException
-import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.GlobalScope.coroutineContext
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.awaitCancellation

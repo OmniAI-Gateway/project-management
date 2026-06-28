@@ -83,7 +83,7 @@ class OpenAiInboundTranslator :
 
     override fun fromDomain(domainResponse: CommonResponse): OpenAiChatCompletionsResponse =
         OpenAiChatCompletionsResponse(
-            id = domainResponse.id?.takeIf { it.isNotBlank() } ?: generateOpenAiID(),
+            id = domainResponse.id.takeIf { it.isNotBlank() } ?: generateOpenAiID(),
             obj = "chat.completion",
             created = ((domainResponse.providerOptions["created"] as? Number)?.toLong() ?: getTime()),
             model = domainResponse.model,

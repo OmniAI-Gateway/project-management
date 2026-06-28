@@ -177,9 +177,9 @@ private fun AnthropicInputContentBlock.toDomainPart(index: Int): RequestContentP
 	when (this) {
 		is AnthropicInputContentBlock.Text -> TextPart(text)
 		is AnthropicInputContentBlock.ToolUse -> ToolCallPart(
-			toolCallId = id ?: "anthropic-tool-use-$index",
+			toolCallId = id,
 			functionName = name,
-			argumentsJson = input?.toDomainJsonObject()?.properties.orEmpty()
+			argumentsJson = input.toDomainJsonObject().properties
 		)
 		is AnthropicInputContentBlock.ToolResult -> ToolResultPart(
 			toolCallId = toolUseId,

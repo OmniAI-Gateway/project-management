@@ -88,7 +88,7 @@ class RoutingDispatcherFactoryTest {
         assertTrue(forwardedRequest != null, "Request should have been forwarded")
 
         // Verify both original options and new attributes are present
-        assertEquals(0.5, forwardedRequest!!.providerOptions.get<Double>("temperature"))
+        assertEquals(0.5, forwardedRequest.providerOptions.get<Double>("temperature"))
         assertEquals(100, forwardedRequest.providerOptions.get<Int>("max_tokens"))
     }
 

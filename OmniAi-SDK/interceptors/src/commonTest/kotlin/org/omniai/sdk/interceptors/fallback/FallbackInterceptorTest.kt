@@ -97,8 +97,8 @@ class FallbackInterceptorTest {
         cb.handle(fakeContext(Provider.OPENAI, "gpt-4o"), chain)
 
         assertNotNull(secondContext)
-        assertEquals("anthropic", secondContext!!.request.provider.value)
-        assertEquals("claude-3", secondContext!!.request.model)
+        assertEquals("anthropic", secondContext.request.provider.value)
+        assertEquals("claude-3", secondContext.request.model)
     }
 
     // ─── All outbounds fail ───────────────────────────────────────────────────

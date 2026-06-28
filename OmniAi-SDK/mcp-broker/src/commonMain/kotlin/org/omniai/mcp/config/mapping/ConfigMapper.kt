@@ -35,7 +35,6 @@ fun YamlElement.toJsonElement(): JsonElement = when (this) {
     is YamlList -> buildJsonArray {
         this@toJsonElement.content.forEach { add(it.toJsonElement()) }
     }
-    else -> JsonNull
 }
 
 fun YamlMap?.toJsonObject(): JsonObject? {
