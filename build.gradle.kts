@@ -26,3 +26,15 @@ tasks.named("check") {
     description = "Runs checks on all included builds"
     dependsOn(dependsOnIncluded("check"))
 }
+
+tasks.register("ktlintCheck") {
+    group = "verification"
+    description = "Runs ktlint checks on all included builds"
+    dependsOn(dependsOnIncluded("ktlintCheck"))
+}
+
+tasks.register("ktlintFormat") {
+    group = "formatting"
+    description = "Formats Kotlin sources in all included builds with ktlint"
+    dependsOn(dependsOnIncluded("ktlintFormat"))
+}

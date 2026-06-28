@@ -10,7 +10,7 @@ sealed interface AuthorizationServerGatewayConfig {
         val discoveryUrl: String,
         val audience: String,
         val clientId: String?,
-        val clientSecret: String?
+        val clientSecret: String?,
     ) : AuthorizationServerGatewayConfig
 }
 
@@ -20,19 +20,19 @@ data class GatewayConfig(
     val telemetryEnabled: Boolean,
     val otelEnabled: Boolean,
     val otelCollectorEndpoint: String?,
-    val authConfig: AuthorizationServerGatewayConfig = AuthorizationServerGatewayConfig.None
+    val authConfig: AuthorizationServerGatewayConfig = AuthorizationServerGatewayConfig.None,
 )
 
 data class TelemetryRuntime(
     val metricsPort: MetricsPort,
-    val tracer: Tracer? = null
+    val tracer: Tracer? = null,
 )
 
 data class ProviderConfig(
     val provider: ProviderKind,
     val models: List<String>,
     val apiKey: String,
-    val baseUrl: String
+    val baseUrl: String,
 )
 
 enum class ProviderKind(
@@ -40,28 +40,27 @@ enum class ProviderKind(
     val apiKeyEnv: String,
     val modelEnv: String,
     val modelsEnv: String,
-    val baseUrlEnv: String
+    val baseUrlEnv: String,
 ) {
     OPENAI(
         configKey = "openai",
         apiKeyEnv = "OPENAI_API_KEY",
         modelEnv = "OPENAI_MODEL",
         modelsEnv = "OPENAI_MODELS",
-        baseUrlEnv = "OPENAI_BASE_URL"
+        baseUrlEnv = "OPENAI_BASE_URL",
     ),
     GEMINI(
         configKey = "gemini",
         apiKeyEnv = "GEMINI_API_KEY",
         modelEnv = "GEMINI_MODEL",
         modelsEnv = "GEMINI_MODELS",
-        baseUrlEnv = "GEMINI_BASE_URL"
+        baseUrlEnv = "GEMINI_BASE_URL",
     ),
     ANTHROPIC(
         configKey = "anthropic",
         apiKeyEnv = "ANTHROPIC_API_KEY",
         modelEnv = "ANTHROPIC_MODEL",
         modelsEnv = "ANTHROPIC_MODELS",
-        baseUrlEnv = "ANTHROPIC_BASE_URL"
-    )
+        baseUrlEnv = "ANTHROPIC_BASE_URL",
+    ),
 }
-

@@ -1,6 +1,7 @@
 plugins {
     kotlin("multiplatform") version "2.3.0"
     kotlin("plugin.serialization") version "2.2.0"
+    id("org.jlleitschuh.gradle.ktlint") version "13.1.0"
 }
 
 group = "org.omniai.sdk"
@@ -13,11 +14,12 @@ repositories {
 subprojects {
     version = rootProject.version
 
+    apply(plugin = "org.jlleitschuh.gradle.ktlint")
+
     repositories {
         mavenCentral()
     }
 }
-
 
 kotlin {
     jvm()

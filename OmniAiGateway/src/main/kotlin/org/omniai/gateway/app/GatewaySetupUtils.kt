@@ -15,8 +15,6 @@ import org.omniai.sdk.gateway.client.dsl.inbounds.InboundsDsl
 import org.omniai.sdk.gateway.client.dsl.interceptors.InterceptorsDsl
 import org.omniai.sdk.gateway.client.dsl.outbounds.OutboundsDsl
 import org.omniai.sdk.gateway.client.extensions.inbounds.openAi
-import org.omniai.sdk.gateway.client.extensions.inbounds.anthropic as inboundAnthropic
-import org.omniai.sdk.gateway.client.extensions.inbounds.gemini as inboundGemini
 import org.omniai.sdk.gateway.client.extensions.outbounds.anthropic
 import org.omniai.sdk.gateway.client.extensions.outbounds.gemini
 import org.omniai.sdk.gateway.client.extensions.outbounds.openAI
@@ -26,6 +24,8 @@ import org.omniai.sdk.gateway.ktor.geminiConnector
 import org.omniai.sdk.gateway.ktor.openAiConnector
 import org.omniai.sdk.interceptors.auth.AUTH_RESULT_KEY
 import org.omniai.sdk.interceptors.auth.domain.AuthValidationResult
+import org.omniai.sdk.gateway.client.extensions.inbounds.anthropic as inboundAnthropic
+import org.omniai.sdk.gateway.client.extensions.inbounds.gemini as inboundGemini
 
 fun Application.configureGatewayCors() {
     install(CORS) {
@@ -39,40 +39,52 @@ fun Application.configureGatewayCors() {
     }
 }
 
-fun InboundsDsl.registerStandardInbounds(route: Route, jsonConfig: Json) {
+fun InboundsDsl.registerStandardInbounds(
+    route: Route,
+    jsonConfig: Json,
+) {
     openAi(route.openAiConnector(json = jsonConfig))
     inboundAnthropic(route.anthropicConnector(json = jsonConfig))
     inboundGemini(route.geminiConnector(json = jsonConfig))
 }
 
-fun OutboundsDsl.registerProvidersFromConfig(providers: List<ProviderConfig>, httpClient: KtorHttpTransportClient) {
+fun OutboundsDsl.registerProvidersFromConfig(
+    providers: List<ProviderConfig>,
+    httpClient: KtorHttpTransportClient,
+) {
     providers.forEach { providerConfig ->
         when (providerConfig.provider) {
-            ProviderKind.OPENAI -> openAI(httpClient) {
-                baseUrl(providerConfig.baseUrl)
-                apiKey(providerConfig.apiKey) {
-                    models(*providerConfig.models.toTypedArray())
+            ProviderKind.OPENAI ->
+                openAI(httpClient) {
+                    baseUrl(providerConfig.baseUrl)
+                    apiKey(providerConfig.apiKey) {
+                        models(*providerConfig.models.toTypedArray())
+                    }
                 }
-            }
-            ProviderKind.GEMINI -> gemini(httpClient) {
-                baseUrl(providerConfig.baseUrl)
-                apiKey(providerConfig.apiKey) {
-                    models(*providerConfig.models.toTypedArray())
+            ProviderKind.GEMINI ->
+                gemini(httpClient) {
+                    baseUrl(providerConfig.baseUrl)
+                    apiKey(providerConfig.apiKey) {
+                        models(*providerConfig.models.toTypedArray())
+                    }
                 }
-            }
-            ProviderKind.ANTHROPIC -> anthropic(httpClient) {
-                baseUrl(providerConfig.baseUrl)
-                apiKey(providerConfig.apiKey) {
-                    models(*providerConfig.models.toTypedArray())
+            ProviderKind.ANTHROPIC ->
+                anthropic(httpClient) {
+                    baseUrl(providerConfig.baseUrl)
+                    apiKey(providerConfig.apiKey) {
+                        models(*providerConfig.models.toTypedArray())
+                    }
                 }
-            }
         }
     }
 }
 
-fun InterceptorsDsl.registerGatewayMetrics(config: GatewayConfig, telemetryRuntime: TelemetryRuntime) {
+fun InterceptorsDsl.registerGatewayMetrics(
+    config: GatewayConfig,
+    telemetryRuntime: TelemetryRuntime,
+) {
     if (!config.telemetryEnabled) return
-    
+
     metrics {
         metricsPort = telemetryRuntime.metricsPort
         tracer = telemetryRuntime.tracer
@@ -80,14 +92,22 @@ fun InterceptorsDsl.registerGatewayMetrics(config: GatewayConfig, telemetryRunti
             attribute("user.email") { gContext, _ ->
                 val authResult = gContext.attributes[AUTH_RESULT_KEY]
                 (authResult as? AuthValidationResult.Jwt)
-                    ?.decoded?.payload?.privateClaims?.get("email")?.jsonPrimitive?.contentOrNull
+                    ?.decoded
+                    ?.payload
+                    ?.privateClaims
+                    ?.get("email")
+                    ?.jsonPrimitive
+                    ?.contentOrNull
             }
             attribute("user.username") { gContext, _ ->
                 val authResult = gContext.attributes[AUTH_RESULT_KEY]
                 (authResult as? AuthValidationResult.Jwt)
-                    ?.decoded?.payload?.privateClaims
+                    ?.decoded
+                    ?.payload
+                    ?.privateClaims
                     ?.get("preferred_username")
-                    ?.jsonPrimitive?.contentOrNull
+                    ?.jsonPrimitive
+                    ?.contentOrNull
                     ?: (authResult as? AuthValidationResult.Opaque)?.introspectionResult?.username
             }
             attribute("user.sub") { gContext, _ ->
@@ -109,7 +129,7 @@ fun InterceptorsDsl.registerGatewayMetrics(config: GatewayConfig, telemetryRunti
             counter(
                 name = "gateway.llm.tokens",
                 description = "Total de tokens consumidos",
-                unit = "{tokens}"
+                unit = "{tokens}",
             ) {
                 value { _, result ->
                     (result as? PipelineResult.Unary)?.response?.usage?.totalTokens
@@ -118,7 +138,7 @@ fun InterceptorsDsl.registerGatewayMetrics(config: GatewayConfig, telemetryRunti
             counter(
                 name = "gateway.requests.errors",
                 description = "Número de requests falhados",
-                unit = "1"
+                unit = "1",
             ) {
                 value { _, result ->
                     if (result is PipelineResult.Error) 1.0 else null
@@ -131,68 +151,83 @@ fun InterceptorsDsl.registerGatewayMetrics(config: GatewayConfig, telemetryRunti
             counter(
                 name = "gateway.requests.total",
                 description = "Total de requests processados pelo gateway",
-                unit = "1"
+                unit = "1",
             ) {
                 value { _, _ -> 1.0 }
                 tags { ctx, result ->
-                    val status = when (result) {
-                        is PipelineResult.Unary -> "ok"
-                        is PipelineResult.Stream -> "ok"
-                        is PipelineResult.Error -> "error"
-                        else -> "unknown"
-                    }
+                    val status =
+                        when (result) {
+                            is PipelineResult.Unary -> "ok"
+                            is PipelineResult.Stream -> "ok"
+                            is PipelineResult.Error -> "error"
+                            else -> "unknown"
+                        }
                     mapOf(
                         "status" to status,
                         "provider" to ctx.request.provider.value,
-                        "model" to ctx.request.model
+                        "model" to ctx.request.model,
                     )
                 }
             }
             counter(
                 name = "gateway.llm.tokens.input",
                 description = "Tokens de input consumidos",
-                unit = "{tokens}"
+                unit = "{tokens}",
             ) {
                 value { _, result ->
-                    (result as? PipelineResult.Unary)?.response?.usage?.inputTokens?.toDouble()
+                    (result as? PipelineResult.Unary)
+                        ?.response
+                        ?.usage
+                        ?.inputTokens
+                        ?.toDouble()
                 }
             }
             counter(
                 name = "gateway.llm.tokens.output",
                 description = "Tokens de output gerados",
-                unit = "{tokens}"
+                unit = "{tokens}",
             ) {
                 value { _, result ->
-                    (result as? PipelineResult.Unary)?.response?.usage?.outputTokens?.toDouble()
+                    (result as? PipelineResult.Unary)
+                        ?.response
+                        ?.usage
+                        ?.outputTokens
+                        ?.toDouble()
                 }
             }
             histogram(
                 name = "gateway.request.size",
                 description = "Número de mensagens por request",
-                unit = "{messages}"
+                unit = "{messages}",
             ) {
                 value { ctx, _ ->
-                    ctx.request.messages.size.toDouble()
+                    ctx.request.messages.size
+                        .toDouble()
                 }
             }
             counter(
                 name = "gateway.response.finish_reason",
                 description = "Contagem por razão de término da resposta",
-                unit = "1"
+                unit = "1",
             ) {
                 value { _, result ->
                     if (result is PipelineResult.Unary && result.response.choices.isNotEmpty()) 1.0 else null
                 }
                 tags { _, result ->
-                    val reason = (result as? PipelineResult.Unary)
-                        ?.response?.choices?.firstOrNull()?.finishReason?.name ?: "unknown"
+                    val reason =
+                        (result as? PipelineResult.Unary)
+                            ?.response
+                            ?.choices
+                            ?.firstOrNull()
+                            ?.finishReason
+                            ?.name ?: "unknown"
                     mapOf("finish_reason" to reason)
                 }
             }
             counter(
                 name = "gateway.provider.errors",
                 description = "Erros detalhados por provider e tipo de erro",
-                unit = "1"
+                unit = "1",
             ) {
                 value { _, result ->
                     if (result is PipelineResult.Error) 1.0 else null
@@ -203,7 +238,7 @@ fun InterceptorsDsl.registerGatewayMetrics(config: GatewayConfig, telemetryRunti
                         "provider" to ctx.request.provider.value,
                         "model" to ctx.request.model,
                         "error.code" to (error?.code?.name ?: "UNKNOWN"),
-                        "error.type" to (error?.let { it::class.simpleName } ?: "Unknown")
+                        "error.type" to (error?.let { it::class.simpleName } ?: "Unknown"),
                     )
                 }
             }

@@ -11,48 +11,52 @@ import org.omniai.mcp.core.mcpBroker
 import org.omniai.mcp.server.ServerTransportConfig
 import java.io.File
 
-
 suspend fun Application.buildMcpSetup() {
     val mcpWorkDir = File(System.getProperty("user.dir"))
-    val mcpConfigDir = listOf(
-        File(mcpWorkDir, "OmniAiGateway/mcp-configs"),
-        File(mcpWorkDir, "mcp-configs")
-    ).firstOrNull { it.exists() && it.isDirectory }?.absolutePath
-        ?: File(mcpWorkDir, "OmniAiGateway/mcp-configs").also { it.mkdirs() }.absolutePath
+    val mcpConfigDir =
+        listOf(
+            File(mcpWorkDir, "OmniAiGateway/mcp-configs"),
+            File(mcpWorkDir, "mcp-configs"),
+        ).firstOrNull { it.exists() && it.isDirectory }?.absolutePath
+            ?: File(mcpWorkDir, "OmniAiGateway/mcp-configs").also { it.mkdirs() }.absolutePath
 
-    val mcpHttpClient = HttpClient(OkHttp) {
-        install(ContentNegotiation) {
-            json(Json {
-                ignoreUnknownKeys = true
-                explicitNulls = false
-            })
+    val mcpHttpClient =
+        HttpClient(OkHttp) {
+            install(ContentNegotiation) {
+                json(
+                    Json {
+                        ignoreUnknownKeys = true
+                        explicitNulls = false
+                    },
+                )
+            }
         }
-    }
 
-    val mcpBrokerServer = mcpBroker {
-        info("omniai-mcp-broker", "1.0.0")
-        configDirectory(mcpConfigDir)
-        httpClient(mcpHttpClient)
-        clientTransportFactory(McpClientTransportFactory(mcpHttpClient))
-        
-        application(this@buildMcpSetup)
-        
+    val mcpBrokerServer =
+        mcpBroker {
+            info("omniai-mcp-broker", "1.0.0")
+            configDirectory(mcpConfigDir)
+            httpClient(mcpHttpClient)
+            clientTransportFactory(McpClientTransportFactory(mcpHttpClient))
+
+            application(this@buildMcpSetup)
+
 //        serverTransport(
 //            ServerTransportConfig.Stdio(
 //                input = System.`in`.asSource().buffered(),
 //                output = originalOut.asSink().buffered()
 //            )
 //        )
-        serverTransport(
-            ServerTransportConfig.SSE(path = "/sse")
-        )
-        serverTransport(
-            ServerTransportConfig.StreamableHttp(path = "/mcp")
-        )
+            serverTransport(
+                ServerTransportConfig.SSE(path = "/sse"),
+            )
+            serverTransport(
+                ServerTransportConfig.StreamableHttp(path = "/mcp"),
+            )
 //        serverTransport(
 //            ServerTransportConfig.WebSocket( path = "/ws")
 //        )
-    }
+        }
 
     mcpBrokerServer.start()
 

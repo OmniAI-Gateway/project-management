@@ -4,4 +4,3 @@ plugins {
 rootProject.name = "OmniAiGateway"
 
 includeBuild("../OmniAi-SDK")
-

@@ -2,6 +2,7 @@ plugins {
     kotlin("jvm") version "2.2.0"
     application
     id("com.gradleup.shadow") version "8.3.6"
+    id("org.jlleitschuh.gradle.ktlint") version "13.1.0"
 }
 
 group = "org.omniai.gateway"
@@ -29,7 +30,7 @@ dependencies {
     implementation("io.ktor:ktor-client-core")
     implementation("io.ktor:ktor-client-okhttp")
     implementation("io.ktor:ktor-client-content-negotiation")
-    
+
     implementation(platform("io.opentelemetry:opentelemetry-bom:1.38.0"))
     implementation(platform("io.opentelemetry.instrumentation:opentelemetry-instrumentation-bom-alpha:2.4.0-alpha"))
     implementation("io.opentelemetry:opentelemetry-sdk")
