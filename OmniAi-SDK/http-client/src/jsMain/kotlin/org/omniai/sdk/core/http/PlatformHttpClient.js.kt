@@ -8,4 +8,3 @@ internal actual fun defaultPlatformHttpClient(json: Json): HttpClient =
     HttpClient(Js) {
         installDefaultTransportPlugins(json)
     }
-

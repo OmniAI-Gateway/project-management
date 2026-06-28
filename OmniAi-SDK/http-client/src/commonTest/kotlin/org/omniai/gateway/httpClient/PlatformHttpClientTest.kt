@@ -1,6 +1,5 @@
 package org.omniai.gateway.httpClient
 
-import org.omniai.sdk.core.http.installDefaultTransportPlugins
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
@@ -12,14 +11,13 @@ import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.headersOf
-import io.ktor.serialization.kotlinx.json.json
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
+import org.omniai.sdk.core.http.installDefaultTransportPlugins
 import kotlin.test.Test
 import kotlin.test.assertNotNull
 
 class PlatformHttpClientTest {
-
     private val testJson = Json { ignoreUnknownKeys = true }
 
     @Test
@@ -55,23 +53,26 @@ class PlatformHttpClientTest {
     }
 
     @Test
-    fun `client built with defaults can perform a basic GET and receive JSON`() = runTest {
-        val engine = MockEngine {
-            respond(
-                content = """{"key":"value"}""",
-                status = HttpStatusCode.OK,
-                headers = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString())
-            )
-        }
+    fun `client built with defaults can perform a basic GET and receive JSON`() =
+        runTest {
+            val engine =
+                MockEngine {
+                    respond(
+                        content = """{"key":"value"}""",
+                        status = HttpStatusCode.OK,
+                        headers = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString()),
+                    )
+                }
 
-        val client = HttpClient(engine) {
-            installDefaultTransportPlugins(testJson)
-        }
+            val client =
+                HttpClient(engine) {
+                    installDefaultTransportPlugins(testJson)
+                }
 
-        val response = client.config { }
-        assertNotNull(response)
-        client.close()
-    }
+            val response = client.config { }
+            assertNotNull(response)
+            client.close()
+        }
 
     private fun buildClientWithDefaults(): HttpClient {
         val engine = MockEngine { respond("", HttpStatusCode.OK) }

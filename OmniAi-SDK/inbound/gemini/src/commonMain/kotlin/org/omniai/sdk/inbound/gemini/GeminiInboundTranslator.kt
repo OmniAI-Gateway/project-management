@@ -4,6 +4,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
+import org.omniai.sdk.common.TypedMap
 import org.omniai.sdk.contracts.gemini.input.GeminiContent
 import org.omniai.sdk.contracts.gemini.input.GeminiFunctionCallingConfig
 import org.omniai.sdk.contracts.gemini.input.GeminiFunctionDeclaration
@@ -17,8 +18,6 @@ import org.omniai.sdk.contracts.gemini.output.GeminiPromptFeedback
 import org.omniai.sdk.contracts.gemini.output.GeminiResponseContent
 import org.omniai.sdk.contracts.gemini.output.GeminiResponsePart
 import org.omniai.sdk.contracts.gemini.output.GeminiUsageMetadata
-import org.omniai.sdk.common.TypedMap
-import org.omniai.sdk.ports.inbound.InboundTranslator
 import org.omniai.sdk.domain.common.CommonGenerationConfig
 import org.omniai.sdk.domain.common.CommonRole
 import org.omniai.sdk.domain.common.CommonTool
@@ -26,8 +25,8 @@ import org.omniai.sdk.domain.common.Provider
 import org.omniai.sdk.domain.common.SystemPrompt
 import org.omniai.sdk.domain.common.ToolChoice
 import org.omniai.sdk.domain.common.content.JsonPart
-import org.omniai.sdk.domain.common.content.RequestContentPart
 import org.omniai.sdk.domain.common.content.RefusalPart
+import org.omniai.sdk.domain.common.content.RequestContentPart
 import org.omniai.sdk.domain.common.content.ResponseContentPart
 import org.omniai.sdk.domain.common.content.TextPart
 import org.omniai.sdk.domain.common.content.ToolCallPart
@@ -35,8 +34,8 @@ import org.omniai.sdk.domain.common.content.ToolResultPart
 import org.omniai.sdk.domain.common.json.JsonValue
 import org.omniai.sdk.domain.common.json.toDomainJsonObject
 import org.omniai.sdk.domain.common.json.toJsonObject
-import org.omniai.sdk.domain.common.json.toKotlinxJsonObject
 import org.omniai.sdk.domain.common.json.toJsonValue
+import org.omniai.sdk.domain.common.json.toKotlinxJsonObject
 import org.omniai.sdk.domain.requests.CommonRequest
 import org.omniai.sdk.domain.requests.CommonRequestMessage
 import org.omniai.sdk.domain.responses.ChoiceFinished
@@ -53,30 +52,34 @@ import org.omniai.sdk.domain.responses.TextDeltaEvent
 import org.omniai.sdk.domain.responses.ToolCallArgumentsDeltaEvent
 import org.omniai.sdk.domain.responses.ToolCallStartedEvent
 import org.omniai.sdk.domain.responses.UsageReported
+import org.omniai.sdk.ports.inbound.InboundTranslator
 
 class GeminiInboundTranslator :
     InboundTranslator<GeminiGenerateContentRequest, GeminiGenerateContentResponse, GeminiGenerateContentResponse> {
     override val provider: Provider = Provider.GEMINI
 
     override fun toDomain(clientRequest: GeminiGenerateContentRequest): CommonRequest {
-        val generationConfig = CommonGenerationConfig(
-            temperature = clientRequest.generationConfig?.temperature,
-            topP = clientRequest.generationConfig?.topP,
-            stopSequences = clientRequest.generationConfig?.stopSequences
-        )
+        val generationConfig =
+            CommonGenerationConfig(
+                temperature = clientRequest.generationConfig?.temperature,
+                topP = clientRequest.generationConfig?.topP,
+                stopSequences = clientRequest.generationConfig?.stopSequences,
+            )
         return CommonRequest(
             provider = provider,
             model = clientRequest.model ?: "NO MODEL",
             messages = clientRequest.contents.map { it.toDomainMessage() },
             systemPrompt = clientRequest.systemInstruction?.toSystemPrompt(),
             config = generationConfig,
-            tools = clientRequest.tools.orEmpty().flatMap { tool ->
-                tool.functionDeclarations.orEmpty().map { declaration -> declaration.toDomainTool() }
-            },
+            tools =
+                clientRequest.tools.orEmpty().flatMap { tool ->
+                    tool.functionDeclarations.orEmpty().map { declaration -> declaration.toDomainTool() }
+                },
             toolChoice = clientRequest.toolConfig?.functionCallingConfig?.toDomainToolChoice(),
-            jsonResponse = clientRequest.generationConfig?.responseMimeType?.lowercase() == "application/json"
-                    || clientRequest.generationConfig?.responseJsonSchema != null,
-            providerOptions = toDomainTypedMapInput(clientRequest)
+            jsonResponse =
+                clientRequest.generationConfig?.responseMimeType?.lowercase() == "application/json" ||
+                    clientRequest.generationConfig?.responseJsonSchema != null,
+            providerOptions = toDomainTypedMapInput(clientRequest),
         )
     }
 
@@ -85,114 +88,157 @@ class GeminiInboundTranslator :
             candidates = domainResponse.choices.map(::toGeminiCandidate),
             usageMetadata = domainResponse.usage?.toGeminiUsageMetadata(),
             modelVersion = domainResponse.model,
-            responseId = domainResponse.id
+            responseId = domainResponse.id,
         )
 
     override fun fromDomainEvent(domainEvent: Flow<CommonResponseEvent>): Flow<GeminiGenerateContentResponse> =
         domainEvent.map(::toGeminiEvent)
 }
 
-private fun toDomainTypedMapInput(clientRequest: GeminiGenerateContentRequest): TypedMap = TypedMap().apply {
-    clientRequest.generationConfig?.topK?.let { put("topK", it) }
-    clientRequest.generationConfig?.thinkingConfig?.let { put("thinkingConfig", it) }
-    clientRequest.generationConfig?.responseMimeType?.let { put("responseMimeType", it) }
-    clientRequest.generationConfig?.responseJsonSchema?.let { put("responseJsonSchema", it) }
-}
+private fun toDomainTypedMapInput(clientRequest: GeminiGenerateContentRequest): TypedMap =
+    TypedMap().apply {
+        clientRequest.generationConfig?.topK?.let { put("topK", it) }
+        clientRequest.generationConfig?.thinkingConfig?.let { put("thinkingConfig", it) }
+        clientRequest.generationConfig?.responseMimeType?.let { put("responseMimeType", it) }
+        clientRequest.generationConfig?.responseJsonSchema?.let { put("responseJsonSchema", it) }
+    }
 
 private fun toGeminiEvent(domainEvent: CommonResponseEvent): GeminiGenerateContentResponse =
     when (domainEvent) {
-            is ResponseStarted -> GeminiGenerateContentResponse(
+        is ResponseStarted -> {
+            GeminiGenerateContentResponse(
                 modelVersion = domainEvent.model.model,
-                responseId = domainEvent.id
+                responseId = domainEvent.id,
             )
-            is ChoiceStarted -> GeminiGenerateContentResponse(
-                candidates = listOf(
-                    GeminiCandidate(
-                        index = domainEvent.choiceIndex,
-                        content = GeminiResponseContent(role = domainEvent.role?.toGeminiRole() ?: "model")
-                    )
-                ),
+        }
+
+        is ChoiceStarted -> {
+            GeminiGenerateContentResponse(
+                candidates =
+                    listOf(
+                        GeminiCandidate(
+                            index = domainEvent.choiceIndex,
+                            content = GeminiResponseContent(role = domainEvent.role?.toGeminiRole() ?: "model"),
+                        ),
+                    ),
                 modelVersion = domainEvent.model.model,
-                responseId = domainEvent.id
+                responseId = domainEvent.id,
             )
-            is TextDeltaEvent -> GeminiGenerateContentResponse(
-                candidates = listOf(
-                    GeminiCandidate(
-                        index = domainEvent.choiceIndex,
-                        content = GeminiResponseContent(parts = listOf(GeminiResponsePart(text = domainEvent.text)))
-                    )
-                ),
+        }
+
+        is TextDeltaEvent -> {
+            GeminiGenerateContentResponse(
+                candidates =
+                    listOf(
+                        GeminiCandidate(
+                            index = domainEvent.choiceIndex,
+                            content = GeminiResponseContent(parts = listOf(GeminiResponsePart(text = domainEvent.text))),
+                        ),
+                    ),
                 modelVersion = domainEvent.model.model,
-                responseId = domainEvent.id
+                responseId = domainEvent.id,
             )
-            is ToolCallStartedEvent -> GeminiGenerateContentResponse(
-                candidates = listOf(
-                    GeminiCandidate(
-                        index = domainEvent.choiceIndex,
-                        content = GeminiResponseContent(
-                            parts = listOf(
-                                GeminiResponsePart(
-                                    functionCall = GeminiFunctionCall(
-                                        name = domainEvent.functionName,
-                                        args = JsonObject(emptyMap())
-                                    )
-                                )
-                            )
-                        )
-                    )
-                ),
+        }
+
+        is ToolCallStartedEvent -> {
+            GeminiGenerateContentResponse(
+                candidates =
+                    listOf(
+                        GeminiCandidate(
+                            index = domainEvent.choiceIndex,
+                            content =
+                                GeminiResponseContent(
+                                    parts =
+                                        listOf(
+                                            GeminiResponsePart(
+                                                functionCall =
+                                                    GeminiFunctionCall(
+                                                        name = domainEvent.functionName,
+                                                        args = JsonObject(emptyMap()),
+                                                    ),
+                                            ),
+                                        ),
+                                ),
+                        ),
+                    ),
                 modelVersion = domainEvent.model.model,
-                responseId = domainEvent.id
+                responseId = domainEvent.id,
             )
-            is ToolCallArgumentsDeltaEvent -> GeminiGenerateContentResponse(
-                candidates = listOf(
-                    GeminiCandidate(
-                        index = domainEvent.choiceIndex,
-                        content = GeminiResponseContent(
-                            parts = listOf(
-                                GeminiResponsePart(
-                                    functionCall = GeminiFunctionCall(
-                                        name = "",
-                                        args = JsonObject(mapOf("partialJson" to JsonPrimitive(domainEvent.argumentsFragment)))
-                                    )
-                                )
-                            )
-                        )
-                    )
-                ),
+        }
+
+        is ToolCallArgumentsDeltaEvent -> {
+            GeminiGenerateContentResponse(
+                candidates =
+                    listOf(
+                        GeminiCandidate(
+                            index = domainEvent.choiceIndex,
+                            content =
+                                GeminiResponseContent(
+                                    parts =
+                                        listOf(
+                                            GeminiResponsePart(
+                                                functionCall =
+                                                    GeminiFunctionCall(
+                                                        name = "",
+                                                        args =
+                                                            JsonObject(
+                                                                mapOf("partialJson" to JsonPrimitive(domainEvent.argumentsFragment)),
+                                                            ),
+                                                    ),
+                                            ),
+                                        ),
+                                ),
+                        ),
+                    ),
                 modelVersion = domainEvent.model.model,
-                responseId = domainEvent.id
+                responseId = domainEvent.id,
             )
-            is ChoiceFinished -> GeminiGenerateContentResponse(
-                candidates = listOf(
-                    GeminiCandidate(
-                        index = domainEvent.choiceIndex,
-                        finishReason = domainEvent.finishReason.toGeminiFinishReason()
-                    )
-                ),
+        }
+
+        is ChoiceFinished -> {
+            GeminiGenerateContentResponse(
+                candidates =
+                    listOf(
+                        GeminiCandidate(
+                            index = domainEvent.choiceIndex,
+                            finishReason = domainEvent.finishReason.toGeminiFinishReason(),
+                        ),
+                    ),
                 modelVersion = domainEvent.model.model,
-                responseId = domainEvent.id
+                responseId = domainEvent.id,
             )
-            is UsageReported -> GeminiGenerateContentResponse(
+        }
+
+        is UsageReported -> {
+            GeminiGenerateContentResponse(
                 usageMetadata = domainEvent.usage.toGeminiUsageMetadata(),
                 modelVersion = domainEvent.model.model,
-                responseId = domainEvent.id
+                responseId = domainEvent.id,
             )
-            is ResponseCompleted -> GeminiGenerateContentResponse(
+        }
+
+        is ResponseCompleted -> {
+            GeminiGenerateContentResponse(
                 modelVersion = domainEvent.model.model,
-                responseId = domainEvent.id
+                responseId = domainEvent.id,
             )
-            is ResponseErrored -> GeminiGenerateContentResponse(
-                promptFeedback = GeminiPromptFeedback(
-                    blockReason = if (domainEvent.retryable) {
-                        "TRANSIENT_ERROR: ${domainEvent.message}"
-                    } else {
-                        "ERROR: ${domainEvent.message}"
-                    }
-                ),
+        }
+
+        is ResponseErrored -> {
+            GeminiGenerateContentResponse(
+                promptFeedback =
+                    GeminiPromptFeedback(
+                        blockReason =
+                            if (domainEvent.retryable) {
+                                "TRANSIENT_ERROR: ${domainEvent.message}"
+                            } else {
+                                "ERROR: ${domainEvent.message}"
+                            },
+                    ),
                 modelVersion = domainEvent.model.model,
-                responseId = domainEvent.id
+                responseId = domainEvent.id,
             )
+        }
     }
 
 private fun String?.toCommonRole(): CommonRole =
@@ -206,29 +252,40 @@ private fun String?.toCommonRole(): CommonRole =
 
 private fun GeminiPart.toDomainPart(index: Int): RequestContentPart? =
     when {
-        text != null -> TextPart(text = text.orEmpty())
+        text != null -> {
+            TextPart(text = text.orEmpty())
+        }
+
         functionCall != null -> {
             val call = functionCall ?: return null
             ToolCallPart(
                 toolCallId = "gemini-tool-call-$index",
                 functionName = call.name,
-                argumentsJson = call.args?.toDomainJsonObject()?.properties.orEmpty()
+                argumentsJson =
+                    call.args
+                        ?.toDomainJsonObject()
+                        ?.properties
+                        .orEmpty(),
             )
         }
+
         functionResponse != null -> {
             val response = functionResponse ?: return null
             ToolResultPart(
                 toolCallId = response.name,
-                content = listOf(response.response.toJsonValue())
+                content = listOf(response.response.toJsonValue()),
             )
         }
-        else -> null
+
+        else -> {
+            null
+        }
     }
 
 private fun GeminiContent.toDomainMessage(): CommonRequestMessage =
     CommonRequestMessage(
         role = role.toCommonRole(),
-        content = parts.mapIndexedNotNull { index, part -> part.toDomainPart(index) }
+        content = parts.mapIndexedNotNull { index, part -> part.toDomainPart(index) },
     )
 
 private fun GeminiSystemInstruction.toSystemPrompt(): SystemPrompt? {
@@ -240,7 +297,7 @@ private fun GeminiFunctionDeclaration.toDomainTool(): CommonTool =
     CommonTool(
         name = name,
         description = description,
-        parametersSchema = parameters.toJsonObject().properties
+        parametersSchema = parameters.toJsonObject().properties,
     )
 
 private fun GeminiFunctionCallingConfig.toDomainToolChoice(): ToolChoice? {
@@ -257,32 +314,45 @@ private fun GeminiFunctionCallingConfig.toDomainToolChoice(): ToolChoice? {
 
 private fun toGeminiCandidate(choice: CommonChoice): GeminiCandidate =
     GeminiCandidate(
-        content = GeminiResponseContent(
-            parts = choice.message.content.map(::toGeminiPart),
-            role = choice.message.role.toGeminiRole()
-        ),
+        content =
+            GeminiResponseContent(
+                parts = choice.message.content.map(::toGeminiPart),
+                role = choice.message.role.toGeminiRole(),
+            ),
         finishReason = choice.finishReason.toGeminiFinishReason(),
-        index = choice.index
+        index = choice.index,
     )
 
 private fun toGeminiPart(part: ResponseContentPart): GeminiResponsePart =
     when (part) {
-        is TextPart -> GeminiResponsePart(text = part.text)
-        is ToolCallPart -> GeminiResponsePart(
-            functionCall = GeminiFunctionCall(
-                name = part.functionName,
-                args = JsonValue.JsonObject(part.argumentsJson).toKotlinxJsonObject()
+        is TextPart -> {
+            GeminiResponsePart(text = part.text)
+        }
+
+        is ToolCallPart -> {
+            GeminiResponsePart(
+                functionCall =
+                    GeminiFunctionCall(
+                        name = part.functionName,
+                        args = JsonValue.JsonObject(part.argumentsJson).toKotlinxJsonObject(),
+                    ),
             )
-        )
-        is JsonPart -> GeminiResponsePart(text = part.json.toString())
-        is RefusalPart -> GeminiResponsePart(text = part.reason)
+        }
+
+        is JsonPart -> {
+            GeminiResponsePart(text = part.json.toString())
+        }
+
+        is RefusalPart -> {
+            GeminiResponsePart(text = part.reason)
+        }
     }
 
 private fun CommonUsage.toGeminiUsageMetadata(): GeminiUsageMetadata =
     GeminiUsageMetadata(
         promptTokenCount = inputTokens,
         candidatesTokenCount = outputTokens,
-        totalTokenCount = totalTokens
+        totalTokenCount = totalTokens,
     )
 
 private fun CommonRole.toGeminiRole(): String =
@@ -301,5 +371,3 @@ private fun FinishReason?.toGeminiFinishReason(): String? =
         FinishReason.CONTENT_FILTER -> "SAFETY"
         FinishReason.OTHER, null -> null
     }
-
-

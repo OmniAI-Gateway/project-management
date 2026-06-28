@@ -5,7 +5,6 @@ plugins {
 
 description = "Anthropic inbound translator module"
 
-
 base {
     archivesName.set("inbound-anthropic")
 }

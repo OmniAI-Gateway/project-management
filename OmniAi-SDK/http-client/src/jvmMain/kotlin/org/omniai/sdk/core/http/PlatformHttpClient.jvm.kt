@@ -2,8 +2,8 @@ package org.omniai.sdk.core.http
 
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.okhttp.OkHttp
-import java.util.concurrent.TimeUnit
 import kotlinx.serialization.json.Json
+import java.util.concurrent.TimeUnit
 
 internal actual fun defaultPlatformHttpClient(json: Json): HttpClient =
     HttpClient(OkHttp) {
@@ -14,4 +14,3 @@ internal actual fun defaultPlatformHttpClient(json: Json): HttpClient =
         }
         installDefaultTransportPlugins(json)
     }
-

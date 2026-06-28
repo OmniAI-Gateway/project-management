@@ -1,7 +1,7 @@
 package org.omniai.gateway.httpClient
 
-import org.omniai.sdk.core.http.ErrorHttpMapper
 import io.ktor.http.HttpStatusCode
+import org.omniai.sdk.core.http.ErrorHttpMapper
 import org.omniai.sdk.domain.errors.ErrorCode
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -9,7 +9,6 @@ import kotlin.test.assertNotEquals
 import kotlin.test.assertTrue
 
 class ErrorHttpMapperTest {
-
     @Test
     fun `BAD_REQUEST maps to 400`() {
         assertEquals(HttpStatusCode.BadRequest, ErrorHttpMapper.toHttpStatusCode(ErrorCode.BAD_REQUEST))
@@ -44,7 +43,7 @@ class ErrorHttpMapperTest {
     fun `INTERNAL_SERVER_ERROR maps to 500`() {
         assertEquals(
             HttpStatusCode.InternalServerError,
-            ErrorHttpMapper.toHttpStatusCode(ErrorCode.INTERNAL_SERVER_ERROR)
+            ErrorHttpMapper.toHttpStatusCode(ErrorCode.INTERNAL_SERVER_ERROR),
         )
     }
 
@@ -57,7 +56,7 @@ class ErrorHttpMapperTest {
     fun `SERVICE_UNAVAILABLE maps to 503`() {
         assertEquals(
             HttpStatusCode.ServiceUnavailable,
-            ErrorHttpMapper.toHttpStatusCode(ErrorCode.SERVICE_UNAVAILABLE)
+            ErrorHttpMapper.toHttpStatusCode(ErrorCode.SERVICE_UNAVAILABLE),
         )
     }
 
@@ -75,7 +74,7 @@ class ErrorHttpMapperTest {
     fun `UNKNOWN_ERROR maps to 500`() {
         assertEquals(
             HttpStatusCode.InternalServerError,
-            ErrorHttpMapper.toHttpStatusCode(ErrorCode.UNKNOWN_ERROR)
+            ErrorHttpMapper.toHttpStatusCode(ErrorCode.UNKNOWN_ERROR),
         )
     }
 
@@ -89,7 +88,7 @@ class ErrorHttpMapperTest {
                 assertNotEquals(
                     HttpStatusCode.InternalServerError,
                     status,
-                    "ErrorCode.$code unexpectedly resolved to 500 — it may be missing from the codeMap"
+                    "ErrorCode.$code unexpectedly resolved to 500 — it may be missing from the codeMap",
                 )
             }
         }
@@ -101,7 +100,7 @@ class ErrorHttpMapperTest {
             val status = ErrorHttpMapper.toHttpStatusCode(code)
             assertTrue(
                 status.value in 100..599,
-                "Unexpected status value ${status.value} for ErrorCode.$code"
+                "Unexpected status value ${status.value} for ErrorCode.$code",
             )
         }
     }

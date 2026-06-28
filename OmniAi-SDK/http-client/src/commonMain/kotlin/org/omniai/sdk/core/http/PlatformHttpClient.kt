@@ -21,4 +21,3 @@ internal fun HttpClientConfig<*>.installDefaultTransportPlugins(json: Json) {
     }
     install(SSE)
 }
-
