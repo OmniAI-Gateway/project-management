@@ -9,7 +9,11 @@ import org.omniai.sdk.interceptors.auth.domain.Kid
 import org.omniai.sdk.interceptors.auth.domain.PublicKey
 import org.omniai.sdk.interceptors.auth.dto.JwksDto
 import org.omniai.sdk.interceptors.auth.interfaces.PublicKeyCache
-import org.omniai.sdk.ports.outbound.http.*
+import org.omniai.sdk.ports.outbound.http.HttpCallResult
+import org.omniai.sdk.ports.outbound.http.HttpMethod
+import org.omniai.sdk.ports.outbound.http.HttpTransportClient
+import org.omniai.sdk.ports.outbound.http.executeRequest
+import org.omniai.sdk.ports.outbound.http.requestConfig
 import kotlin.concurrent.Volatile
 import kotlin.time.TimeSource
 
@@ -19,7 +23,6 @@ class JwksClient(
     private val httpClient: HttpTransportClient,
     private val jwksUri: String,
 ) {
-
     @Volatile
     private var lastFetchEpochNanos: Long = -config.minimumTimeToFetchKeys.inWholeNanoseconds
 
@@ -62,7 +65,10 @@ class JwksClient(
                 val keys = result.data.keys.mapNotNull { key -> key.toDomain() }
                 keys.forEach { (kid, publicKey) -> publicKeyCache.put(kid, publicKey) }
             }
-            else -> Unit
+
+            else -> {
+                Unit
+            }
         }
         lastFetchEpochNanos = startMark.elapsedNow().inWholeNanoseconds
     }

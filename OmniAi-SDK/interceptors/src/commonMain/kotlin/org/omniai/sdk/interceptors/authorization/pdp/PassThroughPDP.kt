@@ -5,7 +5,5 @@ import org.omniai.sdk.interceptors.auth.AuthorizationInput
 import org.omniai.sdk.interceptors.auth.interfaces.PolicyDecisionPointPort
 
 class PassThroughPDP : PolicyDecisionPointPort {
-    override suspend fun decide(context: AuthorizationInput): AuthorizationDecision {
-        return AuthorizationDecision.Allow
-    }
+    override suspend fun decide(context: AuthorizationInput): AuthorizationDecision = AuthorizationDecision.Allow
 }

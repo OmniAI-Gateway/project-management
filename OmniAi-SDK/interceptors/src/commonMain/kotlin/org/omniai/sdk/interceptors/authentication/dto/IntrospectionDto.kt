@@ -38,9 +38,8 @@ data class IntrospectionDto(
     // OPTIONAL by RFC 7662: Audience for this token.
     // Handled safely here as it can be a single string or an array of strings.
     @Serializable(with = AudienceSerializer::class)
-    val aud: List<String> = emptyList()
+    val aud: List<String> = emptyList(),
 ) {
-
     private object AudienceSerializer : KSerializer<List<String>> {
         override val descriptor: SerialDescriptor = ListSerializer(String.serializer()).descriptor
 
@@ -53,13 +52,16 @@ data class IntrospectionDto(
             }
         }
 
-        override fun serialize(encoder: Encoder, value: List<String>) {
+        override fun serialize(
+            encoder: Encoder,
+            value: List<String>,
+        ) {
             encoder.encodeSerializableValue(ListSerializer(String.serializer()), value)
         }
     }
 
-    fun toDomain(): IntrospectionResult {
-        return IntrospectionResult(
+    fun toDomain(): IntrospectionResult =
+        IntrospectionResult(
             active = this.active,
             sub = this.sub,
             scope = this.scope,
@@ -68,7 +70,6 @@ data class IntrospectionDto(
             exp = this.exp,
             iat = this.iat,
             iss = this.iss,
-            aud = this.aud
+            aud = this.aud,
         )
-    }
 }

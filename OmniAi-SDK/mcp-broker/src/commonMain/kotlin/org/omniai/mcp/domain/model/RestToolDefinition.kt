@@ -13,5 +13,5 @@ data class RestToolDefinition(
     val headers: Map<String, String>,
     val pathSchema: JsonObject?,
     val querySchema: JsonObject?,
-    val bodySchema: JsonObject?
+    val bodySchema: JsonObject?,
 )

@@ -21,7 +21,6 @@ kotlin {
             api(project(":pipeline-engine"))
             implementation(libs.kotlinx.serialization.json)
             api("io.modelcontextprotocol:kotlin-sdk:0.8.3")
-
         }
 
         jvmMain.dependencies {
@@ -32,7 +31,6 @@ kotlin {
             api(project.dependencies.platform("io.opentelemetry.instrumentation:opentelemetry-instrumentation-bom-alpha:2.4.0-alpha"))
             api("io.opentelemetry:opentelemetry-api")
             implementation("io.opentelemetry:opentelemetry-extension-kotlin")
-
         }
 
         jsMain.dependencies {
@@ -45,4 +43,3 @@ kotlin {
         }
     }
 }
-

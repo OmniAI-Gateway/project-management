@@ -10,5 +10,5 @@ import org.omniai.mcp.domain.model.RestToolDefinition
 data class BrokerConfig(
     val tools: List<RestToolDefinition>,
     val contexts: List<ContextDefinition>,
-    val mcpClients: List<McpClientConfig>
+    val mcpClients: List<McpClientConfig>,
 )

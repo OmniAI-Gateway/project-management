@@ -72,14 +72,18 @@ suspend fun main() {
             security {
                 authentication {
                     when (val auth = config.authConfig) {
-                        is AuthorizationServerGatewayConfig.None -> none()
-                        is AuthorizationServerGatewayConfig.Oidc ->
+                        is AuthorizationServerGatewayConfig.None -> {
+                            none()
+                        }
+
+                        is AuthorizationServerGatewayConfig.Oidc -> {
                             discovery {
                                 discoveryUrl = auth.discoveryUrl
                                 expectedAudience = auth.audience
                                 clientId = auth.clientId
                                 clientSecret = auth.clientSecret
                             }
+                        }
                     }
                 }
                 authorization { }

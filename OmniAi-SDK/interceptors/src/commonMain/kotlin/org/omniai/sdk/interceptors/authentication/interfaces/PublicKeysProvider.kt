@@ -6,4 +6,3 @@ import org.omniai.sdk.interceptors.auth.domain.PublicKey
 interface PublicKeysProvider {
     suspend fun getPublicKey(keyId: Kid): PublicKey?
 }
-

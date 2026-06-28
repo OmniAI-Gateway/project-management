@@ -10,7 +10,7 @@ import org.omniai.mcp.client.McpClientManager
  * on the local [Server].
  */
 class ProxyToolRegistrar(
-    private val clientManager: McpClientManager
+    private val clientManager: McpClientManager,
 ) {
     /**
      * For each connected external MCP server, lists its tools and
@@ -25,7 +25,7 @@ class ProxyToolRegistrar(
                     server.addTool(
                         name = proxyName,
                         description = remoteTool.description ?: "Proxied from $serverName",
-                        inputSchema = remoteTool.inputSchema
+                        inputSchema = remoteTool.inputSchema,
                     ) { request ->
                         try {
                             val arguments = request.params.arguments?.mapValues { it.value } ?: emptyMap()
@@ -33,7 +33,7 @@ class ProxyToolRegistrar(
                         } catch (e: Exception) {
                             CallToolResult(
                                 content = listOf(TextContent("Error proxying to '$serverName/${remoteTool.name}': ${e.message}")),
-                                isError = true
+                                isError = true,
                             )
                         }
                     }

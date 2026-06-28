@@ -10,6 +10,6 @@ expect class PlatformJwtVerificationEngine() : JwtVerificationEngine {
     override suspend fun verify(
         token: DecodedJwt,
         publicKey: PublicKey,
-        params: TokenValidationParams?
+        params: TokenValidationParams?,
     ): AuthenticationDecision
 }

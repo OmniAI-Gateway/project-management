@@ -20,7 +20,6 @@ import org.omniai.sdk.contracts.anthropic.output.AnthropicStopReason
 import org.omniai.sdk.contracts.anthropic.output.AnthropicStreamDelta
 import org.omniai.sdk.contracts.anthropic.output.AnthropicStreamEvent
 import org.omniai.sdk.contracts.anthropic.output.AnthropicUsage
-import org.omniai.sdk.ports.outbound.OutboundTranslator
 import org.omniai.sdk.domain.common.CommonRole
 import org.omniai.sdk.domain.common.CommonTool
 import org.omniai.sdk.domain.common.Model
@@ -28,7 +27,6 @@ import org.omniai.sdk.domain.common.Provider
 import org.omniai.sdk.domain.common.ToolChoice
 import org.omniai.sdk.domain.common.content.JsonPart
 import org.omniai.sdk.domain.common.content.RequestContentPart
-import org.omniai.sdk.domain.common.content.RefusalPart
 import org.omniai.sdk.domain.common.content.ResponseContentPart
 import org.omniai.sdk.domain.common.content.TextPart
 import org.omniai.sdk.domain.common.content.ToolCallPart
@@ -54,31 +52,35 @@ import org.omniai.sdk.domain.responses.TextDeltaEvent
 import org.omniai.sdk.domain.responses.ToolCallArgumentsDeltaEvent
 import org.omniai.sdk.domain.responses.ToolCallStartedEvent
 import org.omniai.sdk.domain.responses.UsageReported
+import org.omniai.sdk.ports.outbound.OutboundTranslator
 
 class AnthropicOutboundTranslator : OutboundTranslator<AnthropicMessagesRequest, AnthropicMessageResponse, AnthropicStreamEvent> {
-
-    /*
+        /*
      This version of functions doesn't treat the JsonSchema , it needs to add a new message for that
-     */
+         */
     override fun fromDomain(domainRequest: CommonRequest): AnthropicMessagesRequest {
-
         val providerOptions = domainRequest.providerOptions
 
-        val systemMessagesText = domainRequest.messages
-            .filter { it.role == CommonRole.SYSTEM }
-            .flatMap { it.content }
-            .filterIsInstance<TextPart>()
-            .joinToString("\n") { it.text }
+        val systemMessagesText =
+            domainRequest.messages
+                .filter { it.role == CommonRole.SYSTEM }
+                .flatMap { it.content }
+                .filterIsInstance<TextPart>()
+                .joinToString("\n") { it.text }
 
-        val combinedSystemText = listOfNotNull(
-            domainRequest.systemPrompt?.text?.takeIf { it.isNotBlank() },
-            systemMessagesText.takeIf { it.isNotBlank() }
-        ).joinToString("\n\n").takeIf { it.isNotBlank() }
+        val combinedSystemText =
+            listOfNotNull(
+                domainRequest.systemPrompt?.text?.takeIf { it.isNotBlank() },
+                systemMessagesText.takeIf { it.isNotBlank() },
+            ).joinToString("\n\n").takeIf { it.isNotBlank() }
 
         return AnthropicMessagesRequest(
             model = domainRequest.model,
             maxTokens = domainRequest.config?.maxTokens ?: 1024,
-            messages = domainRequest.messages.filter { it.role != CommonRole.SYSTEM }.map(CommonRequestMessage::toAnthropicMessageInput),
+            messages =
+                domainRequest.messages
+                    .filter { it.role != CommonRole.SYSTEM }
+                    .map(CommonRequestMessage::toAnthropicMessageInput),
             system = combinedSystemText?.let(::RawText),
             tools = domainRequest.tools.map(CommonTool::toAnthropicToolDefinition).ifEmpty { null },
             toolChoice = domainRequest.toolChoice?.toAnthropicToolChoice(),
@@ -88,144 +90,171 @@ class AnthropicOutboundTranslator : OutboundTranslator<AnthropicMessagesRequest,
             topK = providerOptions.get<Int>("topK"),
             stopSequences = domainRequest.config?.stopSequences,
             thinking = providerOptions.get<AnthropicThinkingConfig>("thinking"),
-            metadata = providerOptions.get<JsonElement>("metadata")
+            metadata = providerOptions.get<JsonElement>("metadata"),
         )
     }
 
     override fun toDomain(providerResponse: AnthropicMessageResponse): CommonResponse {
-        val message = CommonResponseMessage(
-            role = providerResponse.role.toCommonRole(),
-            content = providerResponse.content.mapNotNull(::toDomainContentPart)
-        )
+        val message =
+            CommonResponseMessage(
+                role = providerResponse.role.toCommonRole(),
+                content = providerResponse.content.mapNotNull(::toDomainContentPart),
+            )
 
         return CommonResponse(
             provider = Provider.ANTHROPIC,
             id = providerResponse.id,
             model = providerResponse.model,
-            choices = listOf(
-                CommonChoice(
-                    index = 0,
-                    message = message,
-                    finishReason = providerResponse.stopReason.toDomainFinishReason()
-                )
-            ),
-            usage = providerResponse.usage?.toDomainUsage()
+            choices =
+                listOf(
+                    CommonChoice(
+                        index = 0,
+                        message = message,
+                        finishReason = providerResponse.stopReason.toDomainFinishReason(),
+                    ),
+                ),
+            usage = providerResponse.usage?.toDomainUsage(),
         )
     }
 
     override fun toDomainEvent(providerEvent: Flow<AnthropicStreamEvent>): Flow<CommonResponseEvent> =
         providerEvent
             .runningFold(AnthropicEventContext()) { context, event ->
-                val translatedEvent = event.toDomainStreamEvent(context.id,context.model)
+                val translatedEvent = event.toDomainStreamEvent(context.id, context.model)
                 if (translatedEvent != null) {
                     AnthropicEventContext(translatedEvent.id, translatedEvent.model, translatedEvent)
                 } else {
                     context.copy(event = null)
                 }
-            }
-            .mapNotNull { it.event }
+            }.mapNotNull { it.event }
 }
 
 private data class AnthropicEventContext(
     val id: String = "",
     val model: Model = Model(""),
-    val event: CommonResponseEvent? = null
+    val event: CommonResponseEvent? = null,
 )
 
-private fun AnthropicStreamEvent.toDomainStreamEvent(receivedId: String, receivedModel: Model): CommonResponseEvent? =
+private fun AnthropicStreamEvent.toDomainStreamEvent(
+    receivedId: String,
+    receivedModel: Model,
+): CommonResponseEvent? =
     when (this) {
-        is AnthropicStreamEvent.MessageStart -> ResponseStarted(
-            provider = Provider.ANTHROPIC,
-            id = message.id,
-            model = Model(message.model),
-            sequence = 0,
-            providerEventType = eventType()
-        )
-        is AnthropicStreamEvent.ContentBlockStart -> when (val block = contentBlock) {
-            is AnthropicOutputContent.Text -> ChoiceStarted(
+        is AnthropicStreamEvent.MessageStart -> {
+            ResponseStarted(
                 provider = Provider.ANTHROPIC,
-                id = receivedId,
-                model = receivedModel,
-                sequence = index.toLong(),
-                choiceIndex = index,
-                role = CommonRole.ASSISTANT,
-                providerEventType = eventType()
-            )
-
-            is AnthropicOutputContent.ToolUse -> ToolCallStartedEvent(
-                provider = Provider.ANTHROPIC,
-                id = receivedId,
-                model = receivedModel,
-                sequence = index.toLong(),
-                choiceIndex = 0,
-                toolCallIndex = index,
-                toolCallId = block.id,
-                functionName = block.name,
-                providerEventType = eventType()
-            )
-
-            is AnthropicOutputContent.Thinking -> ChoiceStarted(
-                provider = Provider.ANTHROPIC,
-                id = receivedId,
-                model = receivedModel,
-                sequence = index.toLong(),
-                choiceIndex = index,
-                role = CommonRole.ASSISTANT,
-                providerEventType = eventType()
+                id = message.id,
+                model = Model(message.model),
+                sequence = 0,
+                providerEventType = eventType(),
             )
         }
 
-        is AnthropicStreamEvent.ContentBlockDelta -> when (val delta = this.delta) {
-            is AnthropicStreamDelta.TextDelta -> TextDeltaEvent(
-                provider = Provider.ANTHROPIC,
-                id = receivedId,
-                model = receivedModel,
-                sequence = index.toLong(),
-                choiceIndex = index,
-                text = delta.text,
-                providerEventType = eventType()
-            )
+        is AnthropicStreamEvent.ContentBlockStart -> {
+            when (val block = contentBlock) {
+                is AnthropicOutputContent.Text -> {
+                    ChoiceStarted(
+                        provider = Provider.ANTHROPIC,
+                        id = receivedId,
+                        model = receivedModel,
+                        sequence = index.toLong(),
+                        choiceIndex = index,
+                        role = CommonRole.ASSISTANT,
+                        providerEventType = eventType(),
+                    )
+                }
 
-            is AnthropicStreamDelta.InputJsonDelta -> ToolCallArgumentsDeltaEvent(
-                provider = Provider.ANTHROPIC,
-                id = receivedId,
-                model = receivedModel,
-                sequence = index.toLong(),
-                choiceIndex = 0,
-                toolCallIndex = index,
-                argumentsFragment = delta.partialJson,
-                providerEventType = eventType()
-            )
+                is AnthropicOutputContent.ToolUse -> {
+                    ToolCallStartedEvent(
+                        provider = Provider.ANTHROPIC,
+                        id = receivedId,
+                        model = receivedModel,
+                        sequence = index.toLong(),
+                        choiceIndex = 0,
+                        toolCallIndex = index,
+                        toolCallId = block.id,
+                        functionName = block.name,
+                        providerEventType = eventType(),
+                    )
+                }
 
-            is AnthropicStreamDelta.SignatureDelta -> TextDeltaEvent(
-                provider = Provider.ANTHROPIC,
-                id = receivedId,
-                model = receivedModel,
-                sequence = index.toLong(),
-                choiceIndex = index,
-                text = delta.signature,
-                providerEventType = eventType()
-            )
-
-            is AnthropicStreamDelta.ThinkingDelta -> TextDeltaEvent(
-                provider = Provider.ANTHROPIC,
-                id = receivedId,
-                model = receivedModel,
-                sequence = index.toLong(),
-                choiceIndex = index,
-                text = delta.thinking,
-                providerEventType = eventType()
-            )
+                is AnthropicOutputContent.Thinking -> {
+                    ChoiceStarted(
+                        provider = Provider.ANTHROPIC,
+                        id = receivedId,
+                        model = receivedModel,
+                        sequence = index.toLong(),
+                        choiceIndex = index,
+                        role = CommonRole.ASSISTANT,
+                        providerEventType = eventType(),
+                    )
+                }
+            }
         }
 
-        is AnthropicStreamEvent.ContentBlockStop -> ChoiceFinished(
-            provider = Provider.ANTHROPIC,
-            id = receivedId,
-            model = receivedModel,
-            sequence = index.toLong(),
-            choiceIndex = index,
-            providerEventType = eventType()
-        )
+        is AnthropicStreamEvent.ContentBlockDelta -> {
+            when (val delta = this.delta) {
+                is AnthropicStreamDelta.TextDelta -> {
+                    TextDeltaEvent(
+                        provider = Provider.ANTHROPIC,
+                        id = receivedId,
+                        model = receivedModel,
+                        sequence = index.toLong(),
+                        choiceIndex = index,
+                        text = delta.text,
+                        providerEventType = eventType(),
+                    )
+                }
+
+                is AnthropicStreamDelta.InputJsonDelta -> {
+                    ToolCallArgumentsDeltaEvent(
+                        provider = Provider.ANTHROPIC,
+                        id = receivedId,
+                        model = receivedModel,
+                        sequence = index.toLong(),
+                        choiceIndex = 0,
+                        toolCallIndex = index,
+                        argumentsFragment = delta.partialJson,
+                        providerEventType = eventType(),
+                    )
+                }
+
+                is AnthropicStreamDelta.SignatureDelta -> {
+                    TextDeltaEvent(
+                        provider = Provider.ANTHROPIC,
+                        id = receivedId,
+                        model = receivedModel,
+                        sequence = index.toLong(),
+                        choiceIndex = index,
+                        text = delta.signature,
+                        providerEventType = eventType(),
+                    )
+                }
+
+                is AnthropicStreamDelta.ThinkingDelta -> {
+                    TextDeltaEvent(
+                        provider = Provider.ANTHROPIC,
+                        id = receivedId,
+                        model = receivedModel,
+                        sequence = index.toLong(),
+                        choiceIndex = index,
+                        text = delta.thinking,
+                        providerEventType = eventType(),
+                    )
+                }
+            }
+        }
+
+        is AnthropicStreamEvent.ContentBlockStop -> {
+            ChoiceFinished(
+                provider = Provider.ANTHROPIC,
+                id = receivedId,
+                model = receivedModel,
+                sequence = index.toLong(),
+                choiceIndex = index,
+                providerEventType = eventType(),
+            )
+        }
 
         is AnthropicStreamEvent.MessageDelta -> {
             val usage = usage
@@ -236,7 +265,7 @@ private fun AnthropicStreamEvent.toDomainStreamEvent(receivedId: String, receive
                     model = receivedModel,
                     sequence = 0,
                     usage = usage.toDomainUsage(),
-                    providerEventType = eventType()
+                    providerEventType = eventType(),
                 )
             } else {
                 ChoiceFinished(
@@ -246,30 +275,36 @@ private fun AnthropicStreamEvent.toDomainStreamEvent(receivedId: String, receive
                     sequence = 0,
                     choiceIndex = 0,
                     finishReason = delta.stopReason.toDomainFinishReason(),
-                    providerEventType = eventType()
+                    providerEventType = eventType(),
                 )
             }
         }
 
-        is AnthropicStreamEvent.MessageStop -> ResponseCompleted(
-            provider = Provider.ANTHROPIC,
-            id = receivedId,
-            model = receivedModel,
-            sequence = 0,
-            providerEventType = eventType()
-        )
+        is AnthropicStreamEvent.MessageStop -> {
+            ResponseCompleted(
+                provider = Provider.ANTHROPIC,
+                id = receivedId,
+                model = receivedModel,
+                sequence = 0,
+                providerEventType = eventType(),
+            )
+        }
 
-        is AnthropicStreamEvent.Error -> ResponseErrored(
-            provider = Provider.ANTHROPIC,
-            id = receivedId,
-            model = receivedModel,
-            sequence = 0,
-            message = error.message,
-            retryable = error.type.lowercase().contains("overloaded"),
-            providerEventType = eventType()
-        )
+        is AnthropicStreamEvent.Error -> {
+            ResponseErrored(
+                provider = Provider.ANTHROPIC,
+                id = receivedId,
+                model = receivedModel,
+                sequence = 0,
+                message = error.message,
+                retryable = error.type.lowercase().contains("overloaded"),
+                providerEventType = eventType(),
+            )
+        }
 
-        is AnthropicStreamEvent.Ping -> null
+        is AnthropicStreamEvent.Ping -> {
+            null
+        }
     }
 
 private fun AnthropicStreamEvent.eventType(): String =
@@ -287,7 +322,7 @@ private fun AnthropicStreamEvent.eventType(): String =
 private fun CommonRequestMessage.toAnthropicMessageInput(): AnthropicMessageInput =
     AnthropicMessageInput(
         role = role.toAnthropicRole(),
-        content = content.toAnthropicContent()
+        content = content.toAnthropicContent(),
     )
 
 private fun List<RequestContentPart>.toAnthropicContent(): AnthropicContent {
@@ -296,21 +331,38 @@ private fun List<RequestContentPart>.toAnthropicContent(): AnthropicContent {
         if (first is TextPart) return RawText(first.text)
     }
     return ListContentBlock(
-        blocks = mapNotNull { part ->
-            when (part) {
-                is TextPart -> AnthropicInputContentBlock.Text(text = part.text)
-                is ToolCallPart -> AnthropicInputContentBlock.ToolUse(
-                    id = part.toolCallId,
-                    name = part.functionName,
-                    input = JsonValue.JsonObject(part.argumentsJson).toKotlinxJsonObject()
-                )
-                is ToolResultPart -> AnthropicInputContentBlock.ToolResult(
-                    toolUseId = part.toolCallId,
-                    content = part.content.firstOrNull()?.toRawAny()?.toString().orEmpty()
-                )
-                is JsonPart -> AnthropicInputContentBlock.Text(text = part.json.toString())
-            }
-        }
+        blocks =
+            mapNotNull { part ->
+                when (part) {
+                    is TextPart -> {
+                        AnthropicInputContentBlock.Text(text = part.text)
+                    }
+
+                    is ToolCallPart -> {
+                        AnthropicInputContentBlock.ToolUse(
+                            id = part.toolCallId,
+                            name = part.functionName,
+                            input = JsonValue.JsonObject(part.argumentsJson).toKotlinxJsonObject(),
+                        )
+                    }
+
+                    is ToolResultPart -> {
+                        AnthropicInputContentBlock.ToolResult(
+                            toolUseId = part.toolCallId,
+                            content =
+                                part.content
+                                    .firstOrNull()
+                                    ?.toRawAny()
+                                    ?.toString()
+                                    .orEmpty(),
+                        )
+                    }
+
+                    is JsonPart -> {
+                        AnthropicInputContentBlock.Text(text = part.json.toString())
+                    }
+                }
+            },
     )
 }
 
@@ -318,7 +370,7 @@ private fun CommonTool.toAnthropicToolDefinition(): AnthropicToolDefinition =
     AnthropicToolDefinition(
         name = name,
         description = description,
-        inputSchema = JsonValue.JsonObject(parametersSchema).toKotlinxJsonObject()
+        inputSchema = JsonValue.JsonObject(parametersSchema).toKotlinxJsonObject(),
     )
 
 private fun ToolChoice.toAnthropicToolChoice(): AnthropicToolChoice =
@@ -338,7 +390,6 @@ private fun String.toCommonRole(): CommonRole =
         else -> CommonRole.USER
     }
 
-
 private fun String?.toDomainFinishReason(): FinishReason? =
     when (this) {
         "end_turn" -> FinishReason.STOP
@@ -351,20 +402,32 @@ private fun String?.toDomainFinishReason(): FinishReason? =
 
 private fun toDomainContentPart(part: AnthropicOutputContent): ResponseContentPart? =
     when (part) {
-        is AnthropicOutputContent.Text -> TextPart(part.text)
-        is AnthropicOutputContent.ToolUse -> ToolCallPart(
-            toolCallId = part.id,
-            functionName = part.name,
-            argumentsJson = part.input?.toDomainJsonObject()?.properties.orEmpty()
-        )
-        is AnthropicOutputContent.Thinking -> TextPart(text = part.thinking)
+        is AnthropicOutputContent.Text -> {
+            TextPart(part.text)
+        }
+
+        is AnthropicOutputContent.ToolUse -> {
+            ToolCallPart(
+                toolCallId = part.id,
+                functionName = part.name,
+                argumentsJson =
+                    part.input
+                        ?.toDomainJsonObject()
+                        ?.properties
+                        .orEmpty(),
+            )
+        }
+
+        is AnthropicOutputContent.Thinking -> {
+            TextPart(text = part.thinking)
+        }
     }
 
 private fun AnthropicUsage.toDomainUsage(): CommonUsage =
     CommonUsage(
         inputTokens = inputTokens,
         outputTokens = outputTokens,
-        totalTokens = (inputTokens ?: 0) + (outputTokens ?: 0)
+        totalTokens = (inputTokens ?: 0) + (outputTokens ?: 0),
     )
 
 private fun AnthropicStopReason?.toDomainFinishReason(): FinishReason? =
@@ -383,5 +446,3 @@ private fun CommonRole.toAnthropicRole(): AnthropicRole =
         CommonRole.ASSISTANT -> AnthropicRole.ASSISTANT
         CommonRole.TOOL -> AnthropicRole.USER
     }
-
-

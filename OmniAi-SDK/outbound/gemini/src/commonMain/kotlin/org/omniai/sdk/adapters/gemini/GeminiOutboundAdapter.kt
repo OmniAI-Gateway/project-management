@@ -57,7 +57,8 @@ class GeminiOutboundAdapter(
                 body = providerRequest
             }
 
-        val callResult = transportClient.executeRequest<GeminiGenerateContentResponse, GeminiGenerateContentRequest>(requestConfig)
+        val callResult =
+            transportClient.executeRequest<GeminiGenerateContentResponse, GeminiGenerateContentRequest>(requestConfig)
 
         return when (callResult) {
             is HttpCallResult.Success -> {

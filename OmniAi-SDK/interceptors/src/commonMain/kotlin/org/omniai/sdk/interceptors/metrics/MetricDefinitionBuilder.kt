@@ -7,7 +7,7 @@ class MetricDefinitionBuilder(
     private val name: String,
     private val type: InstrumentType,
     private val description: String,
-    private val unit: String? = null
+    private val unit: String? = null,
 ) {
     private var extractor: (GatewayContext, PipelineResult?) -> Double? = { _, _ -> null }
     private var attributes: (GatewayContext, PipelineResult?) -> Map<String, String> = { _, _ -> emptyMap() }
@@ -20,12 +20,13 @@ class MetricDefinitionBuilder(
         attributes = logic
     }
 
-    fun build(): CustomMetric = CustomMetric(
-        name = name,
-        type = type,
-        description = description,
-        unit = unit ?: "",
-        extractor = extractor,
-        attributes = attributes
-    )
+    fun build(): CustomMetric =
+        CustomMetric(
+            name = name,
+            type = type,
+            description = description,
+            unit = unit ?: "",
+            extractor = extractor,
+            attributes = attributes,
+        )
 }

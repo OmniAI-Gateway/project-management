@@ -1,12 +1,22 @@
 package org.omniai.sdk.interceptors.auth
 
+import org.omniai.sdk.application.pipeline.GatewayContext
+import org.omniai.sdk.application.pipeline.Interceptor
+import org.omniai.sdk.application.pipeline.InterceptorChain
+import org.omniai.sdk.application.pipeline.PipelineResult
 import org.omniai.sdk.common.key
-import org.omniai.sdk.application.pipeline.*
 import org.omniai.sdk.domain.common.AUTH_BEARER_TOKEN_KEY
 import org.omniai.sdk.domain.errors.InvalidRequest
 import org.omniai.sdk.interceptors.auth.cache.InMemoryKeyCache
 import org.omniai.sdk.interceptors.auth.config.loadTokenAuthenticator
-import org.omniai.sdk.interceptors.auth.domain.*
+import org.omniai.sdk.interceptors.auth.domain.AuthSetupConfig
+import org.omniai.sdk.interceptors.auth.domain.AuthToken
+import org.omniai.sdk.interceptors.auth.domain.AuthenticationDecision
+import org.omniai.sdk.interceptors.auth.domain.DecodedJwt
+import org.omniai.sdk.interceptors.auth.domain.JWT
+import org.omniai.sdk.interceptors.auth.domain.OPAQUE
+import org.omniai.sdk.interceptors.auth.domain.OpaqueToken
+import org.omniai.sdk.interceptors.auth.domain.TokenValidationParams
 import org.omniai.sdk.interceptors.auth.interfaces.IntrospectionCache
 import org.omniai.sdk.interceptors.auth.interfaces.PublicKeyCache
 import org.omniai.sdk.interceptors.auth.interfaces.TokenAuthenticator
@@ -14,20 +24,26 @@ import kotlin.time.Duration
 
 class AuthenticationInterceptor(
     private val authenticator: TokenAuthenticator,
-    private val validationParams: TokenValidationParams? = null
+    private val validationParams: TokenValidationParams? = null,
 ) : Interceptor {
-
-    override suspend fun handle(context: GatewayContext, chain: InterceptorChain): PipelineResult {
+    override suspend fun handle(
+        context: GatewayContext,
+        chain: InterceptorChain,
+    ): PipelineResult {
         val bearerToken = context.request.providerOptions[AUTH_BEARER_TOKEN_KEY] as? String
 
         if (bearerToken.isNullOrBlank()) {
             return PipelineResult.Error(
-                InvalidRequest("Authentication failed: Token missing")
+                InvalidRequest("Authentication failed: Token missing"),
             )
         }
 
-        val token = if (isJwt(bearerToken)) JWT(DecodedJwt.decode(bearerToken))
-        else OPAQUE(OpaqueToken(bearerToken))
+        val token =
+            if (isJwt(bearerToken)) {
+                JWT(DecodedJwt.decode(bearerToken))
+            } else {
+                OPAQUE(OpaqueToken(bearerToken))
+            }
 
         context.attributes.put(AUTH_TOKEN_KIND_KEY, token::class.simpleName ?: "no Name")
 
@@ -37,9 +53,12 @@ class AuthenticationInterceptor(
                 context.attributes.put(AUTH_TOKEN_KEY, token)
                 chain.proceed(context)
             }
-            is AuthenticationDecision.Deny -> PipelineResult.Error(
-                InvalidRequest("Authentication failed: ${decision.reason}")
-            )
+
+            is AuthenticationDecision.Deny -> {
+                PipelineResult.Error(
+                    InvalidRequest("Authentication failed: ${decision.reason}"),
+                )
+            }
         }
     }
 
@@ -53,20 +72,22 @@ class AuthenticationInterceptor(
             positiveCacheTtl: Duration? = null,
             negativeCacheTtl: Duration? = null,
         ): AuthenticationInterceptor {
-            val configuredAuth = loadTokenAuthenticator(
-                config = setup,
-                publicKeyCache = publicKeyCache,
-                introspectionCache = introspectionCache,
-                positiveCacheTtl = positiveCacheTtl,
-                negativeCacheTtl = negativeCacheTtl,
-            )
+            val configuredAuth =
+                loadTokenAuthenticator(
+                    config = setup,
+                    publicKeyCache = publicKeyCache,
+                    introspectionCache = introspectionCache,
+                    positiveCacheTtl = positiveCacheTtl,
+                    negativeCacheTtl = negativeCacheTtl,
+                )
 
             return AuthenticationInterceptor(
                 authenticator = configuredAuth.authenticator,
-                validationParams = configuredAuth.validationParams
+                validationParams = configuredAuth.validationParams,
             )
         }
     }
+
     private fun isJwt(token: String): Boolean {
         val segments = token.split('.')
         return segments.size == 3 && segments.none { it.isBlank() }

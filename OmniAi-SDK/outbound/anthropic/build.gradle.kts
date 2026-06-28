@@ -9,7 +9,6 @@ base {
     archivesName.set("outbound-anthropic")
 }
 
-
 kotlin {
     jvm()
     jvmToolchain(22)
@@ -24,9 +23,7 @@ kotlin {
             implementation(project(":http-client"))
             implementation(project(":contracts:anthropic"))
             implementation(libs.kotlinx.serialization.json)
-
         }
-
 
         commonTest.dependencies {
             implementation(kotlin("test"))

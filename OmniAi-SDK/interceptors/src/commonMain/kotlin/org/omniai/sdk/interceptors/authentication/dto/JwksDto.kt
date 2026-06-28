@@ -9,5 +9,5 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class JwksDto(
     // REQUIRED by RFC 7517: An array of JWK values.
-    val keys: List<JwkDto>
+    val keys: List<JwkDto>,
 )

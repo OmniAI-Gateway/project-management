@@ -6,4 +6,6 @@ package org.omniai.sdk.application.pipeline
  */
 @Target(AnnotationTarget.CLASS)
 @Retention(AnnotationRetention.RUNTIME)
-annotation class InterceptorPriority(val value: Int)
+annotation class InterceptorPriority(
+    val value: Int,
+)

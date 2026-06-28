@@ -1,13 +1,12 @@
 package org.omniai.sdk.interceptors.auth.engines
 
 import com.nimbusds.jose.crypto.factories.DefaultJWSVerifierFactory
-
 import com.nimbusds.jwt.SignedJWT
+import org.omniai.sdk.interceptors.auth.domain.AuthValidationResult
 import org.omniai.sdk.interceptors.auth.domain.AuthenticationDecision
 import org.omniai.sdk.interceptors.auth.domain.DecodedJwt
 import org.omniai.sdk.interceptors.auth.domain.PublicKey
 import org.omniai.sdk.interceptors.auth.domain.TokenValidationParams
-import org.omniai.sdk.interceptors.auth.domain.AuthValidationResult
 import org.omniai.sdk.interceptors.auth.interfaces.JwtVerificationEngine
 import java.security.KeyFactory
 import java.security.spec.X509EncodedKeySpec
@@ -15,12 +14,11 @@ import kotlin.io.encoding.Base64
 import kotlin.io.encoding.ExperimentalEncodingApi
 
 actual class PlatformJwtVerificationEngine actual constructor() : JwtVerificationEngine {
-
     @OptIn(ExperimentalEncodingApi::class)
     actual override suspend fun verify(
         token: DecodedJwt,
         publicKey: PublicKey,
-        params: TokenValidationParams?
+        params: TokenValidationParams?,
     ): AuthenticationDecision {
         return try {
             // 1. Gerar a chave pública Java
@@ -48,7 +46,6 @@ actual class PlatformJwtVerificationEngine actual constructor() : JwtVerificatio
             }
 
             AuthenticationDecision.Allow(AuthValidationResult.Jwt(token))
-
         } catch (e: Exception) {
             AuthenticationDecision.Deny("Erro na validação: ${e.message}")
         }

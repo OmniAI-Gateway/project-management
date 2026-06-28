@@ -9,5 +9,5 @@ data class McpClientConfig(
     val transport: TransportType,
     val command: String?,
     val args: List<String>,
-    val url: String?
+    val url: String?,
 )

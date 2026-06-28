@@ -12,5 +12,5 @@ data class McpClientConfigDto(
     val transport: TransportType,
     val command: String? = null,
     val args: List<String> = emptyList(),
-    val url: String? = null
+    val url: String? = null,
 )

@@ -10,7 +10,6 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.contentOrNull
 import org.omniai.sdk.contracts.gemini.input.GeminiContent
-import org.omniai.sdk.contracts.gemini.input.GeminiFunctionCall as GeminiInputFunctionCall
 import org.omniai.sdk.contracts.gemini.input.GeminiFunctionCallingConfig
 import org.omniai.sdk.contracts.gemini.input.GeminiFunctionDeclaration
 import org.omniai.sdk.contracts.gemini.input.GeminiFunctionResponse
@@ -26,7 +25,6 @@ import org.omniai.sdk.contracts.gemini.output.GeminiEventStream
 import org.omniai.sdk.contracts.gemini.output.GeminiGenerateContentResponse
 import org.omniai.sdk.contracts.gemini.output.GeminiResponsePart
 import org.omniai.sdk.contracts.gemini.output.GeminiUsageMetadata
-import org.omniai.sdk.ports.outbound.OutboundTranslator
 import org.omniai.sdk.domain.common.CommonRole
 import org.omniai.sdk.domain.common.CommonTool
 import org.omniai.sdk.domain.common.Model
@@ -59,12 +57,13 @@ import org.omniai.sdk.domain.responses.TextDeltaEvent
 import org.omniai.sdk.domain.responses.ToolCallArgumentsDeltaEvent
 import org.omniai.sdk.domain.responses.ToolCallStartedEvent
 import org.omniai.sdk.domain.responses.UsageReported
+import org.omniai.sdk.ports.outbound.OutboundTranslator
 import kotlin.random.Random
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
+import org.omniai.sdk.contracts.gemini.input.GeminiFunctionCall as GeminiInputFunctionCall
 
 class GeminiOutboundTranslator : OutboundTranslator<GeminiGenerateContentRequest, GeminiGenerateContentResponse, GeminiEventStream> {
-
     override fun fromDomain(domainRequest: CommonRequest): GeminiGenerateContentRequest {
         val providerOptions = domainRequest.providerOptions
 
@@ -73,18 +72,20 @@ class GeminiOutboundTranslator : OutboundTranslator<GeminiGenerateContentRequest
             systemInstruction = domainRequest.systemPrompt?.toGeminiSystemInstruction(),
             tools = domainRequest.tools.toGeminiTools(),
             toolConfig = domainRequest.toolChoice?.toGeminiToolConfig(),
-            generationConfig = GeminiGenerationConfig(
-                stopSequences = domainRequest.config?.stopSequences,
-                temperature = domainRequest.config?.temperature,
-                topP = domainRequest.config?.topP,
-                topK = providerOptions.get<Int>("topK"),
-                thinkingConfig = providerOptions.get<GeminiThinkingConfig>("thinkingConfig"),
-                responseMimeType = when {
-                    domainRequest.jsonResponse -> "application/json"
-                    else -> providerOptions.get<String>("responseMimeType")
-                },
-                responseJsonSchema = providerOptions.get<JsonObject>("responseJsonSchema")
-            )
+            generationConfig =
+                GeminiGenerationConfig(
+                    stopSequences = domainRequest.config?.stopSequences,
+                    temperature = domainRequest.config?.temperature,
+                    topP = domainRequest.config?.topP,
+                    topK = providerOptions.get<Int>("topK"),
+                    thinkingConfig = providerOptions.get<GeminiThinkingConfig>("thinkingConfig"),
+                    responseMimeType =
+                        when {
+                            domainRequest.jsonResponse -> "application/json"
+                            else -> providerOptions.get<String>("responseMimeType")
+                        },
+                    responseJsonSchema = providerOptions.get<JsonObject>("responseJsonSchema"),
+                ),
         )
     }
 
@@ -95,7 +96,9 @@ class GeminiOutboundTranslator : OutboundTranslator<GeminiGenerateContentRequest
             model = providerResponse.modelVersion ?: "",
             choices = providerResponse.candidates.map(::toDomainChoice),
             usage = providerResponse.usageMetadata?.toDomainUsage(),
-            providerOptions = providerResponse.promptFeedback?.let { mapOf("promptFeedback" to it.blockReason) } ?: emptyMap()
+            providerOptions =
+                providerResponse.promptFeedback?.let { mapOf("promptFeedback" to it.blockReason) }
+                    ?: emptyMap(),
         )
 
     override fun toDomainEvent(providerEvent: Flow<GeminiEventStream>): Flow<CommonResponseEvent> =
@@ -103,10 +106,7 @@ class GeminiOutboundTranslator : OutboundTranslator<GeminiGenerateContentRequest
             .runningFold(GeminiEventContext()) { context, event ->
                 val translatedEvent = event.toDomainStreamEvent(context.id, context.model)
                 context.copy(id = translatedEvent.id, model = translatedEvent.model, event = translatedEvent)
-            }
-            .mapNotNull { it.event }
-
-
+            }.mapNotNull { it.event }
 }
 
 @OptIn(ExperimentalUuidApi::class)
@@ -115,19 +115,28 @@ private fun generateGeminiId() = Uuid.random().toHexString()
 private data class GeminiEventContext(
     val id: String = "",
     val model: Model = Model(""),
-    val event: CommonResponseEvent? = null
+    val event: CommonResponseEvent? = null,
 )
 
-private fun GeminiEventStream.toDomainStreamEvent(previousId: String, previousModel: Model): CommonResponseEvent =
+private fun GeminiEventStream.toDomainStreamEvent(
+    previousId: String,
+    previousModel: Model,
+): CommonResponseEvent =
     when (this) {
-        is GeminiEventStream.Chunk -> data.toDomainChunkEvent(previousId, previousModel)
-        GeminiEventStream.Done -> ResponseCompleted(
-            provider = Provider.GEMINI,
-            id = previousId,
-            model = previousModel,
-            sequence = 0L,
-            providerEventType = "done"
-        )
+        is GeminiEventStream.Chunk -> {
+            data.toDomainChunkEvent(previousId, previousModel)
+        }
+
+        GeminiEventStream.Done -> {
+            ResponseCompleted(
+                provider = Provider.GEMINI,
+                id = previousId,
+                model = previousModel,
+                sequence = 0L,
+                providerEventType = "done",
+            )
+        }
+
         is GeminiEventStream.Error -> {
             val streamError = error.error
             ResponseErrored(
@@ -137,12 +146,15 @@ private fun GeminiEventStream.toDomainStreamEvent(previousId: String, previousMo
                 sequence = 0L,
                 message = streamError.message,
                 retryable = streamError.status.isRetryableGeminiStatus(),
-                providerEventType = "error"
+                providerEventType = "error",
             )
         }
     }
 
-private fun GeminiGenerateContentResponse.toDomainChunkEvent(previousId: String, previousModel: Model): CommonResponseEvent {
+private fun GeminiGenerateContentResponse.toDomainChunkEvent(
+    previousId: String,
+    previousModel: Model,
+): CommonResponseEvent {
     val resolvedId = responseId?.takeUnless { it.isBlank() } ?: previousId
     val model = modelVersion?.takeUnless { it.isBlank() }?.let(::Model) ?: previousModel
     val sequence = 0L
@@ -151,12 +163,12 @@ private fun GeminiGenerateContentResponse.toDomainChunkEvent(previousId: String,
     promptFeedback?.blockReason?.let { blockReason ->
         return ResponseErrored(
             provider = Provider.GEMINI,
-                id = resolvedId,
+            id = resolvedId,
             model = model,
             sequence = sequence,
             message = blockReason,
             retryable = blockReason.contains("TRANSIENT", ignoreCase = true),
-            providerEventType = "prompt_feedback"
+            providerEventType = "prompt_feedback",
         )
     }
 
@@ -168,7 +180,7 @@ private fun GeminiGenerateContentResponse.toDomainChunkEvent(previousId: String,
                 model = model,
                 sequence = sequence,
                 usage = it.toDomainUsage(),
-                providerEventType = "usage"
+                providerEventType = "usage",
             )
         }
 
@@ -177,17 +189,18 @@ private fun GeminiGenerateContentResponse.toDomainChunkEvent(previousId: String,
             id = resolvedId,
             model = model,
             sequence = sequence,
-            providerEventType = "response_start"
+            providerEventType = "response_start",
         )
     }
 
-    val candidate = firstCandidate ?: return ResponseStarted(
-        provider = Provider.GEMINI,
-        id = resolvedId,
-        model = model,
-        sequence = sequence,
-        providerEventType = "response_start"
-    )
+    val candidate =
+        firstCandidate ?: return ResponseStarted(
+            provider = Provider.GEMINI,
+            id = resolvedId,
+            model = model,
+            sequence = sequence,
+            providerEventType = "response_start",
+        )
 
     candidate.finishReason?.let {
         return ChoiceFinished(
@@ -197,11 +210,15 @@ private fun GeminiGenerateContentResponse.toDomainChunkEvent(previousId: String,
             sequence = sequence,
             choiceIndex = candidate.index ?: 0,
             finishReason = it.toDomainFinishReason(),
-            providerEventType = "choice_finished"
+            providerEventType = "choice_finished",
         )
     }
 
-    val functionCall = candidate.content?.parts.orEmpty().firstNotNullOfOrNull { it.functionCall }
+    val functionCall =
+        candidate.content
+            ?.parts
+            .orEmpty()
+            .firstNotNullOfOrNull { it.functionCall }
     if (functionCall != null) {
         val argumentsFragment = functionCall.args.extractArgumentsFragment()
         if (argumentsFragment != null && functionCall.name.isBlank()) {
@@ -213,7 +230,7 @@ private fun GeminiGenerateContentResponse.toDomainChunkEvent(previousId: String,
                 choiceIndex = candidate.index ?: 0,
                 toolCallIndex = 0,
                 argumentsFragment = argumentsFragment,
-                providerEventType = "tool_call_arguments_delta"
+                providerEventType = "tool_call_arguments_delta",
             )
         }
 
@@ -226,11 +243,15 @@ private fun GeminiGenerateContentResponse.toDomainChunkEvent(previousId: String,
             toolCallIndex = 0,
             toolCallId = "gemini-tool-call-${Random.nextInt(100000, 999999)}",
             functionName = functionCall.name,
-            providerEventType = "tool_call_started"
+            providerEventType = "tool_call_started",
         )
     }
 
-    val textDelta = candidate.content?.parts.orEmpty().firstNotNullOfOrNull { it.text }
+    val textDelta =
+        candidate.content
+            ?.parts
+            .orEmpty()
+            .firstNotNullOfOrNull { it.text }
     if (textDelta != null) {
         return TextDeltaEvent(
             provider = Provider.GEMINI,
@@ -239,7 +260,7 @@ private fun GeminiGenerateContentResponse.toDomainChunkEvent(previousId: String,
             sequence = sequence,
             choiceIndex = candidate.index ?: 0,
             text = textDelta,
-            providerEventType = "text_delta"
+            providerEventType = "text_delta",
         )
     }
 
@@ -251,7 +272,7 @@ private fun GeminiGenerateContentResponse.toDomainChunkEvent(previousId: String,
             sequence = sequence,
             choiceIndex = candidate.index ?: 0,
             role = it.toCommonRole(),
-            providerEventType = "choice_started"
+            providerEventType = "choice_started",
         )
     }
 
@@ -260,7 +281,7 @@ private fun GeminiGenerateContentResponse.toDomainChunkEvent(previousId: String,
         id = resolvedId,
         model = model,
         sequence = sequence,
-        providerEventType = "response_start"
+        providerEventType = "response_start",
     )
 }
 
@@ -280,26 +301,39 @@ private fun String?.isRetryableGeminiStatus(): Boolean {
 private fun CommonRequestMessage.toGeminiContent(): GeminiContent =
     GeminiContent(
         role = role.toGeminiRole(),
-        parts = content.mapNotNull { it.toGeminiPart() }
+        parts = content.mapNotNull { it.toGeminiPart() },
     )
 
 private fun RequestContentPart.toGeminiPart(): GeminiPart? =
     when (this) {
-        is TextPart -> GeminiPart(text = text)
-        is ToolCallPart -> GeminiPart(
-            thoughtSignature = "skip_thought_signature_validator",
-            functionCall = GeminiInputFunctionCall(
-                name = functionName,
-                args = JsonValue.JsonObject(argumentsJson).toKotlinxJsonObject()
+        is TextPart -> {
+            GeminiPart(text = text)
+        }
+
+        is ToolCallPart -> {
+            GeminiPart(
+                thoughtSignature = "skip_thought_signature_validator",
+                functionCall =
+                    GeminiInputFunctionCall(
+                        name = functionName,
+                        args = JsonValue.JsonObject(argumentsJson).toKotlinxJsonObject(),
+                    ),
             )
-        )
-        is ToolResultPart -> GeminiPart(
-            functionResponse = GeminiFunctionResponse(
-                name = toolCallId,
-                response = content.firstOrNull().toGeminiToolResponseJson()
+        }
+
+        is ToolResultPart -> {
+            GeminiPart(
+                functionResponse =
+                    GeminiFunctionResponse(
+                        name = toolCallId,
+                        response = content.firstOrNull().toGeminiToolResponseJson(),
+                    ),
             )
-        )
-        is JsonPart -> GeminiPart(text = json.toString())
+        }
+
+        is JsonPart -> {
+            GeminiPart(text = json.toString())
+        }
     }
 
 private fun SystemPrompt.toGeminiSystemInstruction(): GeminiSystemInstruction =
@@ -309,56 +343,74 @@ private fun List<CommonTool>.toGeminiTools(): List<GeminiTool>? {
     if (isEmpty()) return null
     return listOf(
         GeminiTool(
-            functionDeclarations = map {
-                GeminiFunctionDeclaration(
-                    name = it.name,
-                    description = it.description,
-                    parameters = JsonValue.JsonObject(it.parametersSchema).toKotlinxJsonObject().cleanGeminiParameters()
-                )
-            }
-        )
+            functionDeclarations =
+                map {
+                    GeminiFunctionDeclaration(
+                        name = it.name,
+                        description = it.description,
+                        parameters = JsonValue.JsonObject(it.parametersSchema).toKotlinxJsonObject().cleanGeminiParameters(),
+                    )
+                },
+        ),
     )
 }
 
 private fun ToolChoice.toGeminiToolConfig(): GeminiToolConfig =
     GeminiToolConfig(
-        functionCallingConfig = when (this) {
-            ToolChoice.Auto -> GeminiFunctionCallingConfig(mode = "AUTO")
-            ToolChoice.None -> GeminiFunctionCallingConfig(mode = "NONE")
-            ToolChoice.Required -> GeminiFunctionCallingConfig(mode = "ANY")
-            is ToolChoice.Specific -> GeminiFunctionCallingConfig(mode = "ANY", allowedFunctionNames = toolNames)
-        }
+        functionCallingConfig =
+            when (this) {
+                ToolChoice.Auto -> GeminiFunctionCallingConfig(mode = "AUTO")
+                ToolChoice.None -> GeminiFunctionCallingConfig(mode = "NONE")
+                ToolChoice.Required -> GeminiFunctionCallingConfig(mode = "ANY")
+                is ToolChoice.Specific -> GeminiFunctionCallingConfig(mode = "ANY", allowedFunctionNames = toolNames)
+            },
     )
 
 private fun toDomainChoice(candidate: GeminiCandidate): CommonChoice {
-    val parts = candidate.content?.parts.orEmpty().mapNotNull { it.toDomainPart() }
+    val parts =
+        candidate.content
+            ?.parts
+            .orEmpty()
+            .mapNotNull { it.toDomainPart() }
     val hasToolCalls = parts.any { it is ToolCallPart }
     return CommonChoice(
         index = candidate.index ?: 0,
-        message = org.omniai.sdk.domain.responses.CommonResponseMessage(
-            role = candidate.content?.role.toCommonRole(),
-            content = parts
-        ),
-        finishReason = if (hasToolCalls) {
-            FinishReason.TOOL_CALL
-        } else {
-            candidate.finishReason.toDomainFinishReason()
-        }
+        message =
+            org.omniai.sdk.domain.responses.CommonResponseMessage(
+                role = candidate.content?.role.toCommonRole(),
+                content = parts,
+            ),
+        finishReason =
+            if (hasToolCalls) {
+                FinishReason.TOOL_CALL
+            } else {
+                candidate.finishReason.toDomainFinishReason()
+            },
     )
 }
 
 private fun GeminiResponsePart.toDomainPart(): ResponseContentPart? {
     return when {
-        text != null -> TextPart(text ?: return null)
+        text != null -> {
+            TextPart(text ?: return null)
+        }
+
         functionCall != null -> {
             val fc = functionCall ?: return null
             ToolCallPart(
                 toolCallId = "gemini-tool-call-0",
                 functionName = fc.name,
-                argumentsJson = fc.args?.toDomainJsonObject()?.properties.orEmpty()
+                argumentsJson =
+                    fc.args
+                        ?.toDomainJsonObject()
+                        ?.properties
+                        .orEmpty(),
             )
         }
-        else -> null
+
+        else -> {
+            null
+        }
     }
 }
 
@@ -366,7 +418,7 @@ private fun GeminiUsageMetadata.toDomainUsage(): CommonUsage =
     CommonUsage(
         inputTokens = promptTokenCount,
         outputTokens = candidatesTokenCount,
-        totalTokens = totalTokenCount
+        totalTokens = totalTokenCount,
     )
 
 private fun String?.toCommonRole(): CommonRole =
@@ -397,15 +449,16 @@ private fun CommonRole.toGeminiRole(): String =
 
 // deve ser passada para uma funcao de traducao de apis
 private fun JsonObject.cleanGeminiParameters(): JsonObject {
-    val keysToRemove = setOf(
-        "\$schema",
-        "additionalProperties",
-        "propertyNames",
-        "title",
-        "default",
-        "\$id",
-        "exclusiveMinimum"
-    )
+    val keysToRemove =
+        setOf(
+            "\$schema",
+            "additionalProperties",
+            "propertyNames",
+            "title",
+            "default",
+            "\$id",
+            "exclusiveMinimum",
+        )
 
     val cleaned = mutableMapOf<String, JsonElement>()
 
@@ -424,20 +477,27 @@ private fun JsonObject.cleanGeminiParameters(): JsonObject {
 
 private fun JsonElement.cleanGeminiElement(keysToRemove: Set<String>): JsonElement =
     when (this) {
-        is JsonObject -> JsonObject(
-            entries
-                .filterNot { (key, _) -> key in keysToRemove || key == "const" }
-                .associate { (key, value) -> key to value.cleanGeminiElement(keysToRemove) }
-                .toMutableMap()
-                .apply {
-                    this@cleanGeminiElement["const"]?.let { constValue ->
-                        this["enum"] = JsonArray(listOf(constValue.cleanGeminiElement(keysToRemove)))
-                    }
-                }
-        )
+        is JsonObject -> {
+            JsonObject(
+                entries
+                    .filterNot { (key, _) -> key in keysToRemove || key == "const" }
+                    .associate { (key, value) -> key to value.cleanGeminiElement(keysToRemove) }
+                    .toMutableMap()
+                    .apply {
+                        this@cleanGeminiElement["const"]?.let { constValue ->
+                            this["enum"] = JsonArray(listOf(constValue.cleanGeminiElement(keysToRemove)))
+                        }
+                    },
+            )
+        }
 
-        is JsonArray -> JsonArray(map { it.cleanGeminiElement(keysToRemove) })
-        else -> this
+        is JsonArray -> {
+            JsonArray(map { it.cleanGeminiElement(keysToRemove) })
+        }
+
+        else -> {
+            this
+        }
     }
 
 private fun JsonValue?.toGeminiToolResponseJson(): JsonObject {
@@ -447,4 +507,3 @@ private fun JsonValue?.toGeminiToolResponseJson(): JsonObject {
         else -> JsonObject(mapOf("value" to value.toKotlinxJsonElement()))
     }
 }
-

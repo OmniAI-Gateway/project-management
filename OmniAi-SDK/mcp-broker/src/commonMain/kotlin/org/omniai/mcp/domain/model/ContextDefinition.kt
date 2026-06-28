@@ -8,5 +8,5 @@ data class ContextDefinition(
     val uri: String,
     val description: String?,
     val mimeType: String?,
-    val content: String
+    val content: String,
 )

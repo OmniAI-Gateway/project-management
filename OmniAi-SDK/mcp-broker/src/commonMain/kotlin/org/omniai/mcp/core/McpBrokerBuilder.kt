@@ -31,14 +31,18 @@ class McpBrokerBuilder {
     private var engineFactory: ApplicationEngineFactory<*, *>? = null
     private var application: Application? = null
 
-    fun info(name: String, version: String) {
+    fun info(
+        name: String,
+        version: String,
+    ) {
         this.name = name
         this.version = version
     }
 
-    fun application(application: Application){
+    fun application(application: Application) {
         this.application = application
     }
+
     fun configDirectory(path: String) {
         this.configDirectory = path
     }
@@ -58,23 +62,25 @@ class McpBrokerBuilder {
     fun serverTransport(transport: ServerTransportConfig) {
         this.serverTransports.add(transport)
     }
-    
+
     fun serverEngine(factory: ApplicationEngineFactory<*, *>) {
         this.engineFactory = factory
     }
 
     fun build(): McpBroker {
         val http = httpClient ?: error("HttpClient must be provided via httpClient(...)")
-        val clientFactory = clientTransportFactory ?: error("ClientTransportFactory must be provided via clientTransportFactory(...)")
+        val clientFactory =
+            clientTransportFactory ?: error("ClientTransportFactory must be provided via clientTransportFactory(...)")
 
         require(serverTransports.isNotEmpty()) { "At least one server transport must be configured via serverTransport(...)" }
 
-        val brokerServer = BrokerServer(
-            name = name,
-            version = version,
-            transports = serverTransports.toList(),
-            application = application
-        )
+        val brokerServer =
+            BrokerServer(
+                name = name,
+                version = version,
+                transports = serverTransports.toList(),
+                application = application,
+            )
 
         val configWatcher = ConfigDirectoryWatcher(configDirectory)
         val configMapper = ConfigMapper()
@@ -92,11 +98,9 @@ class McpBrokerBuilder {
             toolRegistrar = toolRegistrar,
             contextRegistrar = contextRegistrar,
             clientManager = clientManager,
-            proxyToolRegistrar = proxyToolRegistrar
+            proxyToolRegistrar = proxyToolRegistrar,
         )
     }
 }
 
-fun mcpBroker(block: McpBrokerBuilder.() -> Unit): McpBroker {
-    return McpBrokerBuilder().apply(block).build()
-}
+fun mcpBroker(block: McpBrokerBuilder.() -> Unit): McpBroker = McpBrokerBuilder().apply(block).build()

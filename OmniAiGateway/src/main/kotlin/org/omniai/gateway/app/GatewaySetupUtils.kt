@@ -54,27 +54,32 @@ fun OutboundsDsl.registerProvidersFromConfig(
 ) {
     providers.forEach { providerConfig ->
         when (providerConfig.provider) {
-            ProviderKind.OPENAI ->
+            ProviderKind.OPENAI -> {
                 openAI(httpClient) {
                     baseUrl(providerConfig.baseUrl)
                     apiKey(providerConfig.apiKey) {
                         models(*providerConfig.models.toTypedArray())
                     }
                 }
-            ProviderKind.GEMINI ->
+            }
+
+            ProviderKind.GEMINI -> {
                 gemini(httpClient) {
                     baseUrl(providerConfig.baseUrl)
                     apiKey(providerConfig.apiKey) {
                         models(*providerConfig.models.toTypedArray())
                     }
                 }
-            ProviderKind.ANTHROPIC ->
+            }
+
+            ProviderKind.ANTHROPIC -> {
                 anthropic(httpClient) {
                     baseUrl(providerConfig.baseUrl)
                     apiKey(providerConfig.apiKey) {
                         models(*providerConfig.models.toTypedArray())
                     }
                 }
+            }
         }
     }
 }
@@ -118,9 +123,13 @@ fun InterceptorsDsl.registerGatewayMetrics(
                 }
             }
             include(ClientIpMetadataKey, alias = "client.ip")
-            attribute("discovery") { _, _ -> (config.authConfig as? AuthorizationServerGatewayConfig.Oidc)?.discoveryUrl ?: "discovery" }
+            attribute("discovery") { _, _ ->
+                (config.authConfig as? AuthorizationServerGatewayConfig.Oidc)?.discoveryUrl ?: "discovery"
+            }
             attribute("sdk.version") { _, _ -> "1.0.0" }
-            attribute("aud") { _, _ -> (config.authConfig as? AuthorizationServerGatewayConfig.Oidc)?.audience ?: "anonymous" }
+            attribute("aud") { _, _ ->
+                (config.authConfig as? AuthorizationServerGatewayConfig.Oidc)?.audience ?: "anonymous"
+            }
         }
         defaultLatency { enabled = true }
         activeRequests { enabled = true }

@@ -7,12 +7,14 @@ import org.omniai.sdk.ports.outbound.http.HttpTransportClient
 import org.omniai.sdk.ports.outbound.http.executeRequest
 import org.omniai.sdk.ports.outbound.http.requestConfig
 
-class OidcDiscovery(private val httpClient: HttpTransportClient) {
+class OidcDiscovery(
+    private val httpClient: HttpTransportClient,
+) {
     suspend fun fetchMetadata(url: String): HttpCallResult<OidcMetadata> {
-        val config = requestConfig<Unit>(url) {
-            method = HttpMethod.GET
-        }
+        val config =
+            requestConfig<Unit>(url) {
+                method = HttpMethod.GET
+            }
         return httpClient.executeRequest<OidcMetadata, Unit>(config)
     }
 }
-

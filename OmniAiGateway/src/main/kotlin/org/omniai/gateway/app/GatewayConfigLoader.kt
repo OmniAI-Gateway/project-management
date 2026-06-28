@@ -133,9 +133,18 @@ private fun Config.loadProviderConfig(kind: ProviderKind): ProviderConfig? {
 
     val models =
         when {
-            modelsFromEnv.isNotEmpty() -> modelsFromEnv
-            modelsFromConfigList.isNotEmpty() -> modelsFromConfigList
-            modelsFromConfigModelKey.isNotEmpty() -> modelsFromConfigModelKey
+            modelsFromEnv.isNotEmpty() -> {
+                modelsFromEnv
+            }
+
+            modelsFromConfigList.isNotEmpty() -> {
+                modelsFromConfigList
+            }
+
+            modelsFromConfigModelKey.isNotEmpty() -> {
+                modelsFromConfigModelKey
+            }
+
             else -> {
                 val singleModel = System.getenv(kind.modelEnv) ?: safeString("$pathPrefix.model", "")
                 if (singleModel.isBlank()) emptyList() else listOf(singleModel.trim())

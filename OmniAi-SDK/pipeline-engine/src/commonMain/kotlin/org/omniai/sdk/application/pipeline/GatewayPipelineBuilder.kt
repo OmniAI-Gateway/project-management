@@ -29,4 +29,3 @@ class GatewayPipelineBuilder {
         return GatewayPipeline(interceptors.toList(), terminalDispatcher)
     }
 }
-

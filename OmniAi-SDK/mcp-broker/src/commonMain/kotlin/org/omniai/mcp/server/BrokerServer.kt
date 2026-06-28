@@ -20,19 +20,20 @@ class BrokerServer(
     name: String,
     version: String,
     val transports: List<ServerTransportConfig>,
-    val application: Application?
+    val application: Application?,
 ) {
-
-    val server: Server = Server(
-        Implementation(name, version),
-        ServerOptions(
-            capabilities = ServerCapabilities(
-                tools = ServerCapabilities.Tools(listChanged = true),
-                resources = ServerCapabilities.Resources(listChanged = true, subscribe = false),
-                prompts = null
-            )
+    val server: Server =
+        Server(
+            Implementation(name, version),
+            ServerOptions(
+                capabilities =
+                    ServerCapabilities(
+                        tools = ServerCapabilities.Tools(listChanged = true),
+                        resources = ServerCapabilities.Resources(listChanged = true, subscribe = false),
+                        prompts = null,
+                    ),
+            ),
         )
-    )
 
     init {
         require(transports.isNotEmpty()) { "At least one server transport must be configured" }
@@ -45,12 +46,15 @@ class BrokerServer(
         transports.forEach { transport ->
             when (transport) {
                 is ServerTransportConfig.Stdio -> {
-                    val stdioTransport = StdioServerTransport(input = transport.input,
-                        output = transport.output
-                    )
+                    val stdioTransport =
+                        StdioServerTransport(
+                            input = transport.input,
+                            output = transport.output,
+                        )
                     server.createSession(stdioTransport)
                     println("[BrokerServer] STDIO transport session created")
                 }
+
                 is ServerTransportConfig.SSE -> {
                     application?.routing {
                         route(transport.path) {
@@ -58,9 +62,11 @@ class BrokerServer(
                         }
                     }
                 }
+
                 is ServerTransportConfig.StreamableHttp -> {
                     application?.mcpStreamableHttp(path = transport.path) { server }
                 }
+
                 is ServerTransportConfig.WebSocket -> {
                     application?.routing {
                         mcpWebSocket(transport.path, block = { server })

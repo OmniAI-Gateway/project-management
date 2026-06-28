@@ -6,7 +6,7 @@ import org.omniai.sdk.application.pipeline.PipelineResult
 enum class InstrumentType {
     COUNTER,
     UP_DOWN_COUNTER,
-    HISTOGRAM
+    HISTOGRAM,
 }
 
 data class CustomMetric(
@@ -15,5 +15,5 @@ data class CustomMetric(
     val description: String = "",
     val unit: String = "",
     val extractor: (GatewayContext, PipelineResult?) -> Double?,
-    val attributes: (GatewayContext, PipelineResult?) -> Map<String, String> = { _, _ -> emptyMap() }
+    val attributes: (GatewayContext, PipelineResult?) -> Map<String, String> = { _, _ -> emptyMap() },
 )

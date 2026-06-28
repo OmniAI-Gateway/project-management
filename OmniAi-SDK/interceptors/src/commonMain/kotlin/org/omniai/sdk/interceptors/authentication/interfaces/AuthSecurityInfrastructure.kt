@@ -1,3 +1,5 @@
 package org.omniai.sdk.interceptors.auth.interfaces
 
-interface AuthSecurityInfrastructure : PublicKeysProvider, TokenIntrospector
+interface AuthSecurityInfrastructure :
+    PublicKeysProvider,
+    TokenIntrospector

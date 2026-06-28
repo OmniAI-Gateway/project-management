@@ -5,5 +5,5 @@ package org.omniai.sdk.interceptors.ratelimiting.domain
  */
 enum class RateLimitType {
     REQUESTS,
-    TOKENS
+    TOKENS,
 }

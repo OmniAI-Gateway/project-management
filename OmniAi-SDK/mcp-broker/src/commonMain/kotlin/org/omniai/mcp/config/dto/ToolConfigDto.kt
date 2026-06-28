@@ -15,5 +15,5 @@ data class ToolConfigDto(
     val headers: Map<String, String>? = null,
     val pathSchema: YamlMap? = null,
     val querySchema: YamlMap? = null,
-    val bodySchema: YamlMap? = null
+    val bodySchema: YamlMap? = null,
 )

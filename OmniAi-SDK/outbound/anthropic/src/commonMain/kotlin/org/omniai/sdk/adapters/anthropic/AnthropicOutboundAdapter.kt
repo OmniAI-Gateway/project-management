@@ -46,7 +46,8 @@ class AnthropicOutboundAdapter(
     override suspend fun generate(request: CommonRequest): Either<DomainError, CommonResponse> {
         val providerRequest = translator.fromDomain(request)
         val requestConfig = providerRequest.toSimplePost()
-        val callResult = transportClient.executeRequest<AnthropicMessageResponse, AnthropicMessagesRequest>(requestConfig)
+        val callResult =
+            transportClient.executeRequest<AnthropicMessageResponse, AnthropicMessagesRequest>(requestConfig)
 
         return when (callResult) {
             is HttpCallResult.Success -> {

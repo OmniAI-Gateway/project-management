@@ -9,5 +9,5 @@ data class IntrospectionResult(
     val exp: Long? = null,
     val iat: Long? = null,
     val iss: String? = null,
-    val aud: List<String> = emptyList()
+    val aud: List<String> = emptyList(),
 )

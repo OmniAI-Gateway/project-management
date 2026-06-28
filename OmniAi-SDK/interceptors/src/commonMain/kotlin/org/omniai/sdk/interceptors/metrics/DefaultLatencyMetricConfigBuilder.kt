@@ -1,7 +1,7 @@
 package org.omniai.sdk.interceptors.metrics
 
 class DefaultLatencyMetricConfigBuilder(
-    config: DefaultLatencyMetricConfig = DefaultLatencyMetricConfig()
+    config: DefaultLatencyMetricConfig = DefaultLatencyMetricConfig(),
 ) {
     var name: String = config.name
     var enabled: Boolean = config.enabled
@@ -12,9 +12,10 @@ class DefaultLatencyMetricConfigBuilder(
         additionalAttributes += MetricsAttributesBuilder().apply(block).build()
     }
 
-    fun build(): DefaultLatencyMetricConfig = DefaultLatencyMetricConfig(
-        name = name,
-        enabled = enabled,
-        additionalAttributes = additionalAttributes.toList()
-    )
+    fun build(): DefaultLatencyMetricConfig =
+        DefaultLatencyMetricConfig(
+            name = name,
+            enabled = enabled,
+            additionalAttributes = additionalAttributes.toList(),
+        )
 }

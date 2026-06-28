@@ -51,7 +51,8 @@ class OpenAiOutboundAdapter(
                 header("Content-Type", "application/json")
                 body = providerRequest
             }
-        val callResult = transportClient.executeRequest<OpenAiChatCompletionsResponse, OpenAiChatCompletionsRequest>(requestConfig)
+        val callResult =
+            transportClient.executeRequest<OpenAiChatCompletionsResponse, OpenAiChatCompletionsRequest>(requestConfig)
         return when (callResult) {
             is HttpCallResult.Success -> {
                 val translated = translator.toDomain(callResult.data)

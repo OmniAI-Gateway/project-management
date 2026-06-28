@@ -3,7 +3,6 @@ package org.omniai.sdk.interceptors.auth.domain
 import org.omniai.sdk.ports.outbound.http.HttpTransportClient
 
 sealed interface AuthSetupConfig {
-
     data object Off : AuthSetupConfig
 
     data class Discovery(
@@ -11,6 +10,6 @@ sealed interface AuthSetupConfig {
         val httpClient: HttpTransportClient,
         val expectedAudience: String,
         val authClientId: String,
-        val authClientSecret: String
+        val authClientSecret: String,
     ) : AuthSetupConfig
 }

@@ -10,10 +10,7 @@ class HttpAuthSecurityClient(
     private val jwksClient: JwksClient,
     private val introspectionClient: HttpIntrospectionClient?,
 ) : AuthSecurityInfrastructure {
+    override suspend fun getPublicKey(keyId: Kid): PublicKey? = jwksClient.getPublicKey(keyId)
 
-    override suspend fun getPublicKey(keyId: Kid): PublicKey? =
-        jwksClient.getPublicKey(keyId)
-
-    override suspend fun introspectToken(token: OpaqueToken): IntrospectionResult? =
-        introspectionClient?.introspect(token)
+    override suspend fun introspectToken(token: OpaqueToken): IntrospectionResult? = introspectionClient?.introspect(token)
 }

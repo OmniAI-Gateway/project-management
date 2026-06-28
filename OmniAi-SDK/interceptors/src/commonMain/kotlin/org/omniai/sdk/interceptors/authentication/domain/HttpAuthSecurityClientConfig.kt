@@ -12,5 +12,5 @@ data class HttpAuthSecurityClientConfig(
     val backgroundJwksRefreshInterval: Duration = 12.hours,
     val minimumTimeToFetchKeys: Duration = 1.minutes,
     val introspectionCacheTtl: Duration = 5.minutes,
-    val introspectionNegativeCacheTtl: Duration = 30.seconds
+    val introspectionNegativeCacheTtl: Duration = 30.seconds,
 )

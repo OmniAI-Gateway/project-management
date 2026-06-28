@@ -7,23 +7,26 @@ class InMemoryCircuitBreakerStore : CircuitBreakerStore {
     private data class StateData(
         var state: CircuitState = CircuitState.CLOSED,
         var failures: Int = 0,
-        var lastFailureTime: Long? = null
+        var lastFailureTime: Long? = null,
     )
 
     private val store = mutableMapOf<String, StateData>()
     private val mutex = Mutex()
 
-    override suspend fun getState(outboundId: String): CircuitState = mutex.withLock {
-        store[outboundId]?.state ?: CircuitState.CLOSED
-    }
+    override suspend fun getState(outboundId: String): CircuitState =
+        mutex.withLock {
+            store[outboundId]?.state ?: CircuitState.CLOSED
+        }
 
-    override suspend fun getFailures(outboundId: String): Int = mutex.withLock {
-        store[outboundId]?.failures ?: 0
-    }
+    override suspend fun getFailures(outboundId: String): Int =
+        mutex.withLock {
+            store[outboundId]?.failures ?: 0
+        }
 
-    override suspend fun getLastFailureTime(outboundId: String): Long? = mutex.withLock {
-        store[outboundId]?.lastFailureTime
-    }
+    override suspend fun getLastFailureTime(outboundId: String): Long? =
+        mutex.withLock {
+            store[outboundId]?.lastFailureTime
+        }
 
     override suspend fun recordFailure(outboundId: String) {
         mutex.withLock {
@@ -41,7 +44,10 @@ class InMemoryCircuitBreakerStore : CircuitBreakerStore {
         }
     }
 
-    override suspend fun transitionState(outboundId: String, newState: CircuitState) {
+    override suspend fun transitionState(
+        outboundId: String,
+        newState: CircuitState,
+    ) {
         mutex.withLock {
             val data = store.getOrPut(outboundId) { StateData() }
             data.state = newState

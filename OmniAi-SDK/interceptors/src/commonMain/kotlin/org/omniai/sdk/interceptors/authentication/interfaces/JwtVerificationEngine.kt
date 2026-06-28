@@ -9,6 +9,6 @@ interface JwtVerificationEngine {
     suspend fun verify(
         token: DecodedJwt,
         publicKey: PublicKey,
-        params: TokenValidationParams?
+        params: TokenValidationParams?,
     ): AuthenticationDecision
 }

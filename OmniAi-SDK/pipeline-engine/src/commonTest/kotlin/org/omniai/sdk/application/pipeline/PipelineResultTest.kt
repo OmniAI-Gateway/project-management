@@ -1,66 +1,69 @@
 package org.omniai.sdk.application.pipeline
 
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
 import org.omniai.sdk.common.Either
 import org.omniai.sdk.domain.errors.DomainError
 import org.omniai.sdk.domain.errors.UnknownDomainError
 import org.omniai.sdk.domain.responses.CommonResponse
 import org.omniai.sdk.domain.responses.CommonResponseEvent
-import kotlinx.coroutines.flow.Flow
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
 class PipelineResultTest {
-
     // ─── fold() ───────────────────────────────────────────────────────────────
 
     @Test
     fun `fold calls onUnary branch for Unary result`() {
         val result: PipelineResult = PipelineResult.Unary(fakeResponse())
-        val branch = result.fold(
-            onUnary = { "unary" },
-            onStream = { "stream" },
-            onError = { "error" },
-            onNothing = { "nothing" }
-        )
+        val branch =
+            result.fold(
+                onUnary = { "unary" },
+                onStream = { "stream" },
+                onError = { "error" },
+                onNothing = { "nothing" },
+            )
         assertEquals("unary", branch)
     }
 
     @Test
     fun `fold calls onStream branch for Stream result`() {
         val result: PipelineResult = PipelineResult.Stream(emptyFlow())
-        val branch = result.fold(
-            onUnary = { "unary" },
-            onStream = { "stream" },
-            onError = { "error" },
-            onNothing = { "nothing" }
-        )
+        val branch =
+            result.fold(
+                onUnary = { "unary" },
+                onStream = { "stream" },
+                onError = { "error" },
+                onNothing = { "nothing" },
+            )
         assertEquals("stream", branch)
     }
 
     @Test
     fun `fold calls onError branch for Error result`() {
         val result: PipelineResult = PipelineResult.Error(fakeError())
-        val branch = result.fold(
-            onUnary = { "unary" },
-            onStream = { "stream" },
-            onError = { "error" },
-            onNothing = { "nothing" }
-        )
+        val branch =
+            result.fold(
+                onUnary = { "unary" },
+                onStream = { "stream" },
+                onError = { "error" },
+                onNothing = { "nothing" },
+            )
         assertEquals("error", branch)
     }
 
     @Test
     fun `fold calls onNothing branch for NoResult`() {
         val result: PipelineResult = PipelineResult.NoResult
-        val branch = result.fold(
-            onUnary = { "unary" },
-            onStream = { "stream" },
-            onError = { "error" },
-            onNothing = { "nothing" }
-        )
+        val branch =
+            result.fold(
+                onUnary = { "unary" },
+                onStream = { "stream" },
+                onError = { "error" },
+                onNothing = { "nothing" },
+            )
         assertEquals("nothing", branch)
     }
 
@@ -88,7 +91,7 @@ class PipelineResultTest {
         assertIs<Either.Left<DomainError>>(result)
         assertTrue(
             result.value.message.contains("Contract violation"),
-            "Expected contract violation message, got: ${result.value.message}"
+            "Expected contract violation message, got: ${result.value.message}",
         )
     }
 
@@ -122,7 +125,7 @@ class PipelineResultTest {
         assertIs<Either.Left<DomainError>>(result)
         assertTrue(
             result.value.message.contains("Contract violation"),
-            "Expected contract violation message, got: ${result.value.message}"
+            "Expected contract violation message, got: ${result.value.message}",
         )
     }
 

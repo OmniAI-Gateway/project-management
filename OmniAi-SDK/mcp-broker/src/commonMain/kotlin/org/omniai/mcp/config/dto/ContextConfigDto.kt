@@ -12,5 +12,5 @@ data class ContextConfigDto(
     val uri: String,
     val description: String? = null,
     val mimeType: String? = "text/plain",
-    val content: String
+    val content: String,
 )

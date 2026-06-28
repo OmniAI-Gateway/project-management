@@ -14,13 +14,13 @@ import kotlin.time.Duration.Companion.seconds
 
 /**
  * Interceptor responsible for enforcing rate limits across incoming requests.
- * 
+ *
  * It evaluates a series of [RateLimitPolicy] implementations injected by the client,
  * extracts dynamic context data, and checks bounds against a given [RateLimitStore].
- * 
+ *
  * If any policy results in a throttled state, the interceptor immediately aborts
  * the pipeline and returns a [PipelineResult.Error] containing [TooManyRequestsError].
- * 
+ *
  * @property store The storage backend to use for tracking usage.
  * @property policies A list of policies defining how limits are extracted and evaluated.
  * @property metricsPort Optional metrics port for emitting rate limit rejection metrics.
@@ -28,16 +28,19 @@ import kotlin.time.Duration.Companion.seconds
 class RateLimitInterceptor(
     private val store: RateLimitStore,
     private val policies: List<RateLimitPolicy<out Any>>,
-    private val metricsPort: MetricsPort? = null
+    private val metricsPort: MetricsPort? = null,
 ) : Interceptor {
+    private val rejectedCounter =
+        metricsPort?.counter(
+            "gateway.ratelimit.rejected",
+            "Requests rejeitados pelo rate limiter",
+            "1",
+        )
 
-    private val rejectedCounter = metricsPort?.counter(
-        "gateway.ratelimit.rejected",
-        "Requests rejeitados pelo rate limiter",
-        "1"
-    )
-
-    override suspend fun handle(context: GatewayContext, chain: InterceptorChain): PipelineResult {
+    override suspend fun handle(
+        context: GatewayContext,
+        chain: InterceptorChain,
+    ): PipelineResult {
         var maxRetryAfter = Duration.ZERO
 
         for (policy in policies) {
@@ -49,15 +52,18 @@ class RateLimitInterceptor(
         }
 
         if (maxRetryAfter > Duration.ZERO) {
-            rejectedCounter?.add(1.0, mapOf(
-                "provider" to context.request.provider.value,
-                "model" to context.request.model
-            ))
+            rejectedCounter?.add(
+                1.0,
+                mapOf(
+                    "provider" to context.request.provider.value,
+                    "model" to context.request.model,
+                ),
+            )
             return PipelineResult.Error(
                 TooManyRequestsError(
                     message = "Rate limit exceeded.",
-                    retryAfter = maxRetryAfter
-                )
+                    retryAfter = maxRetryAfter,
+                ),
             )
         }
 
@@ -70,7 +76,7 @@ class RateLimitInterceptor(
      */
     private suspend fun <T : Any> evaluatePolicy(
         policy: RateLimitPolicy<T>,
-        context: GatewayContext
+        context: GatewayContext,
     ): Duration? {
         val extractedData = policy.extract(context) ?: return null
         val targets = policy.evaluate(extractedData)
@@ -78,10 +84,12 @@ class RateLimitInterceptor(
         var maxRetryAfter = Duration.ZERO
 
         for (target in targets) {
-            // Note: If you have token limits (e.g. RateLimitType.TOKENS), 
+            // Note: If you have token limits (e.g. RateLimitType.TOKENS),
             // the weight should be dynamically calculated. For simplicity, we assume weight = 1.
             when (val result = store.consume(target, weight = 1)) {
-                is RateLimitResult.Allowed -> { /* Ok, proceed to next target */ }
+                is RateLimitResult.Allowed -> { // Ok, proceed to next target
+                }
+
                 is RateLimitResult.Throttled -> {
                     if (result.retryAfter > maxRetryAfter) {
                         maxRetryAfter = result.retryAfter
@@ -93,4 +101,3 @@ class RateLimitInterceptor(
         return if (maxRetryAfter > Duration.ZERO) maxRetryAfter else null
     }
 }
-

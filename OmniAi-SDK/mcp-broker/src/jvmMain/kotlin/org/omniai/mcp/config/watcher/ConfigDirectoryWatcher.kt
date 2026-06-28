@@ -8,9 +8,11 @@ import java.nio.file.StandardWatchEventKinds
 import java.nio.file.WatchKey
 import kotlin.concurrent.thread
 
-actual class ConfigDirectoryWatcher actual constructor(private val directoryPath: String) {
-
+actual class ConfigDirectoryWatcher actual constructor(
+    private val directoryPath: String,
+) {
     private var watchingThread: Thread? = null
+
     @Volatile
     private var isRunning = false
 
@@ -24,48 +26,49 @@ actual class ConfigDirectoryWatcher actual constructor(private val directoryPath
             file.mkdirs()
         }
 
-        watchingThread = thread(start = true, isDaemon = true, name = "ConfigDirectoryWatcher") {
-            val watchService = FileSystems.getDefault().newWatchService()
-            dirPath.register(
-                watchService,
-                StandardWatchEventKinds.ENTRY_CREATE,
-                StandardWatchEventKinds.ENTRY_MODIFY,
-                StandardWatchEventKinds.ENTRY_DELETE
-            )
+        watchingThread =
+            thread(start = true, isDaemon = true, name = "ConfigDirectoryWatcher") {
+                val watchService = FileSystems.getDefault().newWatchService()
+                dirPath.register(
+                    watchService,
+                    StandardWatchEventKinds.ENTRY_CREATE,
+                    StandardWatchEventKinds.ENTRY_MODIFY,
+                    StandardWatchEventKinds.ENTRY_DELETE,
+                )
 
-            while (isRunning) {
-                val key: WatchKey
-                try {
-                    key = watchService.take()
-                } catch (e: InterruptedException) {
-                    break
-                }
-
-                var changed = false
-                for (event in key.pollEvents()) {
-                    val kind = event.kind()
-                    if (kind == StandardWatchEventKinds.OVERFLOW) continue
-                    
-                    val changedPath = event.context() as Path
-                    if (changedPath.toString().endsWith(".yaml") || changedPath.toString().endsWith(".yml")) {
-                        changed = true
-                    }
-                }
-
-                val valid = key.reset()
-                if (changed) {
+                while (isRunning) {
+                    val key: WatchKey
                     try {
-                        val contents = readAllYamlFiles()
-                        onChange(contents)
-                    } catch (e: Exception) {
-                        e.printStackTrace()
+                        key = watchService.take()
+                    } catch (e: InterruptedException) {
+                        break
                     }
-                }
 
-                if (!valid) break
+                    var changed = false
+                    for (event in key.pollEvents()) {
+                        val kind = event.kind()
+                        if (kind == StandardWatchEventKinds.OVERFLOW) continue
+
+                        val changedPath = event.context() as Path
+                        if (changedPath.toString().endsWith(".yaml") || changedPath.toString().endsWith(".yml")) {
+                            changed = true
+                        }
+                    }
+
+                    val valid = key.reset()
+                    if (changed) {
+                        try {
+                            val contents = readAllYamlFiles()
+                            onChange(contents)
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                        }
+                    }
+
+                    if (!valid) break
+                }
+                watchService.close()
             }
-            watchService.close()
-        }
     }
 
     actual fun stopWatching() {
@@ -78,8 +81,9 @@ actual class ConfigDirectoryWatcher actual constructor(private val directoryPath
         val dir = File(directoryPath)
         if (!dir.exists() || !dir.isDirectory) return emptyList()
 
-        return dir.listFiles { file -> 
-            file.isFile && (file.name.endsWith(".yaml") || file.name.endsWith(".yml"))
-        }?.map { it.readText() } ?: emptyList()
+        return dir
+            .listFiles { file ->
+                file.isFile && (file.name.endsWith(".yaml") || file.name.endsWith(".yml"))
+            }?.map { it.readText() } ?: emptyList()
     }
 }

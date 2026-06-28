@@ -5,4 +5,3 @@ group = "org.omniai.sdk.outbound"
 subprojects {
     group = "org.omniai.sdk.outbound"
 }
-

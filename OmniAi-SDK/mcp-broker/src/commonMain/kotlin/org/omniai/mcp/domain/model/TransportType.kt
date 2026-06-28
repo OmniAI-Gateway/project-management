@@ -8,5 +8,8 @@ import kotlinx.serialization.Serializable
  */
 @Serializable
 enum class TransportType {
-    STDIO, STREAMABLE_HTTP, WEBSOCKET, SSE
+    STDIO,
+    STREAMABLE_HTTP,
+    WEBSOCKET,
+    SSE,
 }

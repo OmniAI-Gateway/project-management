@@ -8,7 +8,7 @@ data class DecodedJwt(
     val header: JwtHeader,
     val payload: JwtPayload,
     val signature: String,
-    val rawToken: String
+    val rawToken: String,
 ) {
     companion object {
         private val json = Json { ignoreUnknownKeys = true }

@@ -7,32 +7,37 @@ import org.omniai.sdk.application.pipeline.Interceptor
 import org.omniai.sdk.application.pipeline.InterceptorChain
 import org.omniai.sdk.application.pipeline.PipelineResult
 import org.omniai.sdk.domain.responses.CommonResponseEvent
-import org.omniai.sdk.interceptors.logger.*
+import org.omniai.sdk.interceptors.logger.GatewayLogger
+import org.omniai.sdk.interceptors.logger.NoOpGatewayLogger
 
 class RequestLoggingInterceptor(
-    private val logger: GatewayLogger = NoOpGatewayLogger
+    private val logger: GatewayLogger = NoOpGatewayLogger,
 ) : Interceptor {
-
     override suspend fun handle(
         context: GatewayContext,
-        chain: InterceptorChain
+        chain: InterceptorChain,
     ): PipelineResult {
         logger.info("[gateway] request provider={} model={}", context.request.provider.value, context.request.model)
 
         return when (val result = chain.proceed(context)) {
             is PipelineResult.Unary -> {
-                logger.info("[gateway] unary response provider={} model={}", result.response.provider.value, result.response.model)
+                logger.info(
+                    "[gateway] unary response provider={} model={}",
+                    result.response.provider.value,
+                    result.response.model,
+                )
                 result
             }
 
             is PipelineResult.Stream -> {
-                val traced: Flow<CommonResponseEvent> = result.eventFlow.onCompletion { cause ->
-                    if (cause == null) {
-                        logger.info("[gateway] stream completed")
-                    } else {
-                        logger.error("[gateway] stream failed: {}", cause.message, cause)
+                val traced: Flow<CommonResponseEvent> =
+                    result.eventFlow.onCompletion { cause ->
+                        if (cause == null) {
+                            logger.info("[gateway] stream completed")
+                        } else {
+                            logger.error("[gateway] stream failed: {}", cause.message, cause)
+                        }
                     }
-                }
                 PipelineResult.Stream(traced)
             }
 
@@ -41,8 +46,9 @@ class RequestLoggingInterceptor(
                 result
             }
 
-            is PipelineResult.NoResult -> PipelineResult.NoResult
+            is PipelineResult.NoResult -> {
+                PipelineResult.NoResult
+            }
         }
     }
 }
-

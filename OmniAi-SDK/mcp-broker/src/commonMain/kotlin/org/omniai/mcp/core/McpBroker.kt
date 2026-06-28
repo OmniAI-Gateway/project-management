@@ -29,7 +29,7 @@ import org.omniai.mcp.server.BrokerServer
  * - Hot-reloading when YAML files change in the config directory
  */
 class McpBroker(
-    private val onStop : () -> Unit = {},
+    private val onStop: () -> Unit = {},
     private val brokerServer: BrokerServer,
     private val configParser: ConfigParser,
     private val configMapper: ConfigMapper,
@@ -37,7 +37,7 @@ class McpBroker(
     private val toolRegistrar: ToolRegistrar,
     private val contextRegistrar: ContextRegistrar,
     private val clientManager: McpClientManager,
-    private val proxyToolRegistrar: ProxyToolRegistrar
+    private val proxyToolRegistrar: ProxyToolRegistrar,
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
@@ -51,9 +51,9 @@ class McpBroker(
             scope.launch {
                 try {
                     reloadConfig(newYamls)
-                }catch (e: Exception){
+                } catch (e: Exception) {
                     e.printStackTrace()
-                    throw  e
+                    throw e
                 }
             }
         }

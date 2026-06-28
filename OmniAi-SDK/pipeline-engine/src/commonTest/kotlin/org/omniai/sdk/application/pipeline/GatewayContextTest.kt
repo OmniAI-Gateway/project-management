@@ -1,18 +1,11 @@
 package org.omniai.sdk.application.pipeline
 
 import org.omniai.sdk.common.TypedMap
-import org.omniai.sdk.domain.common.Provider
-import org.omniai.sdk.domain.common.CommonRole
-import org.omniai.sdk.domain.requests.CommonRequest
-import org.omniai.sdk.domain.requests.CommonRequestMessage
-import org.omniai.sdk.domain.common.content.TextPart
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertNotSame
 import kotlin.test.assertSame
 
 class GatewayContextTest {
-
     @Test
     fun `default mode is UNARY`() {
         val ctx = GatewayContext(request = fakeRequest())
@@ -69,8 +62,20 @@ class GatewayContextTest {
         // TypedMap has no structural equals(), so we must share the SAME instance
         // for GatewayContext data-class equality to hold.
         val sharedAttrs = TypedMap()
-        val ctx1 = GatewayContext(request = req, mode = RequestMode.UNARY, res = PipelineResult.NoResult, attributes = sharedAttrs)
-        val ctx2 = GatewayContext(request = req, mode = RequestMode.UNARY, res = PipelineResult.NoResult, attributes = sharedAttrs)
+        val ctx1 =
+            GatewayContext(
+                request = req,
+                mode = RequestMode.UNARY,
+                res = PipelineResult.NoResult,
+                attributes = sharedAttrs,
+            )
+        val ctx2 =
+            GatewayContext(
+                request = req,
+                mode = RequestMode.UNARY,
+                res = PipelineResult.NoResult,
+                attributes = sharedAttrs,
+            )
         assertEquals(ctx1, ctx2)
     }
 
