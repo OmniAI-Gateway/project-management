@@ -25,4 +25,4 @@ jobs:
         run: chmod +x gradlew
 
       - name: Build and test
-        run: ./gradlew clean build && ./gradlew ktlintFormat && ./gradlew ktlintCheck
+        run: ./gradlew clean build && ./gradlew kt-lintFormat && ./gradlew kt lintCheck
