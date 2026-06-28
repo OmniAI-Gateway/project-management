@@ -5,7 +5,6 @@ import org.omniai.sdk.contracts.openai.output.OpenAiChatCompletionsResponse
 import org.omniai.sdk.gateway.client.core.ExecutionMode
 import org.omniai.sdk.gateway.client.extensions.inbounds.openAi
 import org.omniai.sdk.ports.inbound.InboundConnector
-import org.omniai.sdk.ports.inbound.InboundPort
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
