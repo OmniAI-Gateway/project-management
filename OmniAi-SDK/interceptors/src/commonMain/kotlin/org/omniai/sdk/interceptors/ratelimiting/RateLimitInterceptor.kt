@@ -10,7 +10,6 @@ import org.omniai.sdk.interceptors.ratelimiting.domain.RateLimitResult
 import org.omniai.sdk.interceptors.ratelimiting.policy.RateLimitPolicy
 import org.omniai.sdk.interceptors.ratelimiting.store.RateLimitStore
 import kotlin.time.Duration
-import kotlin.time.Duration.Companion.seconds
 
 /**
  * Interceptor responsible for enforcing rate limits across incoming requests.

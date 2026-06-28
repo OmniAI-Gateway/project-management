@@ -1,6 +1,6 @@
 package org.omniai.sdk.interceptors.auth.utils
 
-actual fun generateRsaPublicKeyBase64(
+actual fun GenerateRsaPublicKeyBase64(
     modulusBase64Url: String,
     exponentBase64Url: String,
 ): String? {
