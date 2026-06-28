@@ -7,7 +7,7 @@ import kotlin.io.encoding.Base64
 import kotlin.io.encoding.ExperimentalEncodingApi
 
 @OptIn(ExperimentalEncodingApi::class)
-actual fun GenerateRsaPublicKeyBase64(
+actual fun generateRsaPublicKeyBase64(
     modulusBase64Url: String,
     exponentBase64Url: String,
 ): String? {
