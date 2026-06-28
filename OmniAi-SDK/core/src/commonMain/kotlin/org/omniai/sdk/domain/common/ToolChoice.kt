@@ -7,8 +7,9 @@ sealed class ToolChoice {
 
     data object Required : ToolChoice()
 
-    data class Specific(val toolNames: List<String>) : ToolChoice() {
+    data class Specific(
+        val toolNames: List<String>,
+    ) : ToolChoice() {
         constructor(name: String) : this(listOf(name))
     }
 }
-

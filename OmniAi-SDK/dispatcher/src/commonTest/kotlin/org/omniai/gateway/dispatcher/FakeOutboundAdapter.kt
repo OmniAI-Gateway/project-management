@@ -13,9 +13,8 @@ import org.omniai.sdk.ports.outbound.OutboundPort
 class FakeOutboundAdapter(
     override val provider: Provider,
     override val model: Model,
-    override val key: String = "fake-api-key"
+    override val key: String = "fake-api-key",
 ) : OutboundPort {
-
     // Properties to inspect what was received during the test
     var receivedRequest: CommonRequest? = null
 

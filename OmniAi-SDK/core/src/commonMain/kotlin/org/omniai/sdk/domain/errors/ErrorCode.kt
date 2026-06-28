@@ -12,5 +12,5 @@ enum class ErrorCode {
     SERVICE_UNAVAILABLE,
     TIMEOUT,
     GATEWAY_TIMEOUT,
-    UNKNOWN_ERROR
+    UNKNOWN_ERROR,
 }

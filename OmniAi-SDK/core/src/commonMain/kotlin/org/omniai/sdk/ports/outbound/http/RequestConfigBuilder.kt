@@ -1,6 +1,8 @@
 package org.omniai.sdk.ports.outbound.http
 
-class RequestConfigBuilder<T>(private val rawUrl: String) {
+class RequestConfigBuilder<T>(
+    private val rawUrl: String,
+) {
     var method: HttpMethod = HttpMethod.GET
     var numberOfTries: Int = 3
     var body: T? = null
@@ -10,15 +12,24 @@ class RequestConfigBuilder<T>(private val rawUrl: String) {
 
     private val pathParams = mutableMapOf<String, String>()
 
-    fun header(key: String, value: String) {
+    fun header(
+        key: String,
+        value: String,
+    ) {
         headers.getOrPut(key) { mutableListOf() }.add(value)
     }
 
-    fun parameter(key: String, value: String) {
+    fun parameter(
+        key: String,
+        value: String,
+    ) {
         queryParams.getOrPut(key) { mutableListOf() }.add(value)
     }
 
-    fun pathParam(key: String, value: Any) {
+    fun pathParam(
+        key: String,
+        value: Any,
+    ) {
         pathParams[key] = value.toString()
     }
 
@@ -31,7 +42,7 @@ class RequestConfigBuilder<T>(private val rawUrl: String) {
             numberOfTries = numberOfTries,
             headers = headers,
             queryParams = queryParams,
-            body = body
+            body = body,
         )
     }
 }

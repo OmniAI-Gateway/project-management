@@ -31,22 +31,27 @@ class DispatcherAdapterBuilder {
     }
 
     fun build(): DispatcherAdapter {
-        val unary = requireNotNull(unaryHandler) {
-            "Missing unary handler. Configure it with unary { request -> ... }."
-        }
-        val stream = requireNotNull(streamHandler) {
-            "Missing stream handler. Configure it with stream { request -> ... }."
-        }
+        val unary =
+            requireNotNull(unaryHandler) {
+                "Missing unary handler. Configure it with unary { request -> ... }."
+            }
+        val stream =
+            requireNotNull(streamHandler) {
+                "Missing stream handler. Configure it with stream { request -> ... }."
+            }
 
         return object : DispatcherAdapter {
-            override suspend fun generate(request: CommonRequest, attributes: TypedMap): Either<DomainError, CommonResponse> =
-                unary(request, attributes)
+            override suspend fun generate(
+                request: CommonRequest,
+                attributes: TypedMap,
+            ): Either<DomainError, CommonResponse> = unary(request, attributes)
 
-            override suspend fun generateStream(request: CommonRequest, attributes: TypedMap): Either<DomainError, Flow<CommonResponseEvent>> =
-                stream(request, attributes)
+            override suspend fun generateStream(
+                request: CommonRequest,
+                attributes: TypedMap,
+            ): Either<DomainError, Flow<CommonResponseEvent>> = stream(request, attributes)
         }
     }
 }
 
-fun dispatcherAdapter(block: DispatcherAdapterBuilder.() -> Unit): DispatcherAdapter =
-    DispatcherAdapterBuilder().apply(block).build()
+fun dispatcherAdapter(block: DispatcherAdapterBuilder.() -> Unit): DispatcherAdapter = DispatcherAdapterBuilder().apply(block).build()

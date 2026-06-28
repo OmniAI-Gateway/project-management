@@ -2,18 +2,42 @@ package org.omniai.sdk.domain.common.json
 
 fun Any?.toJsonValue(): JsonValue =
     when (this) {
-        null -> JsonValue.JsonNull
-        is JsonValue -> this
-        is String -> JsonValue.JsonString(this)
-        is Boolean -> JsonValue.JsonBoolean(this)
-        is Number -> JsonValue.JsonNumber(this)
-        is Map<*, *> -> JsonValue.JsonObject(
-            properties = entries.associate { (key, value) ->
-                key.toString() to value.toJsonValue()
-            }
-        )
-        is List<*> -> JsonValue.JsonArray(items = map { it.toJsonValue() })
-        else -> JsonValue.JsonString(toString())
+        null -> {
+            JsonValue.JsonNull
+        }
+
+        is JsonValue -> {
+            this
+        }
+
+        is String -> {
+            JsonValue.JsonString(this)
+        }
+
+        is Boolean -> {
+            JsonValue.JsonBoolean(this)
+        }
+
+        is Number -> {
+            JsonValue.JsonNumber(this)
+        }
+
+        is Map<*, *> -> {
+            JsonValue.JsonObject(
+                properties =
+                    entries.associate { (key, value) ->
+                        key.toString() to value.toJsonValue()
+                    },
+            )
+        }
+
+        is List<*> -> {
+            JsonValue.JsonArray(items = map { it.toJsonValue() })
+        }
+
+        else -> {
+            JsonValue.JsonString(toString())
+        }
     }
 
 fun Map<String, Any?>.toJsonObject(): JsonValue.JsonObject =
@@ -29,10 +53,7 @@ fun JsonValue.toRawAny(): Any? =
         is JsonValue.JsonObject -> properties.mapValues { (_, value) -> value.toRawAny() }
     }
 
-fun JsonValue.JsonObject.toRawMap(): Map<String, Any?> =
-    properties.mapValues { (_, value) -> value.toRawAny() }
-
-
+fun JsonValue.JsonObject.toRawMap(): Map<String, Any?> = properties.mapValues { (_, value) -> value.toRawAny() }
 
 fun String.toJsonObjectOrNull(): JsonValue.JsonObject? {
     val trimmed = this.trim()
@@ -45,7 +66,9 @@ fun String.toJsonObjectOrNull(): JsonValue.JsonObject? {
     }
 }
 
-private class SimpleJsonParser(private val input: String) {
+private class SimpleJsonParser(
+    private val input: String,
+) {
     private var pos = 0
 
     private fun skipWhitespace() {
@@ -126,12 +149,30 @@ private class SimpleJsonParser(private val input: String) {
             // Lógica para lidar com texto escapado (Ex: \" )
             if (c == '\\') {
                 when (val esc = input[pos++]) {
-                    '"', '\\', '/' -> sb.append(esc)
-                    'b' -> sb.append('\b')
-                    'f' -> sb.append('\u000C')
-                    'n' -> sb.append('\n')
-                    'r' -> sb.append('\r')
-                    't' -> sb.append('\t')
+                    '"', '\\', '/' -> {
+                        sb.append(esc)
+                    }
+
+                    'b' -> {
+                        sb.append('\b')
+                    }
+
+                    'f' -> {
+                        sb.append('\u000C')
+                    }
+
+                    'n' -> {
+                        sb.append('\n')
+                    }
+
+                    'r' -> {
+                        sb.append('\r')
+                    }
+
+                    't' -> {
+                        sb.append('\t')
+                    }
+
                     'u' -> {
                         // Lida com caracteres unicode (ex: \u00A9)
                         sb.append(input.substring(pos, pos + 4).toInt(16).toChar())
@@ -161,7 +202,10 @@ private class SimpleJsonParser(private val input: String) {
         }
     }
 
-    private fun parseLiteral(literal: String, value: JsonValue): JsonValue {
+    private fun parseLiteral(
+        literal: String,
+        value: JsonValue,
+    ): JsonValue {
         if (input.startsWith(literal, pos)) {
             pos += literal.length
             return value

@@ -13,7 +13,8 @@ interface OutboundPort {
     val provider: Provider
     val model: Model
     val key: String
-    
+
     suspend fun generate(request: CommonRequest): Either<DomainError, CommonResponse>
+
     suspend fun generateStream(request: CommonRequest): Either<DomainError, Flow<CommonResponseEvent>>
 }

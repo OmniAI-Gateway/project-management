@@ -2,16 +2,17 @@ package org.omniai.sdk.common
 
 import kotlin.reflect.KClass
 
-class AttributeKey<T : Any> @PublishedApi internal constructor(
-    val name: String,
-    val type: KClass<T>
-) {
-    override fun equals(other: Any?): Boolean =
-        (other is AttributeKey<*>) && name == other.name && type == other.type
+class AttributeKey<T : Any>
+    @PublishedApi
+    internal constructor(
+        val name: String,
+        val type: KClass<T>,
+    ) {
+        override fun equals(other: Any?): Boolean = (other is AttributeKey<*>) && name == other.name && type == other.type
 
-    override fun hashCode(): Int = name.hashCode() * 31 + type.hashCode()
+        override fun hashCode(): Int = name.hashCode() * 31 + type.hashCode()
 
-    override fun toString(): String = "Key($name: ${type.simpleName})"
-}
+        override fun toString(): String = "Key($name: ${type.simpleName})"
+    }
 
 inline fun <reified T : Any> key(name: String) = AttributeKey(name, T::class)

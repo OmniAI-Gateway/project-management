@@ -2,38 +2,49 @@ package org.omniai.sdk.common
 
 import kotlin.reflect.KClass
 
-class TypedMap(private val data: MutableMap<AttributeKey<*>, Any> = mutableMapOf()) {
-
-    companion object  {
-
+class TypedMap(
+    private val data: MutableMap<AttributeKey<*>, Any> = mutableMapOf(),
+) {
+    companion object {
         private val cache = mutableMapOf<Pair<String, KClass<*>>, AttributeKey<*>>()
 
         @Suppress("UNCHECKED_CAST")
-        fun <T : Any> get(name: String, type: KClass<T>): AttributeKey<T> {
-            return cache.getOrPut(name to type) { AttributeKey(name, type) } as AttributeKey<T>
-        }
+        fun <T : Any> get(
+            name: String,
+            type: KClass<T>,
+        ): AttributeKey<T> = cache.getOrPut(name to type) { AttributeKey(name, type) } as AttributeKey<T>
     }
 
-    fun <T : Any> put(key: AttributeKey<T>, value: T) {
+    fun <T : Any> put(
+        key: AttributeKey<T>,
+        value: T,
+    ) {
         data[key] = value
     }
 
-    operator fun <T : Any> set(key: AttributeKey<T>, value: T) = put(key, value)
+    operator fun <T : Any> set(
+        key: AttributeKey<T>,
+        value: T,
+    ) = put(key, value)
 
     @Suppress("UNCHECKED_CAST")
     operator fun <T : Any> get(key: AttributeKey<T>): T? = data[key] as? T
 
-    fun <T : Any> require(key: AttributeKey<T>): T =
-        get(key) ?: error("Missing required key: $key")
+    fun <T : Any> require(key: AttributeKey<T>): T = get(key) ?: error("Missing required key: $key")
 
     fun contains(key: AttributeKey<*>): Boolean = key in data
 
     fun remove(key: AttributeKey<*>) = data.remove(key)
 
-    inline fun <T : Any> getOrPut(key: AttributeKey<T>, default: () -> T): T =
-        get(key) ?: default().also { put(key, it) }
+    inline fun <T : Any> getOrPut(
+        key: AttributeKey<T>,
+        default: () -> T,
+    ): T = get(key) ?: default().also { put(key, it) }
 
-    inline fun <reified T : Any> put(name: String, value: T) {
+    inline fun <reified T : Any> put(
+        name: String,
+        value: T,
+    ) {
         val key = get(name, T::class)
         put(key, value)
     }
@@ -58,7 +69,10 @@ class TypedMap(private val data: MutableMap<AttributeKey<*>, Any> = mutableMapOf
         remove(key)
     }
 
-    inline fun <reified T : Any> getOrPut(name: String, noinline default: () -> T): T {
+    inline fun <reified T : Any> getOrPut(
+        name: String,
+        noinline default: () -> T,
+    ): T {
         val key = get(name, T::class)
         return getOrPut(key, default)
     }
@@ -75,6 +89,5 @@ class TypedMap(private val data: MutableMap<AttributeKey<*>, Any> = mutableMapOf
 
     fun size(): Int = data.size
 
-    override fun toString(): String =
-        data.entries.joinToString(prefix = "TypedMap(", postfix = ")") { "${it.key}=${it.value}" }
+    override fun toString(): String = data.entries.joinToString(prefix = "TypedMap(", postfix = ")") { "${it.key}=${it.value}" }
 }

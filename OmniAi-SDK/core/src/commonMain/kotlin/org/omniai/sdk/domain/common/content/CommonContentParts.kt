@@ -7,29 +7,29 @@ sealed interface RequestContentPart
 
 sealed interface ResponseContentPart
 
-sealed interface SharedContentPart : RequestContentPart, ResponseContentPart
+sealed interface SharedContentPart :
+    RequestContentPart,
+    ResponseContentPart
 
 data class TextPart(
-    val text: String
+    val text: String,
 ) : SharedContentPart
 
 data class JsonPart(
-    val json: JsonValue
+    val json: JsonValue,
 ) : SharedContentPart
 
 data class ToolCallPart(
     val toolCallId: String,
     val functionName: String,
-    val argumentsJson: JsonObjectMap
+    val argumentsJson: JsonObjectMap,
 ) : SharedContentPart
 
 data class ToolResultPart(
     val toolCallId: String,
-    val content: List<JsonValue>
+    val content: List<JsonValue>,
 ) : RequestContentPart
 
 data class RefusalPart(
-    val reason: String
+    val reason: String,
 ) : ResponseContentPart
-
-

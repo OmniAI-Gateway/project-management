@@ -4,12 +4,11 @@ import kotlinx.serialization.json.JsonObject
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
-import kotlin.test.assertNull
 import kotlin.test.assertNotNull
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class JsonValueConvertersTest {
-
     // ==========================================
     // 1. Raw Conversions (Any? <-> JsonValue)
     // ==========================================
@@ -25,7 +24,9 @@ class JsonValueConvertersTest {
 
     @Test
     fun `converts unknown types using toString fallback`() {
-        class CustomObject { override fun toString() = "custom_string" }
+        class CustomObject {
+            override fun toString() = "custom_string"
+        }
 
         val result = CustomObject().toJsonValue()
 
@@ -35,18 +36,20 @@ class JsonValueConvertersTest {
 
     @Test
     fun `roundtrips deeply nested maps and lists seamlessly`() {
-        val originalPayload = mapOf(
-            "name" to "claude",
-            "temperature" to 0.3,
-            "enabled" to true,
-            "tags" to listOf("ai", null, "gateway"), // Array com null
-            "meta" to mapOf(
-                "version" to 1,
-                "nested_list" to listOf(mapOf("id" to 10)) // Lista de mapas
-            ),
-            "empty_map" to emptyMap<String, Any>(),
-            "empty_list" to emptyList<Any>()
-        )
+        val originalPayload =
+            mapOf(
+                "name" to "claude",
+                "temperature" to 0.3,
+                "enabled" to true,
+                "tags" to listOf("ai", null, "gateway"), // Array com null
+                "meta" to
+                    mapOf(
+                        "version" to 1,
+                        "nested_list" to listOf(mapOf("id" to 10)), // Lista de mapas
+                    ),
+                "empty_map" to emptyMap<String, Any>(),
+                "empty_list" to emptyList<Any>(),
+            )
 
         // 1. Converte para o teu Domínio
         val jsonObject = originalPayload.toJsonObject()
@@ -64,14 +67,14 @@ class JsonValueConvertersTest {
         assertEquals(originalPayload, raw)
     }
 
-
     // ==========================================
     // 2. SimpleJsonParser (String -> JsonObject)
     // ==========================================
 
     @Test
     fun `parser converts valid complex JSON string to JsonObject`() {
-        val jsonString = """
+        val jsonString =
+            """
             {
                 "model": "gpt-4",
                 "stream": false,
@@ -81,7 +84,7 @@ class JsonValueConvertersTest {
                 ],
                 "metadata": null
             }
-        """.trimIndent()
+            """.trimIndent()
 
         val parsed = jsonString.toJsonObjectOrNull()
         assertNotNull(parsed)
@@ -98,9 +101,10 @@ class JsonValueConvertersTest {
 
     @Test
     fun `parser handles escaped characters and unicode correctly`() {
-        val jsonString = """
+        val jsonString =
+            """
             { "text": "Linha 1\nLinha 2", "quote": "Ele disse \"olá\"", "unicode": "\u00A9" }
-        """.trimIndent()
+            """.trimIndent()
 
         val parsed = jsonString.toJsonObjectOrNull()
         assertNotNull(parsed)
@@ -112,20 +116,20 @@ class JsonValueConvertersTest {
 
     @Test
     fun `parser fails gracefully and returns null for invalid JSON`() {
-        val invalidStrings = listOf(
-            """{ "name": "claude" """,       // Falta fechar chaveta
-            """{ "name": "claude", }""",     // Vírgula extra
-            """[ "array_is_not_object" ]""", // Não é um JsonObject na raiz
-            """{ "bad_key": unquoted }""",   // Valor não formatado
-            "  ",                            // Vazio/Espaços
-            "random text"                    // Lixo
-        )
+        val invalidStrings =
+            listOf(
+                """{ "name": "claude" """, // Falta fechar chaveta
+                """{ "name": "claude", }""", // Vírgula extra
+                """[ "array_is_not_object" ]""", // Não é um JsonObject na raiz
+                """{ "bad_key": unquoted }""", // Valor não formatado
+                "  ", // Vazio/Espaços
+                "random text", // Lixo
+            )
 
         invalidStrings.forEach { invalidJson ->
             assertNull(invalidJson.toJsonObjectOrNull(), "Should return null for: $invalidJson")
         }
     }
-
 
     // ==========================================
     // 3. Serialization (JsonValue -> String)
@@ -133,11 +137,14 @@ class JsonValueConvertersTest {
 
     @Test
     fun `toJsonString serializes objects and arrays correctly`() {
-        val domainObj = JsonValue.JsonObject(mapOf(
-            "key" to JsonValue.JsonString("value"),
-            "number" to JsonValue.JsonNumber(42),
-            "list" to JsonValue.JsonArray(listOf(JsonValue.JsonBoolean(true), JsonValue.JsonNull))
-        ))
+        val domainObj =
+            JsonValue.JsonObject(
+                mapOf(
+                    "key" to JsonValue.JsonString("value"),
+                    "number" to JsonValue.JsonNumber(42),
+                    "list" to JsonValue.JsonArray(listOf(JsonValue.JsonBoolean(true), JsonValue.JsonNull)),
+                ),
+            )
 
         val jsonString = domainObj.toJsonString()
 
@@ -150,9 +157,12 @@ class JsonValueConvertersTest {
         // ATENÇÃO: Este teste vai falhar com a tua implementação atual do `toJsonString()` no JsonValue.kt!
         // O teu `is JsonString -> "\"$value\""` não escapa as aspas interiores.
         // É um excelente teste para te obrigar a corrigir o bug.
-        val domainObj = JsonValue.JsonObject(mapOf(
-            "prompt" to JsonValue.JsonString("O utilizador disse \"olá\" ontem.")
-        ))
+        val domainObj =
+            JsonValue.JsonObject(
+                mapOf(
+                    "prompt" to JsonValue.JsonString("O utilizador disse \"olá\" ontem."),
+                ),
+            )
 
         val jsonString = domainObj.toJsonString()
 
@@ -160,18 +170,18 @@ class JsonValueConvertersTest {
         assertEquals("""{"prompt":"O utilizador disse \"olá\" ontem."}""", jsonString)
     }
 
-
     // ==========================================
     // 4. Kotlinx Serialization Bridge
     // ==========================================
 
     @Test
     fun `maintains strict symmetry when converting to and from kotlinx JsonElement`() {
-        val originalPayload = mapOf(
-            "system" to "You are an AI.",
-            "metrics" to mapOf("latency" to 150.5, "success" to true),
-            "flags" to listOf("experimental", null)
-        ).toJsonObject()
+        val originalPayload =
+            mapOf(
+                "system" to "You are an AI.",
+                "metrics" to mapOf("latency" to 150.5, "success" to true),
+                "flags" to listOf("experimental", null),
+            ).toJsonObject()
 
         // Domínio -> Kotlinx
         val kotlinxElement = originalPayload.toKotlinxJsonElement()

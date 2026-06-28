@@ -2,15 +2,14 @@ package org.omniai.sdk.gateway.client.dsl
 
 import org.omniai.sdk.gateway.client.auth.SecurityConfig
 import org.omniai.sdk.gateway.client.auth.SecurityDsl
-import org.omniai.sdk.ports.inbound.DispatcherPort
-import org.omniai.sdk.gateway.client.core.OmniAiConfig
 import org.omniai.sdk.gateway.client.core.ExecutionMode
+import org.omniai.sdk.gateway.client.core.OmniAiConfig
 import org.omniai.sdk.gateway.client.dsl.inbounds.InboundsDsl
-import org.omniai.sdk.gateway.client.dsl.outbounds.OutboundsDsl
 import org.omniai.sdk.gateway.client.dsl.interceptors.InterceptorsDsl
+import org.omniai.sdk.gateway.client.dsl.outbounds.OutboundsDsl
+import org.omniai.sdk.ports.inbound.DispatcherPort
 
-fun omniAiGateway(block: OmniAiGatewayDsl.() -> Unit): OmniAiConfig =
-    OmniAiGatewayDsl().apply(block).build()
+fun omniAiGateway(block: OmniAiGatewayDsl.() -> Unit): OmniAiConfig = OmniAiGatewayDsl().apply(block).build()
 
 @GatewayDsl
 class OmniAiGatewayDsl {
@@ -31,13 +30,14 @@ class OmniAiGatewayDsl {
     }
 
     fun build(): OmniAiConfig {
-        val resolvedExecution = requireNotNull(executionMode) {
-            "You must define an execution block with either useNativePipeline or useCustomDispatcher."
-        }
+        val resolvedExecution =
+            requireNotNull(executionMode) {
+                "You must define an execution block with either useNativePipeline or useCustomDispatcher."
+            }
         return OmniAiConfig(
             inbounds = inboundsDsl.build(),
             execution = resolvedExecution,
-            security = securityConfig
+            security = securityConfig,
         )
     }
 }
@@ -56,9 +56,10 @@ class ExecutionDsl {
         executionMode = ExecutionMode.CustomDispatcher(dispatcher)
     }
 
-    internal fun build(): ExecutionMode = requireNotNull(executionMode) {
-        "You must choose an execution mode: useNativePipeline or useCustomDispatcher."
-    }
+    internal fun build(): ExecutionMode =
+        requireNotNull(executionMode) {
+            "You must choose an execution mode: useNativePipeline or useCustomDispatcher."
+        }
 }
 
 @GatewayDsl
@@ -78,7 +79,7 @@ class NativePipelineDsl {
         val outbounds = outboundsDsl.build()
         return ExecutionMode.NativePipeline(
             outbounds = outbounds,
-            interceptors = interceptorsDsl.build(outbounds)
+            interceptors = interceptorsDsl.build(outbounds),
         )
     }
 }

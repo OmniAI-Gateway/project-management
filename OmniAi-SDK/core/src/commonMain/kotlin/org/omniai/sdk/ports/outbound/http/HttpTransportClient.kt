@@ -6,18 +6,20 @@ import org.omniai.sdk.binders.IncomingContext
 import org.omniai.sdk.common.TypedMap
 
 interface HttpTransportClient {
-
-    fun bindResponseMetadata(context: IncomingContext, headerNames: Set<String>): TypedMap
+    fun bindResponseMetadata(
+        context: IncomingContext,
+        headerNames: Set<String>,
+    ): TypedMap
 
     suspend fun <T, V> execute(
         config: RequestConfig<V>,
-        responseSerializer: KSerializer<T>
+        responseSerializer: KSerializer<T>,
     ): HttpCallResult<T>
 
     fun <T, V> listen(
         config: RequestConfig<V>,
         eventName: String?,
-        responseSerializer: KSerializer<T>
+        responseSerializer: KSerializer<T>,
     ): Flow<HttpCallResult<T>>
 
     fun <E : Any, V> listenMany(

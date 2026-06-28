@@ -6,23 +6,23 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 
 class RequestConfigDslTest {
-
     @Test
     fun `should build RequestConfig correctly using DSL`() {
-        val config = requestConfig("https://api.provider.com/{resource}") {
-            method = HttpMethod.POST
-            numberOfTries = 5
-            body = "{\"prompt\": \"Hello\"}"
+        val config =
+            requestConfig("https://api.provider.com/{resource}") {
+                method = HttpMethod.POST
+                numberOfTries = 5
+                body = "{\"prompt\": \"Hello\"}"
 
-            pathParam("resource", "completions")
+                pathParam("resource", "completions")
 
-            header("Authorization", "Bearer token123")
-            header("Accept", "application/json")
+                header("Authorization", "Bearer token123")
+                header("Accept", "application/json")
 
-            // Test parameter accumulation with same key
-            parameter("filter", "active")
-            parameter("filter", "recent")
-        }
+                // Test parameter accumulation with same key
+                parameter("filter", "active")
+                parameter("filter", "recent")
+            }
 
         assertEquals("https://api.provider.com/completions", config.url)
         assertEquals(HttpMethod.POST, config.method)

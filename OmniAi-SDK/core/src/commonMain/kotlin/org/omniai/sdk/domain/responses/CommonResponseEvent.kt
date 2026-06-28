@@ -17,7 +17,7 @@ data class ResponseStarted(
     override val id: String,
     override val model: Model,
     override val sequence: Long,
-    override val providerEventType: String? = null
+    override val providerEventType: String? = null,
 ) : CommonResponseEvent
 
 data class ChoiceStarted(
@@ -27,7 +27,7 @@ data class ChoiceStarted(
     override val sequence: Long,
     val choiceIndex: Int,
     val role: CommonRole? = null,
-    override val providerEventType: String? = null
+    override val providerEventType: String? = null,
 ) : CommonResponseEvent
 
 data class TextDeltaEvent(
@@ -37,7 +37,7 @@ data class TextDeltaEvent(
     override val sequence: Long,
     val choiceIndex: Int,
     val text: String,
-    override val providerEventType: String? = null
+    override val providerEventType: String? = null,
 ) : CommonResponseEvent
 
 data class ToolCallStartedEvent(
@@ -49,7 +49,7 @@ data class ToolCallStartedEvent(
     val toolCallIndex: Int,
     val toolCallId: String,
     val functionName: String,
-    override val providerEventType: String? = null
+    override val providerEventType: String? = null,
 ) : CommonResponseEvent
 
 data class ToolCallArgumentsDeltaEvent(
@@ -60,7 +60,7 @@ data class ToolCallArgumentsDeltaEvent(
     val choiceIndex: Int,
     val toolCallIndex: Int,
     val argumentsFragment: String,
-    override val providerEventType: String? = null
+    override val providerEventType: String? = null,
 ) : CommonResponseEvent
 
 data class ChoiceFinished(
@@ -70,7 +70,7 @@ data class ChoiceFinished(
     override val sequence: Long,
     val choiceIndex: Int,
     val finishReason: FinishReason? = null,
-    override val providerEventType: String? = null
+    override val providerEventType: String? = null,
 ) : CommonResponseEvent
 
 data class UsageReported(
@@ -79,7 +79,7 @@ data class UsageReported(
     override val model: Model,
     override val sequence: Long,
     val usage: CommonUsage,
-    override val providerEventType: String? = null
+    override val providerEventType: String? = null,
 ) : CommonResponseEvent
 
 data class ResponseCompleted(
@@ -87,7 +87,7 @@ data class ResponseCompleted(
     override val id: String,
     override val model: Model,
     override val sequence: Long,
-    override val providerEventType: String? = null
+    override val providerEventType: String? = null,
 ) : CommonResponseEvent
 
 data class ResponseErrored(
@@ -97,5 +97,5 @@ data class ResponseErrored(
     override val sequence: Long,
     val message: String,
     val retryable: Boolean = false,
-    override val providerEventType: String? = null
+    override val providerEventType: String? = null,
 ) : CommonResponseEvent

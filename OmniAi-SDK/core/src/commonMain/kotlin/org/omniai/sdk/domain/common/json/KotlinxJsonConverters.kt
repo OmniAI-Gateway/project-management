@@ -16,24 +16,33 @@ fun JsonValue.toKotlinxJsonElement(): JsonElement =
         JsonValue.JsonNull -> JsonNull
     }
 
-fun JsonValue.JsonObject.toKotlinxJsonObject(): JsonObject =
-    JsonObject(properties.mapValues { (_, value) -> value.toKotlinxJsonElement() })
+fun JsonValue.JsonObject.toKotlinxJsonObject(): JsonObject = JsonObject(properties.mapValues { (_, value) -> value.toKotlinxJsonElement() })
 
 fun JsonObject.toDomainJsonObject(): JsonValue.JsonObject =
     JsonValue.JsonObject(properties = mapValues { (_, value) -> value.toDomainJsonValue() })
 
 fun JsonElement.toDomainJsonValue(): JsonValue =
     when (this) {
-        is JsonObject -> JsonValue.JsonObject(properties = mapValues { (_, value) -> value.toDomainJsonValue() })
-        is JsonArray -> JsonValue.JsonArray(items = map { it.toDomainJsonValue() })
-        is JsonNull -> JsonValue.JsonNull
-        is JsonPrimitive -> when {
-            isString -> JsonValue.JsonString(content)
-            content == "true" -> JsonValue.JsonBoolean(true)
-            content == "false" -> JsonValue.JsonBoolean(false)
-            content.toLongOrNull() != null -> JsonValue.JsonNumber(content.toLong())
-            content.toDoubleOrNull() != null -> JsonValue.JsonNumber(content.toDouble())
-            else -> JsonValue.JsonString(content)
+        is JsonObject -> {
+            JsonValue.JsonObject(properties = mapValues { (_, value) -> value.toDomainJsonValue() })
+        }
+
+        is JsonArray -> {
+            JsonValue.JsonArray(items = map { it.toDomainJsonValue() })
+        }
+
+        is JsonNull -> {
+            JsonValue.JsonNull
+        }
+
+        is JsonPrimitive -> {
+            when {
+                isString -> JsonValue.JsonString(content)
+                content == "true" -> JsonValue.JsonBoolean(true)
+                content == "false" -> JsonValue.JsonBoolean(false)
+                content.toLongOrNull() != null -> JsonValue.JsonNumber(content.toLong())
+                content.toDoubleOrNull() != null -> JsonValue.JsonNumber(content.toDouble())
+                else -> JsonValue.JsonString(content)
+            }
         }
     }
-

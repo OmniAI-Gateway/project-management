@@ -1,18 +1,20 @@
 package org.omniai.sdk.gateway.client.extensions.outbounds
 
-import org.omniai.sdk.ports.outbound.http.HttpTransportClient
-import org.omniai.sdk.ports.outbound.OutboundPort
-import org.omniai.sdk.gateway.client.dsl.outbounds.OutboundsDsl
 import org.omniai.sdk.adapters.anthropic.AnthropicOutboundAdapter
 import org.omniai.sdk.domain.common.Model
+import org.omniai.sdk.gateway.client.dsl.outbounds.OutboundsDsl
+import org.omniai.sdk.ports.outbound.OutboundPort
+import org.omniai.sdk.ports.outbound.http.HttpTransportClient
 
 data class AnthropicOutboundConfig(
     val key: String,
     val models: List<String>,
-    val baseUrl: String? = null
+    val baseUrl: String? = null,
 )
 
-class AnthropicOutboundBuilder(private val httpClient: HttpTransportClient) {
+class AnthropicOutboundBuilder(
+    private val httpClient: HttpTransportClient,
+) {
     private val configurations = mutableListOf<AnthropicOutboundConfig>()
     private var currentBaseUrl: String? = null
 
@@ -20,7 +22,10 @@ class AnthropicOutboundBuilder(private val httpClient: HttpTransportClient) {
         currentBaseUrl = url
     }
 
-    fun apiKey(key: String, block: ModelMappingBuilder.() -> Unit) {
+    fun apiKey(
+        key: String,
+        block: ModelMappingBuilder.() -> Unit,
+    ) {
         val mapping = ModelMappingBuilder().apply(block).build()
         configurations.add(AnthropicOutboundConfig(key, mapping, currentBaseUrl))
         currentBaseUrl = null
@@ -36,15 +41,15 @@ class AnthropicOutboundBuilder(private val httpClient: HttpTransportClient) {
                             model = Model(modelName),
                             apiKey = config.key,
                             baseUrl = config.baseUrl,
-                            transportClient = httpClient
+                            transportClient = httpClient,
                         )
                     } else {
                         AnthropicOutboundAdapter(
                             model = Model(modelName),
                             apiKey = config.key,
-                            transportClient = httpClient
+                            transportClient = httpClient,
                         )
-                    }
+                    },
                 )
             }
         }
@@ -52,7 +57,10 @@ class AnthropicOutboundBuilder(private val httpClient: HttpTransportClient) {
     }
 }
 
-fun OutboundsDsl.anthropic(httpClient: HttpTransportClient, block: AnthropicOutboundBuilder.() -> Unit) {
+fun OutboundsDsl.anthropic(
+    httpClient: HttpTransportClient,
+    block: AnthropicOutboundBuilder.() -> Unit,
+) {
     val builder = AnthropicOutboundBuilder(httpClient).apply(block)
     builder.buildPorts().forEach { use(it) }
 }

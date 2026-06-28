@@ -6,5 +6,5 @@ data class RequestConfig<T>(
     val numberOfTries: Int = 3,
     val queryParams: Map<String, List<String>> = emptyMap(),
     val headers: Map<String, List<String>> = emptyMap(),
-    val body: T? = null
+    val body: T? = null,
 )

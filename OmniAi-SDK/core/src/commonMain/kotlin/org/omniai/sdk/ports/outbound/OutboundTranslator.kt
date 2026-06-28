@@ -7,6 +7,8 @@ import org.omniai.sdk.domain.responses.CommonResponseEvent
 
 interface OutboundTranslator<out ProviderReq, in ProviderRes, in ProviderEvent> {
     fun fromDomain(domainRequest: CommonRequest): ProviderReq
+
     fun toDomain(providerResponse: ProviderRes): CommonResponse
+
     fun toDomainEvent(providerEvent: Flow<ProviderEvent>): Flow<CommonResponseEvent>
 }

@@ -1,7 +1,7 @@
 package org.omniai.sdk.gateway.client.dsl.interceptors
 
-import org.omniai.sdk.interceptors.metrics.MetricsInterceptor
 import org.omniai.sdk.application.pipeline.Interceptor
+import org.omniai.sdk.gateway.client.dsl.GatewayDsl
 import org.omniai.sdk.interceptors.metrics.ActiveRequestsConfig
 import org.omniai.sdk.interceptors.metrics.CustomMetric
 import org.omniai.sdk.interceptors.metrics.DefaultLatencyMetricConfig
@@ -9,12 +9,12 @@ import org.omniai.sdk.interceptors.metrics.DefaultLatencyMetricConfigBuilder
 import org.omniai.sdk.interceptors.metrics.MetricsAttributeExtractor
 import org.omniai.sdk.interceptors.metrics.MetricsAttributesBuilder
 import org.omniai.sdk.interceptors.metrics.MetricsConfigurationBuilder
+import org.omniai.sdk.interceptors.metrics.MetricsInterceptor
 import org.omniai.sdk.interceptors.metrics.MetricsInterceptorConfig
 import org.omniai.sdk.interceptors.metrics.MetricsPort
 import org.omniai.sdk.interceptors.metrics.Tracer
 import org.omniai.sdk.interceptors.metrics.TracingInterceptor
 import org.omniai.sdk.interceptors.metrics.TtftConfig
-import org.omniai.sdk.gateway.client.dsl.GatewayDsl
 
 @GatewayDsl
 class MetricsInterceptorBuilder {
@@ -47,29 +47,34 @@ class MetricsInterceptorBuilder {
     }
 
     internal fun build(): List<Interceptor> {
-        val resolvedPort = requireNotNull(metricsPort) {
-            "MetricsPort is required to build telemetry metrics interceptors"
-        }
+        val resolvedPort =
+            requireNotNull(metricsPort) {
+                "MetricsPort is required to build telemetry metrics interceptors"
+            }
 
         val interceptors = mutableListOf<Interceptor>()
         tracer?.let { interceptors += TracingInterceptor(it) }
 
-        interceptors += MetricsInterceptor(
-            metricsPort = resolvedPort,
-            config = MetricsInterceptorConfig(
-                defaultLatency = defaultLatencyConfig,
-                activeRequests = activeRequestsConfig,
-                ttft = ttftConfig,
-                attributeExtractors = attributeExtractors,
-                customMetrics = customMetrics
+        interceptors +=
+            MetricsInterceptor(
+                metricsPort = resolvedPort,
+                config =
+                    MetricsInterceptorConfig(
+                        defaultLatency = defaultLatencyConfig,
+                        activeRequests = activeRequestsConfig,
+                        ttft = ttftConfig,
+                        attributeExtractors = attributeExtractors,
+                        customMetrics = customMetrics,
+                    ),
             )
-        )
         return interceptors
     }
 }
 
 @GatewayDsl
-class ActiveRequestsConfigBuilder(config: ActiveRequestsConfig = ActiveRequestsConfig()) {
+class ActiveRequestsConfigBuilder(
+    config: ActiveRequestsConfig = ActiveRequestsConfig(),
+) {
     var name: String = config.name
     var enabled: Boolean = config.enabled
 
@@ -77,13 +82,14 @@ class ActiveRequestsConfigBuilder(config: ActiveRequestsConfig = ActiveRequestsC
 }
 
 @GatewayDsl
-class TtftConfigBuilder(config: TtftConfig = TtftConfig()) {
+class TtftConfigBuilder(
+    config: TtftConfig = TtftConfig(),
+) {
     var name: String = config.name
     var enabled: Boolean = config.enabled
 
     fun build(): TtftConfig = TtftConfig(name = name, enabled = enabled)
 }
 
-fun metricsInterceptorBuild(
-    block: MetricsInterceptorBuilder.() -> Unit
-): List<Interceptor> = MetricsInterceptorBuilder().apply(block).build()
+fun metricsInterceptorBuild(block: MetricsInterceptorBuilder.() -> Unit): List<Interceptor> =
+    MetricsInterceptorBuilder().apply(block).build()

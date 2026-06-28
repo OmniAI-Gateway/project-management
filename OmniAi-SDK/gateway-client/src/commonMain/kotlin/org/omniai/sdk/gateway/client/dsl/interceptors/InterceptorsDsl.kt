@@ -1,9 +1,9 @@
 package org.omniai.sdk.gateway.client.dsl.interceptors
 
-import org.omniai.sdk.common.key
-import org.omniai.sdk.common.AttributeKey
 import org.omniai.sdk.application.pipeline.Interceptor
-import org.omniai.sdk.ports.outbound.OutboundPort
+import org.omniai.sdk.common.AttributeKey
+import org.omniai.sdk.common.key
+import org.omniai.sdk.gateway.client.dsl.GatewayDsl
 import org.omniai.sdk.interceptors.circuitBreaker.CircuitBreakerConfig
 import org.omniai.sdk.interceptors.circuitBreaker.CircuitBreakerInterceptor
 import org.omniai.sdk.interceptors.circuitBreaker.CircuitBreakerStore
@@ -11,9 +11,7 @@ import org.omniai.sdk.interceptors.circuitBreaker.InMemoryCircuitBreakerStore
 import org.omniai.sdk.interceptors.fallback.FallbackInterceptor
 import org.omniai.sdk.interceptors.metrics.MetricsPort
 import org.omniai.sdk.interceptors.routing.RoutingInterceptor
-
-
-import org.omniai.sdk.gateway.client.dsl.GatewayDsl
+import org.omniai.sdk.ports.outbound.OutboundPort
 
 val DefaultDeniedOutboundsKey = key<Set<String>>("denied_outbounds")
 
@@ -66,7 +64,7 @@ class InterceptorsDsl {
         use { outbounds -> FallbackInterceptor(outbounds, DefaultDeniedOutboundsKey, metricsPort) }
     }
 
-    internal fun build(outbounds: List<OutboundPort>): List<Interceptor> = 
+    internal fun build(outbounds: List<OutboundPort>): List<Interceptor> =
         interceptors.toList() + deferredInterceptors.map { it(outbounds) }
 }
 
@@ -77,7 +75,6 @@ class CircuitBreakerBuilder {
     var deniedOutboundsKey: AttributeKey<Set<String>> = DefaultDeniedOutboundsKey
     var metricsPort: MetricsPort? = null
 
-    internal fun build(outbounds: List<OutboundPort>): CircuitBreakerInterceptor {
-        return CircuitBreakerInterceptor(store, config, deniedOutboundsKey, outbounds, metricsPort)
-    }
+    internal fun build(outbounds: List<OutboundPort>): CircuitBreakerInterceptor =
+        CircuitBreakerInterceptor(store, config, deniedOutboundsKey, outbounds, metricsPort)
 }

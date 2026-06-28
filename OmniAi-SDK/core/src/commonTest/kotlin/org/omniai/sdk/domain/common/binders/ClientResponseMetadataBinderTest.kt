@@ -7,22 +7,24 @@ import kotlin.test.assertEquals
 import kotlin.test.assertNull
 
 class ClientResponseMetadataBinderTest {
-
     @Test
     fun shouldBindDynamicHeaderNamesCaseInsensitivelyAndStandardProperties() {
         val dynamicHeaders = setOf("X-RateLimit-Remaining", "Authorization")
 
-        val context = FakeIncomingContext(
-            headers = mapOf(
-                "X-RateLimit-Remaining" to "99",
-                "Authorization" to "Bearer token123",
-                "Unrequested-Header" to "ShouldBeIgnored"
-            ),
-            properties = mapOf(
-                "statusCode" to "200",
-                "url" to "https://api.omniai.org/v1/chat"
+        val context =
+            FakeIncomingContext(
+                headers =
+                    mapOf(
+                        "X-RateLimit-Remaining" to "99",
+                        "Authorization" to "Bearer token123",
+                        "Unrequested-Header" to "ShouldBeIgnored",
+                    ),
+                properties =
+                    mapOf(
+                        "statusCode" to "200",
+                        "url" to "https://api.omniai.org/v1/chat",
+                    ),
             )
-        )
 
         // Call to ClientResponseMetadataBinder.kt function
         val result = bindClientResponseMetadata(context, dynamicHeaders)

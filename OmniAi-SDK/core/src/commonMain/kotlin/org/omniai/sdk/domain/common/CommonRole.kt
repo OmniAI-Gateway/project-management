@@ -4,6 +4,5 @@ enum class CommonRole {
     SYSTEM,
     USER,
     ASSISTANT,
-    TOOL
+    TOOL,
 }
-

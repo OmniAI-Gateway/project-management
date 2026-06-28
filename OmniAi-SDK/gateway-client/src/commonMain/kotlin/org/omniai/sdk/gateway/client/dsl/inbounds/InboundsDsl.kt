@@ -16,14 +16,13 @@ class InboundsDsl {
 
     fun custom(
         factory: (DispatcherPort) -> InboundPort<*, *, *>,
-        connect: (InboundPort<*, *, *>) -> Unit
+        connect: (InboundPort<*, *, *>) -> Unit,
     ) {
         register(InboundSetup(factory, connect))
     }
 
-    internal fun build(): InboundRegistration = InboundRegistration(
-        setups = setups.toList()
-    )
+    internal fun build(): InboundRegistration =
+        InboundRegistration(
+            setups = setups.toList(),
+        )
 }
-
-

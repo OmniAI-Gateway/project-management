@@ -10,14 +10,12 @@ sealed class Either<out L, out R> {
     ) : Either<Nothing, R>()
 }
 
-
 fun <R> success(value: R) = Either.Right(value)
 
 fun <L> failure(error: L) = Either.Left(error)
 
 typealias Success<S> = Either.Right<S>
 typealias Failure<F> = Either.Left<F>
-
 
 inline fun <L, R> Either<L, R>.onSuccess(action: (R) -> Unit): Either<L, R> {
     if (this is Success) {
@@ -26,7 +24,6 @@ inline fun <L, R> Either<L, R>.onSuccess(action: (R) -> Unit): Either<L, R> {
     return this
 }
 
-
 inline fun <L, R> Either<L, R>.onFailure(action: (L) -> Unit): Either<L, R> {
     if (this is Failure) {
         action(value)
@@ -34,9 +31,8 @@ inline fun <L, R> Either<L, R>.onFailure(action: (L) -> Unit): Either<L, R> {
     return this
 }
 
-fun <L, R> Either<L, R>.getOrNull(): R? {
-    return when (this) {
+fun <L, R> Either<L, R>.getOrNull(): R? =
+    when (this) {
         is Either.Right -> value
         is Either.Left -> null
     }
-}

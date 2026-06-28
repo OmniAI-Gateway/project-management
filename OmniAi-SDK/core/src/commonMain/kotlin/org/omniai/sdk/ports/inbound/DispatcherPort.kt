@@ -9,6 +9,13 @@ import org.omniai.sdk.domain.responses.CommonResponse
 import org.omniai.sdk.domain.responses.CommonResponseEvent
 
 interface DispatcherPort {
-    suspend fun generate(request: CommonRequest, attributes: TypedMap): Either<DomainError, CommonResponse>
-    suspend fun generateStream(request: CommonRequest, attributes: TypedMap): Either<DomainError, Flow<CommonResponseEvent>>
+    suspend fun generate(
+        request: CommonRequest,
+        attributes: TypedMap,
+    ): Either<DomainError, CommonResponse>
+
+    suspend fun generateStream(
+        request: CommonRequest,
+        attributes: TypedMap,
+    ): Either<DomainError, Flow<CommonResponseEvent>>
 }

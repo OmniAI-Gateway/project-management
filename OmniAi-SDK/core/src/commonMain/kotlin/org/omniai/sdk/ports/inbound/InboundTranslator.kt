@@ -8,7 +8,10 @@ import org.omniai.sdk.domain.responses.CommonResponseEvent
 
 interface InboundTranslator<in ClientReq, out ClientRes, out ClientEvent> {
     val provider: Provider
+
     fun toDomain(clientRequest: ClientReq): CommonRequest
+
     fun fromDomain(domainResponse: CommonResponse): ClientRes
+
     fun fromDomainEvent(domainEvent: Flow<CommonResponseEvent>): Flow<ClientEvent>
 }

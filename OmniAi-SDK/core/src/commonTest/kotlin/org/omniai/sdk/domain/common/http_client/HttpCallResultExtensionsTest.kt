@@ -11,9 +11,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
-
 class HttpCallResultExtensionsTest {
-
     // Simple Provider mock for testing
     private val mockProvider = Provider("MockProvider")
 

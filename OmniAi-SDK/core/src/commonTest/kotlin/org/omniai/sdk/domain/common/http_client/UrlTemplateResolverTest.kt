@@ -6,14 +6,14 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 
 class UrlTemplateResolverTest {
-
     @Test
     fun `should replace path parameters correctly`() {
         val rawUrl = "https://api.provider.com/v1/models/{modelId}/generate/{action}"
-        val params = mapOf(
-            "modelId" to "gpt-4",
-            "action" to "stream"
-        )
+        val params =
+            mapOf(
+                "modelId" to "gpt-4",
+                "action" to "stream",
+            )
 
         val result = resolveUrlTemplate(rawUrl, params)
 
@@ -25,9 +25,10 @@ class UrlTemplateResolverTest {
         val rawUrl = "https://api.provider.com/v1/models/{modelId}/generate"
         val params = emptyMap<String, String>() // Forgot to pass modelId
 
-        val exception = assertFailsWith<IllegalArgumentException> {
-            resolveUrlTemplate(rawUrl, params)
-        }
+        val exception =
+            assertFailsWith<IllegalArgumentException> {
+                resolveUrlTemplate(rawUrl, params)
+            }
 
         assertEquals("Unresolved path parameters in URL: https://api.provider.com/v1/models/{modelId}/generate", exception.message)
     }

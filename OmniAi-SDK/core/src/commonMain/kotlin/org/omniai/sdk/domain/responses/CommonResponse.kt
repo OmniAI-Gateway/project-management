@@ -9,24 +9,24 @@ enum class FinishReason {
     LENGTH,
     TOOL_CALL,
     CONTENT_FILTER,
-    OTHER
+    OTHER,
 }
 
 data class CommonUsage(
     val inputTokens: Int? = null,
     val outputTokens: Int? = null,
-    val totalTokens: Int? = null
+    val totalTokens: Int? = null,
 )
 
 data class CommonResponseMessage(
     val role: CommonRole,
-    val content: List<ResponseContentPart>
+    val content: List<ResponseContentPart>,
 )
 
 data class CommonChoice(
     val index: Int,
     val message: CommonResponseMessage,
-    val finishReason: FinishReason? = null
+    val finishReason: FinishReason? = null,
 )
 
 data class CommonResponse(
@@ -35,6 +35,5 @@ data class CommonResponse(
     val model: String,
     val choices: List<CommonChoice>,
     val usage: CommonUsage? = null,
-    val providerOptions: Map<String, Any?> = emptyMap()
+    val providerOptions: Map<String, Any?> = emptyMap(),
 )
-

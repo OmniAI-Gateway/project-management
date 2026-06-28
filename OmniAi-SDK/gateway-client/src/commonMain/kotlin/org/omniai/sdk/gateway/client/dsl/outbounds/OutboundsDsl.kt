@@ -1,12 +1,10 @@
 package org.omniai.sdk.gateway.client.dsl.outbounds
 
-import org.omniai.sdk.ports.outbound.OutboundPort
-
 import org.omniai.sdk.gateway.client.dsl.GatewayDsl
+import org.omniai.sdk.ports.outbound.OutboundPort
 
 @GatewayDsl
 class OutboundsDsl {
-
     internal val values = mutableListOf<OutboundPort>()
 
     fun use(port: OutboundPort) {
@@ -19,4 +17,3 @@ class OutboundsDsl {
 
     internal fun build(): List<OutboundPort> = values.toList()
 }
-

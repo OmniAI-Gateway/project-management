@@ -7,24 +7,25 @@ import kotlin.test.assertEquals
 import kotlin.test.assertNull
 
 class ConfigurableMetadataBinderTest {
-
     private val intKey = key<Int>("test.int")
     private val stringKey = key<String>("test.string")
     private val boolKey = key<Boolean>("test.boolean")
 
     @Test
     fun shouldBindValidValuesFromContextToTypedMap() {
-        val context = FakeIncomingContext(
-            headers = mapOf("X-Limit" to "100"),
-            properties = mapOf("Is-Active" to "true"),
-            pathParams = mapOf("id" to "user-123")
-        )
+        val context =
+            FakeIncomingContext(
+                headers = mapOf("X-Limit" to "100"),
+                properties = mapOf("Is-Active" to "true"),
+                pathParams = mapOf("id" to "user-123"),
+            )
 
-        val binder = buildMetadataBinder {
-            header("X-Limit").bindToInt(intKey)
-            property("Is-Active").bindToBoolean(boolKey)
-            path("id") bindTo stringKey
-        }
+        val binder =
+            buildMetadataBinder {
+                header("X-Limit").bindToInt(intKey)
+                property("Is-Active").bindToBoolean(boolKey)
+                path("id") bindTo stringKey
+            }
 
         val result = binder.bind(context)
 
@@ -38,10 +39,11 @@ class ConfigurableMetadataBinderTest {
         // Empty context, values will return null
         val context = FakeIncomingContext()
 
-        val binder = buildMetadataBinder {
-            header("X-Limit").bindToInt(intKey)
-            property("Is-Active").bindToBoolean(boolKey)
-        }
+        val binder =
+            buildMetadataBinder {
+                header("X-Limit").bindToInt(intKey)
+                property("Is-Active").bindToBoolean(boolKey)
+            }
 
         val result = binder.bind(context)
 
@@ -52,15 +54,17 @@ class ConfigurableMetadataBinderTest {
     @Test
     fun shouldGracefullyHandleValuesThatFailToDecode() {
         // Context with data that cannot be converted to expected types
-        val context = FakeIncomingContext(
-            headers = mapOf("X-Limit" to "Not-A-Number"),
-            properties = mapOf("Is-Active" to "Not-A-Boolean")
-        )
+        val context =
+            FakeIncomingContext(
+                headers = mapOf("X-Limit" to "Not-A-Number"),
+                properties = mapOf("Is-Active" to "Not-A-Boolean"),
+            )
 
-        val binder = buildMetadataBinder {
-            header("X-Limit").bindToInt(intKey)
-            property("Is-Active").bindToBoolean(boolKey)
-        }
+        val binder =
+            buildMetadataBinder {
+                header("X-Limit").bindToInt(intKey)
+                property("Is-Active").bindToBoolean(boolKey)
+            }
 
         val result = binder.bind(context)
 

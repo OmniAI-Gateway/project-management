@@ -1,15 +1,14 @@
 package org.omniai.sdk.gateway.client.auth
 
-import org.omniai.sdk.interceptors.auth.interfaces.TokenAuthenticator
 import org.omniai.sdk.interceptors.auth.interfaces.IntrospectionCache
+import org.omniai.sdk.interceptors.auth.interfaces.TokenAuthenticator
 import kotlin.time.Duration
 
 sealed interface AuthorizationServerConfig {
-
     object None : AuthorizationServerConfig
 
     data class Custom(
-        val authenticator: TokenAuthenticator
+        val authenticator: TokenAuthenticator,
     ) : AuthorizationServerConfig
 
     data class Discovery(
@@ -19,7 +18,7 @@ sealed interface AuthorizationServerConfig {
         val clientSecret: String? = null,
         val introspectionCache: IntrospectionCache? = null,
         val positiveCacheTtl: Duration? = null,
-        val negativeCacheTtl: Duration? = null
+        val negativeCacheTtl: Duration? = null,
     ) : AuthorizationServerConfig
 }
 
@@ -61,7 +60,7 @@ class DiscoveryAuthorizationServerDsl {
             clientSecret = clientSecret,
             introspectionCache = introspectionCache,
             positiveCacheTtl = positiveCacheTtl,
-            negativeCacheTtl = negativeCacheTtl
+            negativeCacheTtl = negativeCacheTtl,
         )
     }
 }

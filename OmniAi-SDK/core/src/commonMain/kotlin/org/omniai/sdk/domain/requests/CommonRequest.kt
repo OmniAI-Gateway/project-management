@@ -11,7 +11,7 @@ import org.omniai.sdk.domain.common.content.RequestContentPart
 
 data class CommonRequestMessage(
     val role: CommonRole,
-    val content: List<RequestContentPart>
+    val content: List<RequestContentPart>,
 )
 
 data class CommonRequest(
@@ -23,5 +23,5 @@ data class CommonRequest(
     val tools: List<CommonTool> = emptyList(),
     val toolChoice: ToolChoice? = null,
     val jsonResponse: Boolean = false,
-    val providerOptions: TypedMap = TypedMap()
+    val providerOptions: TypedMap = TypedMap(),
 )

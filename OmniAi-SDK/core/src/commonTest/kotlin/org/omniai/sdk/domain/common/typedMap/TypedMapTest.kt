@@ -5,13 +5,12 @@ import org.omniai.sdk.common.TypedMap
 import org.omniai.sdk.common.key
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertTrue
-import kotlin.test.assertSame
-import kotlin.test.assertNotSame
 import kotlin.test.assertFailsWith
+import kotlin.test.assertNotSame
+import kotlin.test.assertSame
+import kotlin.test.assertTrue
 
 class TypedMapTest {
-
     @Test
     fun `stores and retrieves values using AttributeKey maintaining type safety`() {
         val map = TypedMap()
@@ -67,9 +66,10 @@ class TypedMapTest {
         val map = TypedMap()
         val missingKey = key<String>("missing")
 
-        val exception = assertFailsWith<IllegalStateException> {
-            map.require(missingKey)
-        }
+        val exception =
+            assertFailsWith<IllegalStateException> {
+                map.require(missingKey)
+            }
         assertTrue(exception.message!!.contains("Missing required key: Key(missing: String)"))
     }
 
@@ -80,15 +80,17 @@ class TypedMapTest {
 
         var calls = 0
 
-        val value1 = map.getOrPut(counterKey) {
-            calls++
-            100
-        }
+        val value1 =
+            map.getOrPut(counterKey) {
+                calls++
+                100
+            }
 
-        val value2 = map.getOrPut(counterKey) {
-            calls++
-            200
-        }
+        val value2 =
+            map.getOrPut(counterKey) {
+                calls++
+                200
+            }
 
         assertEquals(100, value1)
         assertEquals(100, value2)
