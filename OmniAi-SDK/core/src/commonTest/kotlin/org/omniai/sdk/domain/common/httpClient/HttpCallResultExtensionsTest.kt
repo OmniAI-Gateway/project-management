@@ -1,4 +1,4 @@
-package org.omniai.sdk.domain.common.http_client
+package org.omniai.sdk.domain.common.httpClient
 
 import org.omniai.sdk.domain.common.Provider
 import org.omniai.sdk.domain.errors.ApiDownError
