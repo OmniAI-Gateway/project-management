@@ -7,7 +7,6 @@ import org.omniai.sdk.interceptors.auth.domain.DecodedJwt
 import org.omniai.sdk.interceptors.auth.domain.PublicKey
 import org.omniai.sdk.interceptors.auth.domain.TokenValidationParams
 import org.omniai.sdk.interceptors.auth.interfaces.JwtVerificationEngine
-import kotlin.js.Json
 import kotlin.js.Promise
 
 @JsModule("jose")
