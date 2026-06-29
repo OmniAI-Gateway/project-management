@@ -237,8 +237,8 @@ private fun toDomainChoice(choice: OpenAiChoice): CommonChoice {
 private fun String.toDomainContentPart(): SharedContentPart {
     val trimmed = trim()
 
-    if (trimmed.startsWith("[") && trimmed.endsWith("]") ||
-        trimmed.startsWith("{") && trimmed.endsWith("}")
+    if ((trimmed.startsWith("[") && trimmed.endsWith("]")) ||
+        (trimmed.startsWith("{") && trimmed.endsWith("{}"))
     ) {
         try {
             Json.parseToJsonElement(trimmed).let { jsonElement ->
