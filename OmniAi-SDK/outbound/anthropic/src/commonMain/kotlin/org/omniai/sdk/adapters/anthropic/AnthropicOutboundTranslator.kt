@@ -55,9 +55,9 @@ import org.omniai.sdk.domain.responses.UsageReported
 import org.omniai.sdk.ports.outbound.OutboundTranslator
 
 class AnthropicOutboundTranslator : OutboundTranslator<AnthropicMessagesRequest, AnthropicMessageResponse, AnthropicStreamEvent> {
-        /*
-     This version of functions doesn't treat the JsonSchema , it needs to add a new message for that
-         */
+    /*
+ This version of functions doesn't treat the JsonSchema , it needs to add a new message for that
+     */
     override fun fromDomain(domainRequest: CommonRequest): AnthropicMessagesRequest {
         val providerOptions = domainRequest.providerOptions
 

@@ -348,7 +348,11 @@ private fun List<CommonTool>.toGeminiTools(): List<GeminiTool>? {
                     GeminiFunctionDeclaration(
                         name = it.name,
                         description = it.description,
-                        parameters = JsonValue.JsonObject(it.parametersSchema).toKotlinxJsonObject().cleanGeminiParameters(),
+                        parameters =
+                            JsonValue
+                                .JsonObject(it.parametersSchema)
+                                .toKotlinxJsonObject()
+                                .cleanGeminiParameters(),
                     )
                 },
         ),
