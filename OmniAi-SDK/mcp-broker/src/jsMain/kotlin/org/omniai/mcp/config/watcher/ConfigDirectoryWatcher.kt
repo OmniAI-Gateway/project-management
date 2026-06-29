@@ -15,7 +15,7 @@ actual class ConfigDirectoryWatcher actual constructor(
         }
 
         watcher =
-            fs.watch(directoryPath) { eventType: String, filename: String? ->
+            fs.watch(directoryPath) { _: String, filename: String? ->
                 if (filename != null && (filename.endsWith(".yaml") || filename.endsWith(".yml"))) {
                     try {
                         val contents = readAllYamlFiles()
