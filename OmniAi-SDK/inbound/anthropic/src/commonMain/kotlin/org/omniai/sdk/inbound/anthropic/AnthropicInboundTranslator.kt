@@ -8,7 +8,6 @@ import org.omniai.sdk.contracts.anthropic.input.AnthropicContent
 import org.omniai.sdk.contracts.anthropic.input.AnthropicInputContentBlock
 import org.omniai.sdk.contracts.anthropic.input.AnthropicMessageInput
 import org.omniai.sdk.contracts.anthropic.input.AnthropicMessagesRequest
-import org.omniai.sdk.contracts.anthropic.input.AnthropicRole
 import org.omniai.sdk.contracts.anthropic.input.AnthropicToolChoice
 import org.omniai.sdk.contracts.anthropic.input.AnthropicToolDefinition
 import org.omniai.sdk.contracts.anthropic.input.ListContentBlock
@@ -217,7 +216,7 @@ private fun String.toCommonRole(): CommonRole =
         else -> CommonRole.USER
     }
 
-private fun AnthropicInputContentBlock.toDomainPart(index: Int): RequestContentPart? =
+private fun AnthropicInputContentBlock.toDomainPart(): RequestContentPart? =
     when (this) {
         is AnthropicInputContentBlock.Text -> {
             TextPart(text)
@@ -246,7 +245,7 @@ private fun AnthropicInputContentBlock.toDomainPart(index: Int): RequestContentP
 private fun AnthropicContent.toDomainParts(): List<RequestContentPart> =
     when (this) {
         is RawText -> listOf(TextPart(text))
-        is ListContentBlock -> blocks.mapIndexedNotNull { index, block -> block.toDomainPart(index) }
+        is ListContentBlock -> blocks.mapIndexedNotNull { _, block -> block.toDomainPart() }
     }
 
 private fun AnthropicMessageInput.toDomainMessage(): CommonRequestMessage =
