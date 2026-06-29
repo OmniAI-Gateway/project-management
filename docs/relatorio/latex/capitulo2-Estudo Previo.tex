@@ -5,7 +5,7 @@ O estudo inicial comparou APIs de inferência, nomeadamente os líderes de merca
 
 Este estudo não teve apenas um papel de descrever as APIs, mas sim servir como base e ponto de partida para observar os conceitos que podiam ser normalizados no \textbf{OmniAI SDK} e os pontos onde a normalização teria de preservar extensões específicas de cada fornecedor. Para esse efeito, foram executados e documentados pedidos de geração simples, pedidos com \textit{streaming}, pedidos com \textit{tool calling}, respostas com contabilização de \textit{tokens} e casos de configuração de geração. É de notar que o uso de vídeos, imagens e outros formatos suportados por estas APIs seria interessante, mas aumentaria demasiado o escopo do estudo e do projeto.
 
-O estudo das APIs de inferência mostrou que estas partilham de diversos conceitos semelhantes, mas permitem a utilização dos mesmos de maneira diferente. A \textbf{OpenAI} organiza a interação em torno de \texttt{chat/completions}, com \texttt{messages}, \texttt{choices}, \texttt{tool\_calls} e eventos incrementais baseados em \texttt{delta} \cite{openai_api}. A \textbf{Anthropic} usa uma API de \texttt{messages}, onde o \texttt{system prompt} está no nível de topo, o campo \texttt{max\_tokens} é obrigatório, e o conteúdo da resposta é uma lista de blocos como \texttt{text}, \texttt{tool\_use} ou \texttt{thinking} \cite{anthropic_api}. A \textbf{Gemini} modela o pedido como \texttt{contents} compostos por \texttt{parts}, agrupa parâmetros em \texttt{generationConfig}, representa ferramentas por \texttt{functionDeclarations} e introduz conceitos próprios como \textit{thought signatures} e \texttt{thinkingConfig} \cite{google_gemini_api}. Ao longo deste capítulo as diferenças e semelhanças irão ficar mais claras.
+O estudo das APIs de inferência mostrou que estas partilham diversos conceitos semelhantes, mas permitem a utilização dos mesmos de maneira diferente. A \textbf{OpenAI} organiza a interação em torno de \texttt{chat/completions}, com \texttt{messages}, \texttt{choices}, \texttt{tool\_calls} e eventos incrementais baseados em \texttt{delta} \cite{openai_api}. A \textbf{Anthropic} usa uma API de \texttt{messages}, onde o \texttt{system prompt} está no nível de topo, o campo \texttt{max\_tokens} é obrigatório, e o conteúdo da resposta é uma lista de blocos como \texttt{text}, \texttt{tool\_use} ou \texttt{thinking} \cite{anthropic_api}. A \textbf{Gemini} modela o pedido como \texttt{contents} compostos por \texttt{parts}, agrupa parâmetros em \texttt{generationConfig}, representa ferramentas por \texttt{functionDeclarations} e introduz conceitos próprios como \texttt{thought signatures} e \texttt{thinkingConfig} \cite{google_gemini_api}. Ao longo deste capítulo as diferenças e semelhanças irão ficar mais claras.
 
 \subsection{Construção do Pedido}
 
@@ -40,11 +40,11 @@ O estudo das APIs de inferência mostrou que estas partilham de diversos conceit
         \textbf{Saídas Estruturadas} & Controladas via \texttt{"response\_}\allowbreak\texttt{format"} na raiz (e.g., \texttt{\{"type": "json\_object"\}}). & Implementadas forçando uma ferramenta dedicada via \texttt{tool\_choice} para extrair dados. & Definidas via \texttt{responseMimeType} e \texttt{responseJsonSchema} dentro de \texttt{generationConfig}. \\
         \hline
     \end{tabularx}
-    \caption{Mapeamento técnico da estrutura de pedidos e configuração (\textit{Requests}).}
+    \caption{Mapeamento da estrutura de pedidos e configuração (\textit{Requests}).}
     \label{tab:api-request-comparison}
 \end{table}
 
-    Com base nos pedidos executados durante o estudo, foi possível identificar os campos JSON mais relevantes de cada fornecedor. A Figura~\ref{fig:json-request-skeletons} apresenta os esqueletos estruturais dessas mensagens, evidenciando as diferenças de organização e de nomenclatura entre os três fornecedores. Os exemplos JSON completos dos pedidos encontram-se no Apêndice~\ref{apx:json-requests}.
+    Com base nos pedidos executados durante o estudo, foi possível identificar os campos JSON mais relevantes de cada fornecedor. Na Figura~\ref{fig:json-request-skeletons} indentificou se as estruturas dessas mensagens, evidenciando as diferenças de organização e de nomenclatura entre os três fornecedores. Os exemplos JSON completos dos pedidos encontram-se no Apêndice~\ref{apx:json-requests}.
 
 \begin{figure}[H]
     \centering
@@ -318,7 +318,7 @@ O protocolo define uma arquitetura cliente-servidor na qual os servidores dispon
 \item \textbf{Prompts}: modelos de interação reutilizáveis que podem ser parametrizados e utilizados em diferentes cenários.
 \end{itemize}
 
-A comunicação entre clientes e servidores é realizada através de mensagens JSON-RPC e pode utilizar diferentes mecanismos de transporte, incluindo \texttt{stdio}, \textbf{HTTP}, \textbf{SSE} e \textbf{WebSocket} \cite{mcp_architecture}.
+A comunicação entre clientes e servidores é realizada através de mensagens JSON-RPC e pode utilizar diferentes mecanismos de transporte, incluindo \textbf{STDIO}, \textbf{HTTP}, \textbf{SSE} e \textbf{WebSocket} \cite{mcp_architecture}.
 
 No modelo definido pelo protocolo, o \textit{host} corresponde à aplicação responsável por coordenar as ligações aos servidores \textbf{MCP}. Dentro do \textit{host}, os \textit{clients} estabelecem ligações individuais com os servidores, que por sua vez disponibilizam as ferramentas, recursos e \textit{prompts}. Esta separação permite que novas capacidades sejam adicionadas sem necessidade de alterar diretamente a lógica da aplicação que utiliza os modelos.
 
