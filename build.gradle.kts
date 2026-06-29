@@ -32,7 +32,7 @@ tasks.register("ktlintCheckAll") {
     dependsOn(dependsOnIncluded("ktlintCheck"))
 }
 
-tasks.register("ktlintCheckAll") {
+tasks.register("ktlintFormatAll") {
     group = "formatting"
     description = "Formats Kotlin sources in all included builds with ktlint"
     dependsOn(dependsOnIncluded("ktlintFormat"))
