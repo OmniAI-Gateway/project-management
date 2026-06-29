@@ -125,11 +125,11 @@ Esta separação entre \textbf{OmniAI SDK} e \textbf{OmniAI Gateway} constitui u
 \end{figure}
 
     \subsection{{Estrutura do Domínio Comum}}
-    O domínio comum do \textbf{OmniAI SDK} que consite no conjunto de classes e relações que padroniza as interações com os diferentes fornecedores divide-se em dois blocos principais: \textbf{Request} e \textbf{Response}.
+    O domínio comum do \textbf{OmniAI SDK} que consite no conjunto de classes e relações que padroniza as interações com os diferentes fornecedores divide-se em dois blocos principais: \texttt{CommonRequest} e \texttt{CommonResponse}/\texttt{CommonResponseEvent}.
 
     \begin{itemize}
-        \item O \textbf{Request} define a estrutura dos pedidos enviados ao modelo.
-        \item O \textbf{Response} descreve as respostas devolvidas, quer no formato (\texttt{CommonResponse}), quer em formato incremental através de eventos (\texttt{CommonResponseEvent}).
+        \item O \texttt{CommonRequest} define a estrutura dos pedidos enviados ao modelo.
+        \item O \texttt{CommonResponse}/\texttt{CommonResponseEvent} descreve as respostas devolvidas, quer no formato incremental ou através de eventos.
     \end{itemize}
 
     \subsubsection{{Modelo Comum de Pedido}}
@@ -196,7 +196,7 @@ Esta separação entre \textbf{OmniAI SDK} e \textbf{OmniAI Gateway} constitui u
     RequestContentPart & ToolResultPart & toolCallId,\newline content & Resultado de execução de ferramenta. \\ \hline
 
     \end{tabularx}
-    \caption{Parâmetros do domínio de \textit{Request}.}
+    \caption{Parâmetros do domínio de \texttt{CommonRequest}.}
     \label{tab:request-parametros}
 \end{table}
 
@@ -212,7 +212,7 @@ Esta separação entre \textbf{OmniAI SDK} e \textbf{OmniAI Gateway} constitui u
         \label{fig:commonresponse-classes}
     \end{figure}
 
-    A Tabela~\ref{tab:response-parametros} reúne os campos do domínio de \textit{Response}, incluindo o objeto base, as escolhas e os eventos de \textit{streaming}.
+    A Tabela~\ref{tab:response-parametros} reúne os campos do domínio de \texttt{CommonResponse}, incluindo o objeto base, as escolhas e os eventos de \textit{streaming}.
 
         \begin{table}[H]
     \centering
