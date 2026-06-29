@@ -29,7 +29,6 @@ import org.omniai.sdk.ports.outbound.http.listenEvents
 import org.omniai.sdk.ports.outbound.http.requestConfig
 import org.omniai.sdk.ports.outbound.http.toDomainError
 
-
 class AnthropicOutboundAdapter(
     override val model: Model,
     private val apiKey: String,
