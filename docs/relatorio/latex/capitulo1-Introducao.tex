@@ -24,7 +24,7 @@
             arrow/.style={-Latex, thick}
         ]
             % --- CLIENTE ---
-            \node[box] (cliente) {Cliente de API's de Inferência};
+            \node[box] (cliente) {App Baseada em Gen AI};
             \node[keybox, anchor=north east] (key) at (cliente.south east) {API Key};
 
             % --- FORNECEDOR ---
@@ -47,15 +47,15 @@
             arrow/.style={-Latex, thick}
         ]
             % --- CLIENTE A ---
-            \node[box] (clienteA) {Cliente de API's de Inferência };
+            \node[box] (clienteA) {App Baseada em Gen AI};
             \node[keybox, anchor=north east] (keyA) at (clienteA.south east) {API Key};
 
             % --- CLIENTE B ---
-            \node[box, below=of clienteA, yshift=-0.4cm] (clienteB) {Cliente de API's de Inferência};
+            \node[box, below=of clienteA, yshift=-0.4cm] (clienteB) {App Baseada em Gen AI};
             \node[keybox, anchor=north east] (keyB) at (clienteB.south east) {API Key };
 
             % --- CLIENTE C ---
-            \node[box, below=of clienteB, yshift=-0.4cm] (clienteC) {Cliente de API's de Inferência};
+            \node[box, below=of clienteB, yshift=-0.4cm] (clienteC) {App Baseada em Gen AI};
             \node[keybox, anchor=north east] (keyC) at (clienteC.south east) {API Key};
 
             % --- FORNECEDOR (API de acesso à inferência) ---
@@ -82,15 +82,15 @@
         ]
             % --- CLIENTES (Esquerda) ---
             % Cliente A
-            \node[box] (clienteA) {Cliente de API's de Inferência};
+            \node[box] (clienteA) { App Baseada em Gen AI};
             \node[keybox, anchor=north east] (keyA) at (clienteA.south east) {API Key};
 
             % Cliente B (Cliente 2)
-            \node[box, below=of clienteA, yshift=-0.4cm] (clienteB) {Cliente de API's de Inferência};
+            \node[box, below=of clienteA, yshift=-0.4cm] (clienteB) {App Baseada em Gen AI};
             \node[keybox, anchor=north east] (keyB) at (clienteB.south east) {API Key};
 
             % Cliente C
-            \node[box, below=of clienteB, yshift=-0.4cm] (clienteC) {Cliente de API's de Inferência};
+            \node[box, below=of clienteB, yshift=-0.4cm] (clienteC) {App Baseada em Gen AI};
             \node[keybox, anchor=north east] (keyC) at (clienteC.south east) {API Key};
 
             % --- APIS DE INFERÊNCIA (Direita) ---
