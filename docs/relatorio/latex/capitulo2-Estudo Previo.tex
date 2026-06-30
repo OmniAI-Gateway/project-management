@@ -305,30 +305,370 @@ Enquanto a \textbf{OpenAI} \cite{openai_structured_outputs} e a \textbf{Anthropi
   A realização deste estudo envolveu dificuldades práticas que merecem ser documentadas. Para a API da \textbf{OpenAI}, o acesso direto à API oficial implica custos de utilização, pelo que os testes foram realizados utilizando a API da \textbf{Groq} \cite{groq_api}, que oferece um plano gratuito e implementa uma interface compatível com o formato da \textbf{OpenAI} (\texttt{/v1/chat/completions}). Adicionalmente, foram executados testes complementares contra uma instância local de \textbf{Ollama} \cite{ollama_docs}, que também expõe um \textit{endpoint} compatível com o formato \textbf{OpenAI}. Para a API da \textbf{Anthropic}, a situação foi semelhante: a API oficial requer um plano de subscrição pago, pelo que os testes foram realizados utilizando o \textbf{Ollama}, que disponibiliza um \textit{endpoint} compatível com o formato da \textbf{Anthropic} (\texttt{/v1/messages}). Embora o \textbf{Ollama} implemente corretamente as interfaces de compatibilidade para pedidos simples, de \textit{streaming} e com parâmetros de configuração, algumas funcionalidades mais avançadas, nomeadamente o \textit{tool calling} estruturado e a geração de blocos de raciocínio (\textit{thinking}) apresentaram limitações quando executadas em modelos de pequena dimensão, como o \texttt{llama3.2:1b}. Nesses casos, os exemplos de resposta foram ajustados para refletir com fidelidade o comportamento documentado das APIs oficiais. A API do \textbf{Gemini} foi a única cujos testes foram executados diretamente contra a API oficial, nomeadamente através do \textbf{AI Studio} \cite{google_aistudio}, uma vez que este disponibiliza um nível de acesso gratuito.
 
   Do ponto de vista técnico, o estudo permitiu concluir que as três APIs partilham um conjunto de conceitos fundamentais, como as mensagens, papéis, ferramentas, \textit{streaming} e contabilização de \textit{tokens}, mas implementam-nos de formas estruturalmente diferentes. As diferenças manifestam-se na nomenclatura dos campos, na organização hierárquica do JSON, na localização dos parâmetros de configuração e nos mecanismos de ativação de funcionalidades como \textit{streaming} e raciocínio. Contudo, apesar destas similaridades conceituais, ainda existem campos proprietários em cada API de fornecedor de inferência. Esta análise permitiu perceber que uma abstração que pretenda cobrir estes três fornecedores precisa de ir além de uma simples tradução de nomes, exigindo uma compreensão das diferenças semânticas e estruturais observadas nos pedidos e respostas reais.
-  
+% -----------------------------------------------------------------------
 \section{O protocolo MCP}
+% -----------------------------------------------------------------------
 
-O \textbf{Model Context Protocol (MCP)} é um protocolo aberto criado para uniformizar a forma como aplicações de Inteligência Artificial acedem a ferramentas, dados e outras fontes de contexto \cite{mcp_protocol}. Antes do surgimento do \textbf{MCP}, a integração destes recursos era normalmente realizada através de mecanismos específicos de cada aplicação ou fornecedor, resultando em soluções pouco reutilizáveis e difíceis de manter.
+O \textbf{Model Context Protocol (MCP)} é um protocolo aberto desenvolvido pela
+Anthropic com o objetivo de normalizar a forma como aplicações baseadas em modelos
+de linguagem interagem com ferramentas, fontes de dados e outros sistemas externos
+\cite{mcp_protocol}. O protocolo define uma interface comum entre aplicações de IA
+e serviços externos, permitindo que diferentes modelos e clientes utilizem as mesmas
+capacidades sem necessidade de desenvolver integrações específicas para cada
+fornecedor.
 
-O protocolo define uma arquitetura cliente-servidor na qual os servidores disponibilizam capacidades que podem ser utilizadas por aplicações de IA. Estas capacidades são agrupadas em três categorias principais:
+Antes do surgimento do \textbf{MCP}, cada plataforma disponibilizava mecanismos
+próprios para permitir que os modelos invocassem ferramentas externas. Embora estes
+mecanismos oferecessem funcionalidades semelhantes, apresentavam interfaces
+incompatíveis entre si, obrigando os programadores a implementar adaptações
+específicas para cada API. Esta situação dificultava a reutilização de integrações,
+aumentava o esforço de desenvolvimento e criava um forte acoplamento entre as
+aplicações e os fornecedores dos modelos.
+
+Para além da uniformização das integrações, o protocolo procura resolver outra
+limitação inerente aos modelos de linguagem: o acesso a informação externa. Um
+modelo de linguagem possui apenas o conhecimento adquirido durante o processo de
+treino e não tem acesso direto a informação dinâmica, como bases de dados, sistemas
+empresariais, ficheiros locais ou serviços externos. O \textbf{MCP} permite que
+essas capacidades sejam disponibilizadas através de uma interface padronizada,
+possibilitando que o modelo obtenha contexto atualizado ou execute operações no
+exterior sempre que necessário.
+
+A adoção do \textbf{MCP} introduz assim uma camada de abstração independente dos
+fornecedores de modelos de linguagem, uniformizando o acesso a ferramentas, recursos
+e outras fontes de contexto externo. Enquanto as APIs de inferência definem a
+comunicação entre a aplicação e os modelos, o \textbf{MCP} concentra-se
+exclusivamente na interação com sistemas externos, promovendo uma clara separação de
+responsabilidades que se revelou determinante na conceção da arquitetura da
+\textbf{OmniAI}.
+
+% -----------------------------------------------------------------------
+\subsection{Arquitetura do protocolo}
+% -----------------------------------------------------------------------
+
+O protocolo segue uma arquitetura cliente-servidor. Nesta arquitetura, os servidores
+disponibilizam capacidades que podem ser utilizadas pelos modelos, enquanto os
+clientes estabelecem ligações aos servidores, descobrem as capacidades disponíveis e
+efetuam a respetiva utilização. Ao contrário das APIs de inferência, responsáveis
+pela comunicação entre a aplicação e o modelo de linguagem, o \textbf{MCP} define
+exclusivamente a comunicação entre aplicações e fontes externas de contexto. Esta
+separação permite desacoplar o acesso a ferramentas da interação com os modelos,
+tornando ambas as componentes independentes.
+
+A Figura~\ref{fig:mcp_architecture} ilustra esta separação de responsabilidades.
+Do lado da inferência, a aplicação comunica diretamente com o modelo de linguagem
+através de uma API de inferência. Do lado do contexto externo, o cliente \textbf{MCP}
+estabelece ligação a um ou mais servidores \textbf{MCP}, cada um responsável por
+disponibilizar um conjunto de capacidades específicas.
+
+\begin{figure}[h]
+\centering
+\begin{tikzpicture}[
+  node distance = 1.8cm and 2.5cm,
+  box/.style     = {rectangle, rounded corners=4pt, minimum width=2.8cm,
+                    minimum height=1.0cm, align=center, font=\small\sffamily},
+  lbl/.style     = {font=\scriptsize\sffamily\itshape, text=mcpgray},
+  arr/.style     = {-stealth, thick},
+  darr/.style    = {stealth-stealth, thick},
+]
+
+% ---- Application (centre-left) ----
+\node[box, fill=mcpvlight, draw=mcpdark, text=mcpdark, thick] (app)
+      {Aplicação};
+
+% ---- LLM (top-right) ----
+\node[box, fill=mcplight, draw=mcpgray, text=mcpdark,
+      above right=1.2cm and 2.5cm of app] (llm)
+      {Modelo de\\linguagem};
+
+% ---- MCP Client (bottom, inside app conceptually) ----
+\node[box, fill=mcpvlight, draw=mcpgray, text=mcpdark,
+      below right=1.2cm and 2.5cm of app] (client)
+      {Cliente MCP};
+
+% ---- MCP Servers ----
+\node[box, fill=mcplight, draw=mcpdark, text=mcpdark,
+      right=3.0cm of client, yshift= 0.9cm] (srv1)
+      {Servidor MCP\\(base de dados)};
+\node[box, fill=mcplight, draw=mcpdark, text=mcpdark,
+      right=3.0cm of client, yshift=-0.9cm] (srv2)
+      {Servidor MCP\\(API externa)};
+
+% ---- Arrows ----
+\draw[darr, color=mcpgray]
+      (app) -- node[above=2pt, lbl, sloped]{API de inferência} (llm);
+
+\draw[darr, color=mcpdark]
+      (app) -- node[below=2pt, lbl, sloped]{integração interna} (client);
+
+\draw[darr, color=mcpdark]
+      (client) -- node[above=2pt, lbl, sloped]{MCP} (srv1);
+\draw[darr, color=mcpdark]
+      (client) -- node[below=2pt, lbl, sloped]{MCP} (srv2);
+
+% ---- Divider between the two "worlds" ----
+\draw[dashed, color=mcpborder, thick]
+      ($(app.east)!0.45!(client.west) + (0,2.4)$)
+   -- ($(app.east)!0.45!(client.west) + (0,-2.4)$);
+
+\node[lbl, rotate=90] at ($(app.east)!0.45!(client.west) + (-0.35,0)$)
+      {inferência};
+\node[lbl, rotate=90] at ($(app.east)!0.45!(client.west) + (0.45,0)$)
+      {contexto externo};
+
+\end{tikzpicture}
+\caption{Arquitetura do MCP: separação entre a camada de inferência (API do modelo)
+         e a camada de contexto externo (servidores MCP).}
+\label{fig:mcp_architecture}
+\end{figure}
+
+As capacidades disponibilizadas pelos servidores encontram-se organizadas em três
+categorias principais, ilustradas na Figura~\ref{fig:mcp_capabilities}:
 
 \begin{itemize}
-\item \textbf{Tools}: operações que podem ser executadas pelo modelo, permitindo interagir com sistemas externos ou realizar ações específicas.
-\item \textbf{Resources}: informação disponibilizada pelos servidores para consulta, normalmente identificada através de URIs.
-\item \textbf{Prompts}: modelos de interação reutilizáveis que podem ser parametrizados e utilizados em diferentes cenários.
+  \item \textbf{Tools}: operações que podem ser executadas pelo cliente, permitindo
+        realizar ações sobre sistemas externos, como executar comandos, consultar
+        bases de dados ou interagir com APIs.
+  \item \textbf{Resources}: informação disponibilizada pelo servidor para consulta,
+        normalmente identificada através de URIs, incluindo documentos, ficheiros de
+        configuração ou outros dados estruturados.
+  \item \textbf{Prompts}: modelos de interação reutilizáveis que podem ser
+        parametrizados pelo cliente para diferentes cenários de utilização.
 \end{itemize}
 
-A comunicação entre clientes e servidores é realizada através de mensagens JSON-RPC e pode utilizar diferentes mecanismos de transporte, incluindo \textbf{STDIO}, \textbf{HTTP}, \textbf{SSE} e \textbf{WebSocket} \cite{mcp_architecture}.
+\begin{figure}[h]
+\centering
+\begin{tikzpicture}[
+  every node/.style={font=\small\sffamily},
+  cat/.style  = {rectangle, rounded corners=6pt, minimum width=3.2cm,
+                 minimum height=1.8cm, align=center, text width=3.0cm},
+  icon/.style = {font=\large},
+  lbl/.style  = {font=\footnotesize\sffamily, text=mcpgray},
+]
 
-No modelo definido pelo protocolo, o \textit{host} corresponde à aplicação responsável por coordenar as ligações aos servidores \textbf{MCP}. Dentro do \textit{host}, os \textit{clients} estabelecem ligações individuais com os servidores, que por sua vez disponibilizam as ferramentas, recursos e \textit{prompts}. Esta separação permite que novas capacidades sejam adicionadas sem necessidade de alterar diretamente a lógica da aplicação que utiliza os modelos.
+% Server box
+\node[rectangle, rounded corners=8pt, draw=mcpgray, fill=mcpvlight,
+      minimum width=11.6cm, minimum height=3.8cm] (server) {};
+\node[lbl, anchor=north west] at (server.north west) {\quad Servidor MCP};
 
-O estudo do \textbf{MCP} foi realizado em paralelo com a análise das APIs de inferência. Enquanto o objetivo dessa análise era compreender a interação com os modelos, o objetivo aqui foi perceber de que modo ferramentas e contexto externo podem ser disponibilizados de forma uniforme e independente do fornecedor do modelo.
+% Three categories inside
+\node[cat, fill=white, draw=mcpdark, text=mcpdark, thick,
+      left=0.4cm of server.center, xshift=-1.6cm] (tools)
+      {\textbf{Tools}\\[4pt]{\scriptsize\color{mcpgray}Executam ações\\em sistemas externos}};
 
-Para complementar a análise teórica, foi desenvolvido um pequeno protótipo utilizando a biblioteca oficial \texttt{io.modelcontextprotocol:kotlin-sdk}. O protótipo teve como objetivo validar o ciclo básico de funcionamento do protocolo, incluindo a criação de um servidor, o registo de capacidades, o estabelecimento da ligação com um cliente e a troca de mensagens. Este exercício permitiu também verificar a compatibilidade da biblioteca com \textbf{Kotlin Multiplatform} \cite{mcp_kotlin_sdk}.
+\node[cat, fill=white, draw=mcpdark, text=mcpdark, thick,
+      at=(server.center)] (resources)
+      {\textbf{Resources}\\[4pt]{\scriptsize\color{mcpgray}Disponibilizam\\informação via URI}};
 
-O experimento realizado permitiu compreender na prática o funcionamento do protocolo e da biblioteca oficial. Foi possível validar o processo de descoberta de capacidades, a invocação de ferramentas e a troca de informação entre clientes e servidores \textbf{MCP}.
+\node[cat, fill=white, draw=mcpdark, text=mcpdark, thick,
+      right=0.4cm of server.center, xshift=1.6cm] (prompts)
+      {\textbf{Prompts}\\[4pt]{\scriptsize\color{mcpgray}Modelos de interação\\reutilizáveis}};
 
-Este estudo permitiu também perceber que o acesso a ferramentas e fontes externas de contexto constitui uma preocupação distinta da comunicação com os modelos, tendo esta separação influenciado algumas decisões tomadas posteriormente na arquitetura da \textbf{OmniAI}.
+\end{tikzpicture}
+\caption{As três categorias de capacidades disponibilizadas por um servidor MCP.}
+\label{fig:mcp_capabilities}
+\end{figure}
+
+O cliente não necessita de conhecer previamente quais destas capacidades existem.
+Após estabelecer ligação ao servidor, pode solicitar dinamicamente a lista de
+ferramentas, recursos e \textit{prompts} disponibilizados, adaptando automaticamente
+o seu comportamento às funcionalidades oferecidas pelo servidor.
+
+% -----------------------------------------------------------------------
+\subsection{Descoberta de capacidades}
+% -----------------------------------------------------------------------
+
+Uma das principais características do protocolo consiste na descoberta dinâmica de
+capacidades (\textit{capability discovery}). Depois de estabelecida uma sessão entre
+cliente e servidor, o cliente inicia o processo de inicialização através de mensagens
+\textbf{JSON-RPC}. Durante esta fase são negociadas as capacidades suportadas por
+ambas as partes e estabelecidos os parâmetros da sessão.
+
+Após a inicialização, o cliente pode solicitar ao servidor a lista de ferramentas,
+recursos e \textit{prompts} disponíveis. Esta descoberta é feita através de três
+operações definidas pelo protocolo: \texttt{tools/list}, \texttt{resources/list} e
+\texttt{prompts/list}. A invocação efetiva de uma ferramenta ou a leitura de um
+recurso são depois realizadas pelas operações correspondentes, \texttt{tools/call} e
+\texttt{resources/read}, respetivamente. Desta forma, diferentes servidores podem
+disponibilizar conjuntos distintos de funcionalidades sem que seja necessário alterar
+a lógica do cliente.
+
+Quando o modelo necessita de executar uma determinada ação, o cliente seleciona a
+ferramenta apropriada, envia os parâmetros necessários para o servidor e recebe
+posteriormente o resultado da operação. A Figura~\ref{fig:mcp_sequence} representa o
+fluxo completo de comunicação, desde o estabelecimento da sessão até à execução de
+uma ferramenta.
+
+\begin{figure}[h]
+\centering
+\begin{tikzpicture}[
+  every node/.style={font=\small\sffamily},
+  life/.style  = {draw=mcpborder, thick, dashed},
+  head/.style  = {rectangle, rounded corners=4pt, draw, fill, text=white,
+                  minimum width=2.6cm, minimum height=0.7cm, align=center,
+                  font=\small\sffamily\bfseries},
+  msg/.style   = {-stealth, thick},
+  rmsg/.style  = {stealth-, thick, dashed},
+  lbl/.style   = {font=\scriptsize\sffamily, fill=white, inner sep=1pt},
+  grp/.style   = {rectangle, rounded corners=3pt, draw=mcpborder,
+                  fill=mcplight, inner sep=4pt},
+]
+
+% ---- Lifeline headers ----
+\node[head, fill=mcpdark]   (CH) at (0,0)   {Cliente MCP};
+\node[head, fill=mcpgray]   (SH) at (8,0)   {Servidor MCP};
+
+% ---- Lifelines ----
+\draw[life] (CH.south) -- ++(0,-9.6);
+\draw[life] (SH.south) -- ++(0,-9.6);
+
+% ---- Helper macro positions (y offsets) ----
+% 1. initialize  -1.0
+% 2. initialized -1.8
+% 3. tools/list  -2.8
+% 4. list result -3.6
+% 5. tools/call  -5.0  (after loop label)
+% 6. call result -5.8
+% 7. (loop end)  -7.0
+
+% -- Phase label: Inicialização --
+\node[lbl, text=mcpdark, anchor=west] at (-2.2,-0.85) {\textit{Inicialização}};
+\draw[thick, color=mcpborder] (-2.2,-0.7) -- (-2.2,-2.5);
+\draw[thick, color=mcpborder] (-2.2,-0.7) -- (-2.1,-0.7);
+\draw[thick, color=mcpborder] (-2.2,-2.5) -- (-2.1,-2.5);
+
+\draw[msg, color=mcpdark]
+      (0,-1.0) -- node[lbl, above]{\texttt{initialize}} (8,-1.0);
+\draw[rmsg, color=mcpgray]
+      (0,-1.8) -- node[lbl, above]{\texttt{initialized} (capacidades negociadas)} (8,-1.8);
+
+% -- Phase label: Descoberta --
+\node[lbl, text=mcpdark, anchor=west] at (-2.2,-2.65) {\textit{Descoberta}};
+\draw[thick, color=mcpborder] (-2.2,-2.5) -- (-2.2,-4.5);
+\draw[thick, color=mcpborder] (-2.2,-4.5) -- (-2.1,-4.5);
+
+\draw[msg, color=mcpdark]
+      (0,-2.8) -- node[lbl, above]{\texttt{tools/list}} (8,-2.8);
+\draw[rmsg, color=mcpgray]
+      (0,-3.6) -- node[lbl, above]{lista de ferramentas disponíveis} (8,-3.6);
+
+% -- Phase label: Execução --
+\node[lbl, text=mcpdark, anchor=west] at (-2.2,-4.85) {\textit{Execução}};
+\draw[thick, color=mcpborder] (-2.2,-4.7) -- (-2.2,-6.7);
+\draw[thick, color=mcpborder] (-2.2,-6.7) -- (-2.1,-6.7);
+
+% loop box frame (fill=none para não tapar as lifelines)
+\draw[thick, color=mcpgray, rounded corners=2pt] (-0.8,-4.7) rectangle (8.8,-6.5);
+\node[draw=mcpgray, thick, fill=white, anchor=north west, rounded corners=1pt, font=\scriptsize\sffamily\bfseries, inner sep=3pt] at (-0.8,-4.7) {loop};
+\node[font=\scriptsize\sffamily, text=mcpgray, anchor=west] at (0.2,-4.95) {[para cada ferramenta invocada]};
+
+\draw[msg, color=mcpdark]
+      (0,-5.4) -- node[lbl, above]{\texttt{tools/call} (nome + parâmetros)} (8,-5.4);
+\draw[rmsg, color=mcpgray]
+      (0,-6.2) -- node[lbl, above]{resultado da operação} (8,-6.2);
+
+\end{tikzpicture}
+\caption{Sequência de comunicação MCP: inicialização da sessão, descoberta de
+         capacidades e execução de ferramentas via JSON-RPC.}
+\label{fig:mcp_sequence}
+\end{figure}
+
+Este mecanismo permite que novas funcionalidades sejam adicionadas aos servidores sem
+modificar a lógica das aplicações clientes.
+
+% -----------------------------------------------------------------------
+\subsection{Mecanismos de transporte}
+% -----------------------------------------------------------------------
+
+O protocolo define o formato das mensagens e o ciclo de comunicação entre cliente e
+servidor, mas permite que essa comunicação seja realizada através de diferentes
+mecanismos de transporte. A versão atual da especificação define dois mecanismos
+oficiais: \textbf{STDIO} e \textbf{Streamable HTTP}
+\cite{mcp_architecture}, cujas diferenças estão resumidas na
+Tabela~\ref{tab:mcp_transport}.
+
+\begin{table}[H]
+\centering
+\small
+\renewcommand{\arraystretch}{1.5}
+\begin{tabularx}{\textwidth}{|>{\raggedright\arraybackslash}p{3cm}|Y|Y|}
+\hline
+\textbf{Característica} & \textbf{STDIO} & \textbf{Streamable HTTP} \\
+\hline
+\textbf{Âmbito} & Processos locais & Processos distribuídos \\
+\hline
+\textbf{Transporte} & \texttt{stdin} / \texttt{stdout} & HTTP \\
+\hline
+\textbf{Streaming} & --- & Suportado \\
+\hline
+\textbf{Caso de uso típico} & Aplicações desktop (ex.: Claude Desktop) & Servidores remotos e arquiteturas cloud \\
+\hline
+\end{tabularx}
+\caption{Comparação entre os dois mecanismos de transporte oficiais do MCP.}
+\label{tab:mcp_transport}
+\end{table}
+
+O transporte \textbf{STDIO} destina-se principalmente à comunicação entre processos
+executados localmente. Neste modo, o cliente inicia o processo correspondente ao
+servidor \textbf{MCP} e toda a comunicação é realizada através dos fluxos de entrada
+e saída padrão (\textit{stdin} e \textit{stdout}). Esta abordagem apresenta uma
+implementação simples e elimina a necessidade de configurar ligações de rede, sendo
+por isso amplamente utilizada por aplicações de ambiente de trabalho como o Claude
+Desktop.
+
+O transporte \textbf{Streamable HTTP} destina-se à comunicação entre processos
+distribuídos através da rede. Neste caso, as mensagens JSON-RPC são transportadas
+sobre HTTP, sendo igualmente possível transmitir respostas de forma incremental
+(\textit{streaming}) quando necessário. Este mecanismo substitui a abordagem
+anteriormente baseada em \textbf{HTTP} e \textbf{Server-Sent Events (SSE)},
+oferecendo uma solução mais simples e flexível para comunicações remotas.
+
+Embora a especificação atual privilegie estes dois mecanismos, diversas
+implementações disponibilizam suporte adicional para outros transportes,
+nomeadamente \textbf{WebSocket}. Apesar de não constituir um mecanismo oficial do
+protocolo, o WebSocket é frequentemente utilizado em aplicações que necessitam de
+comunicação bidirecional persistente e de baixa latência.
+
+% -----------------------------------------------------------------------
+\subsection{Ferramentas de inspeção}
+% -----------------------------------------------------------------------
+
+Durante o desenvolvimento do protocolo foram igualmente disponibilizadas ferramentas
+que facilitam a validação de implementações. Entre estas destaca-se o \textbf{MCP
+Inspector}, distribuído através do ecossistema Node.js.
+
+Esta ferramenta permite estabelecer ligação a um servidor \textbf{MCP}, visualizar
+interativamente as capacidades disponibilizadas, invocar ferramentas, consultar
+recursos e analisar as mensagens JSON-RPC trocadas durante toda a sessão. A
+utilização do \textbf{MCP Inspector} revelou-se particularmente útil durante o
+desenvolvimento do protótipo, permitindo validar o comportamento do servidor e
+confirmar a conformidade da implementação com a especificação do protocolo.
+
+% -----------------------------------------------------------------------
+\subsection{Protótipo desenvolvido}
+% -----------------------------------------------------------------------
+
+Para complementar o estudo da especificação foi desenvolvido um protótipo utilizando
+a biblioteca oficial \texttt{io.modelcontextprotocol:kotlin-sdk}
+\cite{mcp_kotlin_sdk}. O objetivo deste protótipo consistiu em compreender o ciclo
+completo de funcionamento do protocolo e avaliar a maturidade da biblioteca para
+futura integração na arquitetura da \textbf{OmniAI}.
+
+O trabalho realizado incluiu a implementação de um servidor \textbf{MCP}, responsável
+pelo registo de ferramentas e restantes capacidades disponibilizadas, e de um cliente
+\textbf{MCP}, responsável por estabelecer ligação ao servidor, realizar o processo de
+inicialização, descobrir dinamicamente as capacidades disponíveis e invocar as
+ferramentas registadas.
+
+Durante o desenvolvimento foram explorados os diferentes mecanismos de transporte
+suportados pela biblioteca, tendo sido igualmente utilizado o \textbf{MCP Inspector}
+para validar o correto funcionamento da comunicação entre cliente e servidor e
+verificar a troca de mensagens definida pela especificação.
+
+Este protótipo permitiu compreender detalhadamente o funcionamento do protocolo,
+desde o estabelecimento da sessão até à descoberta de capacidades e execução de
+ferramentas, fornecendo uma experiência prática complementar ao estudo da
+documentação oficial.
 
 \section{Estado da Arte de Gateways de IA e Soluções Semelhantes}
 

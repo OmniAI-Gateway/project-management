@@ -23,7 +23,14 @@
 % --- Configurações TikZ ---
 \usepackage{tikz}
 % Juntámos todas as bibliotecas numa só linha:
-\usetikzlibrary{arrows.meta, positioning, fit, calc, shapes.geometric}
+\usetikzlibrary{arrows.meta, positioning, fit, calc, shapes.geometric, backgrounds, decorations.pathreplacing}
+
+% --- Definições de Cores MCP (Escala de Cinza) ---
+\definecolor{mcpdark}{HTML}{111827}    % Preto / cinza muito escuro
+\definecolor{mcpgray}{HTML}{4B5563}    % Cinza médio/escuro
+\definecolor{mcplight}{HTML}{E5E7EB}   % Cinza claro
+\definecolor{mcpvlight}{HTML}{F9FAFB}  % Cinza muito claro
+\definecolor{mcpborder}{HTML}{D1D5DB}  % Cinza para bordas
 
 % --- Configurações de Tabelas ---
 \newcolumntype{Y}{>{\raggedright\arraybackslash}X}
