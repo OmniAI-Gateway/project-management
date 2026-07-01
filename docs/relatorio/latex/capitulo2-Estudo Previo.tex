@@ -310,7 +310,7 @@ Enquanto a \textbf{OpenAI} \cite{openai_structured_outputs} e a \textbf{Anthropi
 \section{O protocolo MCP}
 % -----------------------------------------------------------------------
 
-O \textbf{Model Context Protocol (MCP)} é um protocolo aberto desenvolvido pela
+O \textbf{Model Context Protocol (MCP)} é um protocolo desenvolvido pela
 Anthropic com o objetivo de normalizar a forma como aplicações consumidoras de IA disponibilizam
 contexto externo às suas APIs de inferência \cite{mcp_intro}. Em vez de cada
 integração definir uma interface própria para expor ferramentas, dados ou operações, o
@@ -332,7 +332,7 @@ Alem de padronizar as integrações, o protocolo mitiga o problema do isolamento
 \subsection{Arquitetura do protocolo}
 % -----------------------------------------------------------------------
 
-O protocolo segue uma arquitetura cliente-servidor composta por três papéis principais: a aplicação consumidora de IA, que integra um ou mais clientes \textbf{MCP}; o cliente \textbf{MCP}, que estabelece e mantém as ligações com os servidores; e o servidor \textbf{MCP}, que expõe capacidades como ferramentas, recursos e \textit{prompts} \cite{mcp_architecture,mcp_server_concepts,mcp_client_concepts}. Nesta arquitetura, os servidores disponibilizam capacidades externas, enquanto os clientes negoceiam essas capacidades e efetuam chamadas em nome da aplicação. Ao contrário das APIs de inferência, responsáveis pela geração e interpretação de respostas, o \textbf{MCP} define exclusivamente a comunicação com fontes externas de contexto. Esta separação permite isolar o acesso a ferramentas do pedido de inferência, tornando ambas as componentes independentes.
+O protocolo segue uma arquitetura cliente-servidor composta por três participantes: a aplicação consumidora de IA, que integra um ou mais clientes \textbf{MCP} o cliente \textbf{MCP}, que estabelece e mantém as ligações com os servidores e o servidor \textbf{MCP}, que expõe capacidades como ferramentas, recursos e \textit{prompts} \cite{mcp_architecture,mcp_server_concepts,mcp_client_concepts}. Nesta arquitetura, os servidores disponibilizam capacidades externas, enquanto os clientes negoceiam essas capacidades e efetuam chamadas em nome da aplicação. Ao contrário das APIs de inferência, responsáveis pela geração e interpretação de respostas, o \textbf{MCP} define exclusivamente a comunicação com fontes externas de contexto. Esta separação permite isolar o acesso a ferramentas do pedido de inferência, tornando ambas as componentes independentes.
 
 A Figura~\ref{fig:mcp_architecture} ilustra esta separação de responsabilidades.
 Do lado da inferência, a aplicação comunica com o fornecedor através de uma API de
@@ -404,11 +404,11 @@ disponibilizar um conjunto de capacidades específicas.
       {\textbf{Camada de Contexto Externo (Servidores)}};
 
 \end{tikzpicture}
-\caption{Arquitetura simplificada do MCP: separação entre a API de inferência, a aplicação com cliente MCP integrado e a comunicação com servidores externos.}
+\caption{Arquitetura simplificada do MCP}
 \label{fig:mcp_architecture}
 \end{figure}
 
-O cliente não necessita de conhecer previamente quais destas capacidades existem.
+Assim, o cliente não necessita de conhecer previamente quais destas capacidades existem.
 Após estabelecer ligação ao servidor, pode solicitar dinamicamente a lista de
 ferramentas, recursos e \textit{prompts} disponibilizados, adaptando automaticamente
 o seu comportamento às funcionalidades de contexto oferecidas pelo servidor.
@@ -420,7 +420,7 @@ o seu comportamento às funcionalidades de contexto oferecidas pelo servidor.
 Uma das principais características do protocolo é a negociação dinâmica de
 capacidades (\textit{capability discovery}), realizada durante a fase de
 inicialização da sessão. O cliente inicia este processo enviando uma mensagem
-\textbf{JSON-RPC} \texttt{initialize}, na qual declara a versão do protocolo
+\textbf{JSON-RPC}, na qual declara a versão do protocolo
 suportada e as suas próprias capacidades (por exemplo, suporte para
 \textit{sampling} iniciado pelo servidor). O servidor responde indicando a
 versão de protocolo acordada e o conjunto de categorias de primitivas que
@@ -588,7 +588,7 @@ de um único \textit{endpoint} HTTP, que aceita pedidos \texttt{POST} e \texttt{
 A resposta do servidor pode ser devolvida diretamente ou, quando há necessidade de
 enviar várias mensagens ou notificações, essa mesma ligação pode ser convertida de
 forma incremental num \textit{stream} SSE, sem que seja necessário recorrer a um
-\textit{endpoint} adicional. Este mecanismo substitui o transporte legado
+\textit{endpoint} adicional. Este mecanismo substitui o transporte 
 \textit{HTTP+SSE}, definido na versão da especificação de novembro de 2024
 (\texttt{2024-11-05}), que assentava em dois \textit{endpoints} distintos, um
 dedicado à ligação SSE (\texttt{/sse}) e outro ao envio de mensagens
@@ -638,20 +638,16 @@ suportados pela biblioteca, tendo sido igualmente utilizado o \textbf{MCP Inspec
 para validar o correto funcionamento da comunicação entre cliente e servidor e
 verificar a troca de mensagens definida pela especificação.
 
-\section{Estado da Arte de Gateways de IA e Soluções Semelhantes}
+\section{Estudo de Soluções Semelhantes}
 
-No momento em que o desenvolvimento deste projeto teve início, a adoção de componentes dedicados ao intermédio entre aplicações e APIs de inferência era ainda uma prática pouco comum. Existiam escassas arquiteturas formalizadas e os produtos disponíveis no mercado com o propósito de atuar como \textit{gateways} de IA eram raros. A grande parte das aplicações integrava as APIs dos fornecedores de forma direta, o que de certa forma acabava por limitar a escalabilidade e a gestão centralizada.
-
-Com a evolução exponencial do uso de APIs de inferência em ambientes de produção, surgiu uma necessidade de governança, de controlo de custos, de segurança e de observabilidade. No decorrer do nosso desenvolvimento, o cenário de mercado transformou-se por completo. Atualmente, existem centenas de soluções e arquiteturas adotadas por empresas que integram nativamente uma \textit{gateway} de IA nos seus sistemas. Surgiram várias abordagens que visam resolver os mesmos problemas base, mas com focos distintos:
+Antes de iniciarmos o desenvolvimento deste projeto, realizámos uma pesquisa sobre as \textbf{Gateways de IA} já existentes no mercado. O objetivo deste estudo prévio foi analisar as soluções disponíveis e compreender as diferentes abordagens utilizadas.
+Desta pesquisa, destacaram-se as seguintes soluções semelhantes:
 
 \begin{itemize}
     \item \textbf{LiteLLM} \cite{litellm}: Uma solução amplamente adotada que atua como um \textit{proxy} central para unificar chamadas a dezenas de fornecedores utilizando o formato da \textbf{OpenAI}. Destaca-se por fornecer funcionalidades prontas de balanceamento de carga e controlo de orçamentos.
     \item \textbf{RouteLLM} \cite{routellm}: Uma \textit{framework} focada no roteamento inteligente de pedidos de inferência. A sua principal proposta de valor é a otimização de custo e latência, reencaminhando pedidos mais simples para fornecedores mais baratos e rápidos, e reservando configurações de maior capacidade para tarefas mais complexas.
     \item \textbf{Cloudflare AI Gateway} \cite{cloudflare_ai_gateway}: Integrado na rede global da Cloudflare, este serviço posiciona a gestão das chamadas na \textit{edge}, proporcionando benefícios significativos a nível de latência e de \textit{caching} de respostas sem exigir gestão de infraestrutura.
-    \item \textbf{Kong AI Gateway} \cite{kong_ai_gateway}: Focado em ambientes empresariais robustos, expande os conceitos tradicionais de gestão de APIs (como \textit{rate limiting} e autenticação) para cobrir o tráfego de inteligência artificial, oferecendo políticas de segurança mais rígidas e suporte para ambientes complexos.
-    \item \textbf{Portkey} \cite{portkey_ai}: Uma plataforma com um foco acentuado na observabilidade e operações (\textit{AI Ops}), fornecendo gestão profunda de \textit{prompts}, gestão de \textit{fallbacks} automáticos e análise semântica.
 \end{itemize}
 
-Para além destas soluções abertas ou comerciais, a necessidade deste tipo de componente provou ser tão grande que várias das principais empresas de base tecnológica optaram por construir as suas próprias soluções internas. Um caso notável, que demonstra a centralidade de uma \textit{gateway} de IA em arquiteturas de larga escala, foi reportado pela \textbf{Uber} \cite{uber_ai_gateway}. A empresa construiu a sua própria arquitetura interna no interior da sua plataforma de \textit{machine learning} (Michelangelo) como forma de resolver a fragmentação de acessos e garantir um controlo de segurança unificado. Isto tornou-se crucial num ecossistema em que múltiplos agentes de IA distintos necessitam de interagir em harmonia, requerendo uma forte gestão centralizada de identidades e permissões.
+Para além destas soluções, a necessidade deste tipo de componente provou ser tão grande que várias das principais empresas de base tecnológica optaram por construir as suas próprias soluções internas. Um caso notável, que demonstra a centralidade de uma \textit{gateway} de IA em arquiteturas de larga escala, foi reportado pela \textbf{Uber} \cite{uber_ai_gateway}. A empresa construiu a sua própria arquitetura interna no interior da sua plataforma de \textit{machine learning} (Michelangelo) como forma de resolver a fragmentação de acessos e garantir um controlo de segurança unificado. Isto tornou-se crucial num ecossistema em que múltiplos agentes de IA distintos necessitam de interagir em harmonia, requerendo uma forte gestão centralizada de identidades e permissões.
 
-A constatação de que o mercado validou a necessidade de um componente com as mesmas responsabilidades que a nossa \textbf{OmniAI} reforça a pertinência do problema escolhido. A adoção massiva destas tecnologias prova que o caminho centralizado é a direção tomada pela indústria. O próximo capítulo irá detalhar como a arquitetura do nosso projeto responde de forma inovadora a estes mesmos desafios.
