@@ -311,9 +311,9 @@ Enquanto a \textbf{OpenAI} \cite{openai_structured_outputs} e a \textbf{Anthropi
 % -----------------------------------------------------------------------
 
 O \textbf{Model Context Protocol (MCP)} é um protocolo aberto desenvolvido pela
-Anthropic com o objetivo de normalizar a forma como aplicações de IA disponibilizam
+Anthropic com o objetivo de normalizar a forma como aplicações consumidoras de IA disponibilizam
 contexto externo às suas APIs de inferência \cite{mcp_intro}. Em vez de cada
-integração definir um contrato próprio para expor ferramentas, dados ou operações, o
+integração definir uma interface própria para expor ferramentas, dados ou operações, o
 \textbf{MCP} estabelece uma interface comum entre aplicações, clientes MCP e
 servidores MCP, permitindo reutilizar as mesmas capacidades em diferentes ambientes
 sem acoplamento direto a um fornecedor específico.
@@ -326,29 +326,13 @@ específicas para cada API. Esta situação dificultava a reutilização de inte
 aumentava o esforço de desenvolvimento e criava um forte acoplamento entre as
 aplicações e os fornecedores de inferência.
 
-Para além da uniformização das integrações, o protocolo resolve uma limitação
-prática do processo de inferência: uma API de inferência responde com base apenas no
-contexto que lhe é fornecido no pedido, sem acesso direto a informação dinâmica como
-bases de dados, sistemas empresariais, ficheiros locais ou serviços externos. O
-\textbf{MCP} disponibiliza essas capacidades através de uma interface padronizada,
-permitindo à aplicação obter contexto atualizado ou executar operações externas
-sempre que necessário.
+Alem de padronizar as integrações, o protocolo mitiga o problema do isolamento das APIs de inferência. Os modelos de linguagem operam apenas sobre o contexto recebido, sem acesso nativo a sistemas externos ou a outras fontes de dados dinâmicas. O \textbf{MCP} resolve esta limitação ao oferecer uma arquitetura que permite à aplicação consultar ficheiros e aceder a serviços externos para, essencialmente, fornecer contexto ao modelo.
 
 % -----------------------------------------------------------------------
 \subsection{Arquitetura do protocolo}
 % -----------------------------------------------------------------------
 
-O protocolo segue uma arquitetura cliente-servidor composta por três papéis
-principais: a aplicação, que integra um ou mais clientes MCP; o cliente \textbf{MCP},
-que mantém uma ligação individual a um servidor; e o servidor \textbf{MCP}, que
-expõe capacidades como ferramentas, recursos e \textit{prompts}
-\cite{mcp_architecture,mcp_server_concepts,mcp_client_concepts}. Nesta arquitetura,
-os servidores disponibilizam capacidades externas, enquanto os clientes estabelecem
-ligações, negoceiam capacidades e efetuam chamadas em nome da aplicação. Ao contrário
-das APIs de inferência, responsáveis pela geração e interpretação de respostas, o
-\textbf{MCP} define exclusivamente a comunicação com fontes externas de contexto.
-Esta separação permite isolar o acesso a ferramentas do pedido de inferência,
-tornando ambas as componentes independentes.
+O protocolo segue uma arquitetura cliente-servidor composta por três papéis principais: a aplicação consumidora de IA, que integra um ou mais clientes \textbf{MCP}; o cliente \textbf{MCP}, que estabelece e mantém as ligações com os servidores; e o servidor \textbf{MCP}, que expõe capacidades como ferramentas, recursos e \textit{prompts} \cite{mcp_architecture,mcp_server_concepts,mcp_client_concepts}. Nesta arquitetura, os servidores disponibilizam capacidades externas, enquanto os clientes negoceiam essas capacidades e efetuam chamadas em nome da aplicação. Ao contrário das APIs de inferência, responsáveis pela geração e interpretação de respostas, o \textbf{MCP} define exclusivamente a comunicação com fontes externas de contexto. Esta separação permite isolar o acesso a ferramentas do pedido de inferência, tornando ambas as componentes independentes.
 
 A Figura~\ref{fig:mcp_architecture} ilustra esta separação de responsabilidades.
 Do lado da inferência, a aplicação comunica com o fornecedor através de uma API de
@@ -427,35 +411,47 @@ disponibilizar um conjunto de capacidades específicas.
 O cliente não necessita de conhecer previamente quais destas capacidades existem.
 Após estabelecer ligação ao servidor, pode solicitar dinamicamente a lista de
 ferramentas, recursos e \textit{prompts} disponibilizados, adaptando automaticamente
-o seu comportamento às funcionalidades oferecidas pelo servidor.
+o seu comportamento às funcionalidades de contexto oferecidas pelo servidor.
 
 % -----------------------------------------------------------------------
 \subsection{Descoberta de capacidades}
 % -----------------------------------------------------------------------
 
-Uma das principais características do protocolo consiste na descoberta dinâmica de
-capacidades (\textit{capability discovery}). Depois de estabelecida uma sessão entre
-cliente e servidor, o cliente inicia o processo de inicialização através de mensagens
-\textbf{JSON-RPC}. Durante esta fase são negociadas as capacidades suportadas por
-ambas as partes e estabelecidos os parâmetros da sessão.
+Uma das principais características do protocolo é a negociação dinâmica de
+capacidades (\textit{capability discovery}), realizada durante a fase de
+inicialização da sessão. O cliente inicia este processo enviando uma mensagem
+\textbf{JSON-RPC} \texttt{initialize}, na qual declara a versão do protocolo
+suportada e as suas próprias capacidades (por exemplo, suporte para
+\textit{sampling} iniciado pelo servidor). O servidor responde indicando a
+versão de protocolo acordada e o conjunto de categorias de primitivas que
+disponibiliza como \textit{tools}, \textit{resources} e \textit{prompts},
+podendo ainda especificar funcionalidades adicionais associadas a cada uma,
+como a emissão de notificações de alteração (\texttt{listChanged}) ou o
+suporte para subscrição de atualizações de recursos (\texttt{subscribe}).
+É importante notar que nesta negociação, o servidor
+indica apenas \textit{que tipos} de funcionalidades suporta, sem ainda
+enumerar os elementos concretos que disponibiliza \cite{mcp_server_concepts}.
 
-Após a inicialização, o cliente pode solicitar ao servidor a lista de ferramentas,
-recursos e \textit{prompts} disponíveis. Esta descoberta é feita através de três
-operações definidas pelo protocolo: \texttt{tools/list}, \texttt{resources/list} e
-\texttt{prompts/list}. A invocação efetiva de uma ferramenta ou a leitura de um
-recurso são depois realizadas pelas operações correspondentes, \texttt{tools/call} e
-\texttt{resources/read}, respetivamente \cite{mcp_server_concepts,mcp_client_concepts}.
-Desta forma, diferentes servidores podem disponibilizar conjuntos distintos de
-funcionalidades sem que seja necessário alterar a lógica da aplicação cliente.
+Só depois de concluída a inicialização (confirmada através de uma notificação \texttt{initialized} enviada pelo cliente) é que este pode consultar o conteúdo efetivo de cada categoria previamente anunciada. Esta descoberta detalhada é feita através de três operações definidas pelo protocolo: \texttt{tools/list}, \texttt{resources/list} e \texttt{prompts/list}, que devolvem, respetivamente, a lista de ferramentas, recursos e \textit{prompts} disponíveis, incluindo os respetivos nomes, descrições e esquemas de parâmetros (no caso das ferramentas e \textit{prompts}, definidos através de \textit{JSON Schema}). A invocação efetiva de uma ferramenta, a leitura de um recurso ou a obtenção de um \textit{prompt} são depois realizadas pelas operações correspondentes, \texttt{tools/call}, \texttt{resources/read} e \texttt{prompts/get}, respetivamente \cite{mcp_server_concepts,mcp_client_concepts}. Desta forma, diferentes servidores podem disponibilizar conjuntos distintos de funcionalidades sem que seja necessário alterar a lógica da aplicação cliente, que se limita a reagir às capacidades e aos elementos anunciados em cada fase.
 
-Quando a resposta da API de inferência indica a necessidade de executar uma ação
-externa, a aplicação utiliza o cliente MCP para selecionar a ferramenta apropriada,
-enviar os parâmetros necessários ao servidor e receber posteriormente o resultado da
-operação. A Figura~\ref{fig:mcp_sequence} representa o fluxo completo de comunicação,
-desde o estabelecimento da sessão até à execução de uma ferramenta.
+Quando a resposta da API de inferência indica a necessidade de executar uma
+ação externa, a aplicação utiliza o cliente MCP para selecionar a ferramenta
+apropriada (entre as previamente obtidas via \texttt{tools/list}), enviar
+os parâmetros necessários ao servidor e receber posteriormente o resultado da
+operação. A Figura~\ref{fig:mcp_sequence} representa o fluxo completo de
+comunicação, desde o estabelecimento da sessão até à execução de uma
+ferramenta.
 
-\begin{figure}[h]
+Para além das mensagens de pedido-resposta, o protocolo define ainda um
+segundo tipo de mensagem JSON-RPC, as \textit{notifications}, que permitem ao
+servidor informar o cliente de eventos assíncronos como a alteração da
+lista de ferramentas disponíveis (\texttt{notifications/tools/list\_changed})
+ou a atualização de um recurso subscrito  sem que seja necessário um pedido
+prévio por parte deste, dado não exigirem resposta.
+
+\begin{figure}[htbp]
 \centering
+\scalebox{0.8}{
 \begin{tikzpicture}[
   >=stealth,
   every node/.style={font=\small\sffamily},
@@ -467,7 +463,8 @@ desde o estabelecimento da sessão até à execução de uma ferramenta.
   res/.style   = {<-, thick, dashed, draw=mcpgray},
   notif/.style = {->, thick, dotted, draw=mcpdark},
   lbl/.style   = {font=\scriptsize\ttfamily, fill=white, inner sep=2pt},
-  phase/.style = {font=\scriptsize\sffamily\itshape, text=mcpgray, anchor=west}
+  phase/.style = {font=\scriptsize\sffamily\itshape, text=mcpgray, anchor=west},
+  block/.style = {font=\scriptsize\sffamily\bfseries, text=mcpdark, fill=white, inner sep=2pt}
 ]
 
 % ---- Cabeçalhos ----
@@ -475,8 +472,8 @@ desde o estabelecimento da sessão até à execução de uma ferramenta.
 \node[head] (S) at (8,0) {Servidor MCP};
 
 % ---- Linhas de Vida ----
-\draw[life] (C.south) -- ++(0,-8.5);
-\draw[life] (S.south) -- ++(0,-8.5);
+\draw[life] (C.south) -- ++(0,-14.3);
+\draw[life] (S.south) -- ++(0,-14.3);
 
 % ==========================================
 % Fase 1: Handshake / Inicialização
@@ -490,31 +487,54 @@ desde o estabelecimento da sessão até à execução de uma ferramenta.
 \draw[notif] (0,-2.8) -- node[lbl]{notifications/initialized} (8,-2.8);
 
 % ==========================================
-% Fase 2: Descoberta (Capability Discovery)
+% Marcador de bifurcação
 % ==========================================
-\node[phase] at (-2.5, -4) {Descoberta};
-\draw[thick, mcpborder] (-2.5,-3.7) -- (-2.5,-5.2) -- (-2.3,-5.2);
-\draw[thick, mcpborder] (-2.5,-3.7) -- (-2.3,-3.7);
-
-\draw[req] (0,-4.0) -- node[lbl]{tools/list} (8,-4.0);
-\draw[res] (0,-4.8) -- node[lbl]{Result (Tool[])} (8,-4.8);
+\node[fill=mcpvlight, draw=mcpdark, thick, rounded corners=2pt,
+      font=\scriptsize\sffamily\itshape, text=mcpdark, inner sep=3pt]
+      at (4,-3.5) {Para cada primitivo suportado (independentes entre si)};
+\draw[thick, mcpdark, ->] (4,-3.75) -- (4,-4.0);
 
 % ==========================================
-% Fase 3: Execução
+% Bloco: Tools
 % ==========================================
-\node[phase] at (-2.5, -6.5) {Execução};
-\draw[thick, mcpborder] (-2.5,-5.8) -- (-2.5,-7.8) -- (-2.3,-7.8);
-\draw[thick, mcpborder] (-2.5,-5.8) -- (-2.3,-5.8);
+\draw[thick, mcpborder, rounded corners=3pt] (-1,-4.1) rectangle (9,-6.9);
+\node[block] at (-0.4,-4.1) {Tools};
 
-% Caixa de Loop mais subtil
-\draw[thick, mcpborder, rounded corners=3pt] (-1,-5.9) rectangle (9,-7.7);
-\node[fill=white, font=\scriptsize\sffamily\bfseries, text=mcpgray, inner sep=2pt] at (-0.5,-5.9) {Loop};
+\draw[req] (0,-4.5) -- node[lbl]{tools/list} (8,-4.5);
+\draw[res] (0,-5.3) -- node[lbl]{Result (Tool[])} (8,-5.3);
+\draw[req] (0,-6.1) -- node[lbl]{tools/call (name, args)} (8,-6.1);
+\draw[res] (0,-6.6) -- node[lbl]{Result (content)} (8,-6.6);
 
-\draw[req] (0,-6.4) -- node[lbl]{tools/call (name, args)} (8,-6.4);
-\draw[res] (0,-7.2) -- node[lbl]{Result (content)} (8,-7.2);
+% ==========================================
+% Bloco: Resources
+% ==========================================
+\draw[thick, mcpborder, rounded corners=3pt] (-1,-7.2) rectangle (9,-10.0);
+\node[block] at (-0.4,-7.2) {Resources};
 
-\end{tikzpicture}
-\caption{Fluxo de comunicação MCP: inicialização por \textit{handshake} JSON-RPC, descoberta de capacidades e execução de ferramentas.}
+\draw[req] (0,-7.6) -- node[lbl]{resources/list} (8,-7.6);
+\draw[res] (0,-8.4) -- node[lbl]{Result (Resource[])} (8,-8.4);
+\draw[req] (0,-9.2) -- node[lbl]{resources/read (uri)} (8,-9.2);
+\draw[res] (0,-9.7) -- node[lbl]{Result (contents)} (8,-9.7);
+
+% ==========================================
+% Bloco: Prompts
+% ==========================================
+\draw[thick, mcpborder, rounded corners=3pt] (-1,-10.3) rectangle (9,-13.1);
+\node[block] at (-0.4,-10.3) {Prompts};
+
+\draw[req] (0,-10.7) -- node[lbl]{prompts/list} (8,-10.7);
+\draw[res] (0,-11.5) -- node[lbl]{Result (Prompt[])} (8,-11.5);
+\draw[req] (0,-12.3) -- node[lbl]{prompts/get (name, args)} (8,-12.3);
+\draw[res] (0,-12.8) -- node[lbl]{Result (messages)} (8,-12.8);
+
+\end{tikzpicture}%
+}
+\caption{Fluxo de comunicação MCP: inicialização por \textit{handshake}
+JSON-RPC, seguida da descoberta e invocação de cada tipo de primitivo
+(\textit{tools}, \textit{resources} e \textit{prompts}). Estes três blocos
+partilham a mesma sessão e podem ser exercidos pelo cliente em qualquer
+ordem, consoante as capacidades anunciadas pelo servidor na fase de
+inicialização.}
 \label{fig:mcp_sequence}
 \end{figure}
 
@@ -545,7 +565,7 @@ Tabela~\ref{tab:mcp_transport}.
 \hline
 \textbf{Sessão e estado} & Adequado a sessões locais simples, normalmente associadas a uma instância da aplicação. & Adequado a sessões remotas, autenticação, infraestrutura partilhada e cenários multiutilizador. \\
 \hline
-\textbf{\textit{Streaming}} & Não aplicável: a troca ocorre diretamente pelos fluxos do processo, sem depender de mecanismos de rede. & Opcional: o servidor responde de forma direta (JSON) ou, quando necessário, abre um \textit{stream} SSE sobre o mesmo endpoint para enviar múltiplas mensagens ou notificações. \\
+\textbf{\textit{Streaming}} & Não aplicável: a troca ocorre diretamente pelos fluxos do processo, sem depender de mecanismos de rede. & Opcional: o mesmo \textit{endpoint} responde de forma direta (JSON) ou, quando necessário, converte-se num \textit{stream} SSE para enviar múltiplas mensagens ou notificações, sem recorrer a \textit{endpoints} adicionais. \\
 \hline
 \textbf{Caso de uso típico} & Aplicações desktop e ferramentas locais que precisam de integrar servidores MCP sem expor rede. & Servidores remotos, integrações partilhadas, ambientes \textit{cloud} e arquiteturas distribuídas. \\
 \hline
@@ -566,11 +586,16 @@ O transporte \textbf{Streamable HTTP} destina-se à comunicação entre processo
 distribuídos através da rede. Neste caso, as mensagens JSON-RPC são trocadas através
 de um único \textit{endpoint} HTTP, que aceita pedidos \texttt{POST} e \texttt{GET}.
 A resposta do servidor pode ser devolvida diretamente ou, quando há necessidade de
-enviar várias mensagens ou notificações, transmitida de forma incremental através de
-um \textit{stream} SSE sobre esse mesmo \textit{endpoint}. Este mecanismo substitui o
-transporte legado, que assentava em dois \textit{endpoints} distintos --- um dedicado
-à ligação SSE e outro ao envio de mensagens ---, simplificando a estrutura da
-comunicação remota sem eliminar o uso de SSE.
+enviar várias mensagens ou notificações, essa mesma ligação pode ser convertida de
+forma incremental num \textit{stream} SSE, sem que seja necessário recorrer a um
+\textit{endpoint} adicional. Este mecanismo substitui o transporte legado
+\textit{HTTP+SSE}, definido na versão da especificação de novembro de 2024
+(\texttt{2024-11-05}), que assentava em dois \textit{endpoints} distintos, um
+dedicado à ligação SSE (\texttt{/sse}) e outro ao envio de mensagens
+(\texttt{/messages}) \cite{mcp_architecture}. A partir da revisão de março de 2025
+(\texttt{2025-03-26}), esta estrutura foi simplificada para um único
+\textit{endpoint}, sem eliminar o uso de SSE, que passou a funcionar apenas como
+mecanismo opcional de \textit{streaming} sobre a mesma ligação.
 
 Embora a especificação atual privilegie estes dois mecanismos, diversas
 implementações disponibilizam suporte adicional para outros transportes,
