@@ -8,55 +8,74 @@ Para validar a arquitetura proposta e demonstrar a aplicabilidade do nosso \text
 
 Esta separação entre \textbf{OmniAI SDK} e \textbf{OmniAI Gateway} constitui uma das principais decisões arquiteturais do projeto. A biblioteca concentra toda a lógica reutilizável e independente do contexto de execução, enquanto cada \textbf{Gateway} representa uma instanciação específica dessa infraestrutura, podendo ser configurada para diferentes fornecedores, requisitos operacionais ou cenários de utilização sem necessidade de alterar os componentes centrais do sistema.
 
+Embora o foco central deste projeto e do presente capítulo resida no acesso a APIs de inferência e na construção de uma Gateway em torno das mesmas, uma infraestrutura de IA completa exige componentes adicionais. Nesse sentido, foi posteriormente integrado de forma nativa no \textbf{SDK} um \textbf{MCP Broker}, que atua em paralelo com a Gateway de inferência, sendo responsável pela exposição e gestão de ferramentas externas via \textit{Model Context Protocol}. Os detalhes arquiteturais específicos de implementação não se encontram nesta secção, estando concentrados no Capítulo5.
+
+
 \begin{figure}[H]
     \centering
     \resizebox{\textwidth}{!}{%
     \begin{tikzpicture}[
         node distance=1.2cm and 1.2cm,
-        box/.style={rectangle, draw, rounded corners, align=center, text width=3.8cm, minimum height=1.2cm, inner sep=5pt, thick},
-        clientsBox/.style={box, text width=2.5cm},
-        entryBox/.style={box, text width=2.0cm},
-        sdkBox/.style={box, minimum width=6.0cm, text width=5.5cm, fill=blue!10, minimum height=1.2cm},
+        box/.style={rectangle, draw, rounded corners, align=center, text width=4.2cm, minimum height=1.2cm, inner sep=5pt, thick},
+        clientsBox/.style={box, text width=2.8cm},
+        entryBox/.style={box, text width=2.2cm},
+        sdkBox/.style={box, minimum width=4.5cm, text width=4.0cm, fill=blue!10, minimum height=1.2cm},
         interceptorBox/.style={box, minimum width=2.4cm, text width=2.4cm, minimum height=0.8cm, fill=white},
         group/.style={rectangle, draw, rounded corners, inner sep=15pt, thick},
+        sdkGroupStyle/.style={rectangle, draw, dashed, rounded corners, inner sep=10pt, thick},
         arrow/.style={-Latex, thick}
     ]
         % --- CLIENTS ---
         \node[clientsBox] (clients) {Clientes Externos\\ \footnotesize{(Aplicações, REST)}};
 
         % --- GATEWAY INTERNAL COMPONENTS ---
-        \node[entryBox, right=1.2cm of clients] (entry) {Endpoints\\HTTP};
-        \node[sdkBox, right=0.6cm of entry] (sdk) {\textbf{OmniAI SDK}\\ \footnotesize{(Core, DSL, Pipeline, Adapters)}};
+        \node[entryBox, right=1.5cm of clients] (entryInf) {Endpoints\\HTTP};
+        \node[sdkBox, right=0.8cm of entryInf] (infGateway) {\textbf{Inference Gateway}\\ \footnotesize{(Core, Pipeline, Adapters)}};
+        
+        % Massive spacing to absolutely prevent overlapping on the right side
+        \node[sdkBox, below=3.5cm of infGateway] (mcpBroker) {\textbf{MCP Broker}\\ \footnotesize{(Transporte HTTP/STDIO,\\Gestão de Ferramentas)}};
 
-        \draw[arrow] (entry.east) -- (sdk.west);
+        % Align MCP Clients with MCP Broker
+        \node[clientsBox, at=(clients |- mcpBroker)] (mcpClients) {Clientes MCP};
+
+        \draw[arrow] (clients.east) -- (entryInf.west);
+        \draw[arrow] (entryInf.east) -- (infGateway.west);
+        \draw[arrow] (mcpClients.east) -- (mcpBroker.west);
 
         % Interceptors on top of SDK
-        \node[interceptorBox, above=0.8cm of sdk, xshift=-1.4cm] (int1) {Interceptor 1};
-        \node[interceptorBox, above=0.8cm of sdk, xshift=1.4cm] (int2) {Interceptor 2};
+        \node[interceptorBox, above=0.8cm of infGateway, xshift=-1.4cm] (int1) {Interceptor 1};
+        \node[interceptorBox, above=0.8cm of infGateway, xshift=1.4cm] (int2) {Interceptor 2};
+        \draw[arrow] (int1.south) -- (int1.south |- infGateway.north);
+        \draw[arrow] (int2.south) -- (int2.south |- infGateway.north);
 
-        \draw[arrow] (int1.south) -- (int1.south |- sdk.north);
-        \draw[arrow] (int2.south) -- (int2.south |- sdk.north);
+        % SDK Group
+        \node[sdkGroupStyle, fit=(infGateway)(mcpBroker), label={[align=center, font=\bfseries]above:OmniAI SDK}] (sdkGroup) {};
 
         % Grouping them in "Aplicação Gateway"
-        \node[group, fit=(entry)(sdk)(int1)(int2), label={[align=center, font=\bfseries]above:Aplicação: OmniAI Gateway}] (gatewayGroup) {};
-
-        \draw[arrow] (clients.east) -- (gatewayGroup.west);
+        \node[group, fit=(entryInf)(sdkGroup)(int1)(int2), label={[align=center, font=\bfseries]above:Aplicação: OmniAI Gateway}] (gatewayGroup) {};
 
         % --- RIGHT SIDE (External Services) ---
-        \node[box, right=1.2cm of gatewayGroup] (providers) {Fornecedores de Inferência\\ \footnotesize{(OpenAI, Anthropic, Gemini)}};
-        \node[box, above=0.6cm of providers] (auth) {\textit{Servidor de Autorização}\\ \footnotesize{(OIDC / OAuth2)}};
-        \node[box, below=0.6cm of providers] (telemetry) {Observabilidade e Telemetria\\ \footnotesize{(OpenTelemetry)}};
+        \coordinate (providersPos) at (gatewayGroup.east |- infGateway);
+        \node[box, right=1.5cm of providersPos] (providers) {Fornecedores de Inferência\\ \footnotesize{(OpenAI, Anthropic, Gemini)}};
+        \node[box, above=1.2cm of providers] (auth) {\textit{Servidor de Autorização}\\ \footnotesize{(OIDC / OAuth2)}};
+        \node[box, below=1.2cm of providers] (telemetry) {Observabilidade e Telemetria\\ \footnotesize{(OpenTelemetry)}};
+        
+        \coordinate (mcpServersPos) at (gatewayGroup.east |- mcpBroker);
+        \node[box, right=1.5cm of mcpServersPos] (mcpServers) {Servidores MCP\\ \footnotesize{(Ferramentas Externas)}};
 
-        % Outputs
-        \coordinate (fork) at ([xshift=0.5cm]gatewayGroup.east);
-        \draw[thick] (gatewayGroup.east) -- (fork);
-        \draw[arrow] (fork) |- (auth.west);
-        \draw[arrow] (fork) -- (providers.west);
-        \draw[arrow] (fork) |- (telemetry.west);
+        % Outputs Inference
+        \coordinate (forkInf) at ([xshift=0.7cm]providersPos);
+        \draw[thick] (infGateway.east) -- (forkInf);
+        \draw[arrow] (forkInf) |- (auth.west);
+        \draw[arrow] (forkInf) -- (providers.west);
+        \draw[arrow] (forkInf) |- (telemetry.west);
+
+        % Outputs MCP
+        \draw[arrow] (mcpBroker.east) -- (mcpServers.west);
 
     \end{tikzpicture}%
     }
-    \caption{Arquitetura de Alto Nível: O \textbf{OmniAI SDK} utilizado para instanciar uma \textbf{OmniAI Gateway}, abstraindo integrações externas padronizadas.}
+    \caption{Arquitetura de Alto Nível: O \textbf{OmniAI SDK} utilizado para instanciar uma \textbf{OmniAI Gateway}, com a \textbf{Inference Gateway} a abstrair integrações externas padronizadas e o \textbf{MCP Broker} a gerir ferramentas.}
     \label{fig:top-level}
 \end{figure}
 
