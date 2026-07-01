@@ -1,4 +1,4 @@
-    \chapter{Estudo Prévio}
+﻿    \chapter{Estudo Prévio}
 \section{Análise das APIs de Inferência}
 
 O estudo inicial comparou 3 APIs de inferência de utilização comum, sendo estas a \textbf{OpenAI} \cite{openai_api}, \textbf{Anthropic} \cite{anthropic_api} e \textbf{Gemini} \cite{google_gemini_api}, para este estudo, utilizou-se o \textbf{Ollama} para analisar a API da \textbf{Anthropic}, o \textbf{Groq} para a da \textbf{OpenAI}, e o \textbf{AI Studio} da própria Google para avaliar a API do \textbf{Gemini}. 
@@ -305,168 +305,123 @@ Enquanto a \textbf{OpenAI} \cite{openai_structured_outputs} e a \textbf{Anthropi
   A realização deste estudo envolveu dificuldades práticas que merecem ser documentadas. Para a API da \textbf{OpenAI}, o acesso direto à API oficial implica custos de utilização, pelo que os testes foram realizados utilizando a API da \textbf{Groq} \cite{groq_api}, que oferece um plano gratuito e implementa uma interface compatível com o formato da \textbf{OpenAI} (\texttt{/v1/chat/completions}). Adicionalmente, foram executados testes complementares contra uma instância local de \textbf{Ollama} \cite{ollama_docs}, que também expõe um \textit{endpoint} compatível com o formato \textbf{OpenAI}. Para a API da \textbf{Anthropic}, a situação foi semelhante: a API oficial requer um plano de subscrição pago, pelo que os testes foram realizados utilizando o \textbf{Ollama}, que disponibiliza um \textit{endpoint} compatível com o formato da \textbf{Anthropic} (\texttt{/v1/messages}). Embora o \textbf{Ollama} implemente corretamente as interfaces de compatibilidade para pedidos simples, de \textit{streaming} e com parâmetros de configuração, algumas funcionalidades mais avançadas, nomeadamente o \textit{tool calling} estruturado e a geração de blocos de raciocínio (\textit{thinking}) apresentaram limitações quando executadas em modelos de pequena dimensão, como o \texttt{llama3.2:1b}. Nesses casos, os exemplos de resposta foram ajustados para refletir com fidelidade o comportamento documentado das APIs oficiais. A API do \textbf{Gemini} foi a única cujos testes foram executados diretamente contra a API oficial, nomeadamente através do \textbf{AI Studio} \cite{google_aistudio}, uma vez que este disponibiliza um nível de acesso gratuito.
 
   Do ponto de vista técnico, o estudo permitiu concluir que as três APIs partilham um conjunto de conceitos fundamentais, como as mensagens, papéis, ferramentas, \textit{streaming} e contabilização de \textit{tokens}, mas implementam-nos de formas estruturalmente diferentes. As diferenças manifestam-se na nomenclatura dos campos, na organização hierárquica do JSON, na localização dos parâmetros de configuração e nos mecanismos de ativação de funcionalidades como \textit{streaming} e raciocínio. Contudo, apesar destas similaridades conceituais, ainda existem campos proprietários em cada API de fornecedor de inferência. Esta análise permitiu perceber que uma abstração que pretenda cobrir estes três fornecedores precisa de ir além de uma simples tradução de nomes, exigindo uma compreensão das diferenças semânticas e estruturais observadas nos pedidos e respostas reais.
+  
 % -----------------------------------------------------------------------
 \section{O protocolo MCP}
 % -----------------------------------------------------------------------
 
 O \textbf{Model Context Protocol (MCP)} é um protocolo aberto desenvolvido pela
-Anthropic com o objetivo de normalizar a forma como aplicações baseadas em modelos
-de linguagem interagem com ferramentas, fontes de dados e outros sistemas externos
-\cite{mcp_protocol}. O protocolo define uma interface comum entre aplicações de IA
-e serviços externos, permitindo que diferentes modelos e clientes utilizem as mesmas
-capacidades sem necessidade de desenvolver integrações específicas para cada
-fornecedor.
+Anthropic com o objetivo de normalizar a forma como aplicações de IA disponibilizam
+contexto externo às suas APIs de inferência \cite{mcp_intro}. Em vez de cada
+integração definir um contrato próprio para expor ferramentas, dados ou operações, o
+\textbf{MCP} estabelece uma interface comum entre aplicações, clientes MCP e
+servidores MCP, permitindo reutilizar as mesmas capacidades em diferentes ambientes
+sem acoplamento direto a um fornecedor específico.
 
 Antes do surgimento do \textbf{MCP}, cada plataforma disponibilizava mecanismos
-próprios para permitir que os modelos invocassem ferramentas externas. Embora estes
+próprios para expor ferramentas externas ao ciclo de inferência. Embora estes
 mecanismos oferecessem funcionalidades semelhantes, apresentavam interfaces
 incompatíveis entre si, obrigando os programadores a implementar adaptações
 específicas para cada API. Esta situação dificultava a reutilização de integrações,
 aumentava o esforço de desenvolvimento e criava um forte acoplamento entre as
-aplicações e os fornecedores dos modelos.
+aplicações e os fornecedores de inferência.
 
-Para além da uniformização das integrações, o protocolo procura resolver outra
-limitação inerente aos modelos de linguagem: o acesso a informação externa. Um
-modelo de linguagem possui apenas o conhecimento adquirido durante o processo de
-treino e não tem acesso direto a informação dinâmica, como bases de dados, sistemas
-empresariais, ficheiros locais ou serviços externos. O \textbf{MCP} permite que
-essas capacidades sejam disponibilizadas através de uma interface padronizada,
-possibilitando que o modelo obtenha contexto atualizado ou execute operações no
-exterior sempre que necessário.
-
-A adoção do \textbf{MCP} introduz assim uma camada de abstração independente dos
-fornecedores de modelos de linguagem, uniformizando o acesso a ferramentas, recursos
-e outras fontes de contexto externo. Enquanto as APIs de inferência definem a
-comunicação entre a aplicação e os modelos, o \textbf{MCP} concentra-se
-exclusivamente na interação com sistemas externos, promovendo uma clara separação de
-responsabilidades que se revelou determinante na conceção da arquitetura da
-\textbf{OmniAI}.
+Para além da uniformização das integrações, o protocolo resolve uma limitação
+prática do processo de inferência: uma API de inferência responde com base apenas no
+contexto que lhe é fornecido no pedido, sem acesso direto a informação dinâmica como
+bases de dados, sistemas empresariais, ficheiros locais ou serviços externos. O
+\textbf{MCP} disponibiliza essas capacidades através de uma interface padronizada,
+permitindo à aplicação obter contexto atualizado ou executar operações externas
+sempre que necessário.
 
 % -----------------------------------------------------------------------
 \subsection{Arquitetura do protocolo}
 % -----------------------------------------------------------------------
 
-O protocolo segue uma arquitetura cliente-servidor. Nesta arquitetura, os servidores
-disponibilizam capacidades que podem ser utilizadas pelos modelos, enquanto os
-clientes estabelecem ligações aos servidores, descobrem as capacidades disponíveis e
-efetuam a respetiva utilização. Ao contrário das APIs de inferência, responsáveis
-pela comunicação entre a aplicação e o modelo de linguagem, o \textbf{MCP} define
-exclusivamente a comunicação entre aplicações e fontes externas de contexto. Esta
-separação permite desacoplar o acesso a ferramentas da interação com os modelos,
+O protocolo segue uma arquitetura cliente-servidor composta por três papéis
+principais: a aplicação, que integra um ou mais clientes MCP; o cliente \textbf{MCP},
+que mantém uma ligação individual a um servidor; e o servidor \textbf{MCP}, que
+expõe capacidades como ferramentas, recursos e \textit{prompts}
+\cite{mcp_architecture,mcp_server_concepts,mcp_client_concepts}. Nesta arquitetura,
+os servidores disponibilizam capacidades externas, enquanto os clientes estabelecem
+ligações, negoceiam capacidades e efetuam chamadas em nome da aplicação. Ao contrário
+das APIs de inferência, responsáveis pela geração e interpretação de respostas, o
+\textbf{MCP} define exclusivamente a comunicação com fontes externas de contexto.
+Esta separação permite isolar o acesso a ferramentas do pedido de inferência,
 tornando ambas as componentes independentes.
 
 A Figura~\ref{fig:mcp_architecture} ilustra esta separação de responsabilidades.
-Do lado da inferência, a aplicação comunica diretamente com o modelo de linguagem
-através de uma API de inferência. Do lado do contexto externo, o cliente \textbf{MCP}
+Do lado da inferência, a aplicação comunica com o fornecedor através de uma API de
+inferência. Do lado do contexto externo, o cliente \textbf{MCP}
 estabelece ligação a um ou mais servidores \textbf{MCP}, cada um responsável por
 disponibilizar um conjunto de capacidades específicas.
 
 \begin{figure}[h]
 \centering
 \begin{tikzpicture}[
-  node distance = 1.8cm and 2.5cm,
-  box/.style     = {rectangle, rounded corners=4pt, minimum width=2.8cm,
-                    minimum height=1.0cm, align=center, font=\small\sffamily},
+  node distance = 1.5cm and 2.5cm,
+  box/.style     = {rectangle, rounded corners=6pt, minimum width=3.2cm,
+                    minimum height=1.2cm, align=center, font=\small\sffamily, thick},
   lbl/.style     = {font=\scriptsize\sffamily\itshape, text=mcpgray},
-  arr/.style     = {-stealth, thick},
   darr/.style    = {stealth-stealth, thick},
+  arr/.style     = {-stealth, thick}
 ]
 
-% ---- Application (centre-left) ----
-\node[box, fill=mcpvlight, draw=mcpdark, text=mcpdark, thick] (app)
+% ---- Definição de Cores (Tons de Cinza Neutros) ----
+\definecolor{mcpdark}{RGB}{60, 60, 60}
+\definecolor{mcpgray}{RGB}{130, 130, 130}
+\definecolor{mcplight}{RGB}{235, 235, 235}
+\definecolor{mcpvlight}{RGB}{248, 248, 248}
+\definecolor{mcpborder}{RGB}{180, 180, 180}
+
+% ---- CAMADA SUPERIOR: Aplicação e IA (y = 1.5) ----
+% Espaçamento ampliado significativamente entre os blocos
+\node[box, fill=mcplight, draw=mcpgray, text=mcpdark] (api) at (-5.5, 1.5)
+      {API de\\inferência};
+
+\node[box, fill=mcpvlight, draw=mcpdark, text=mcpdark] (app) at (0, 1.5)
       {Aplicação};
 
-% ---- LLM (top-right) ----
-\node[box, fill=mcplight, draw=mcpgray, text=mcpdark,
-      above right=1.2cm and 2.5cm of app] (llm)
-      {Modelo de\\linguagem};
-
-% ---- MCP Client (bottom, inside app conceptually) ----
-\node[box, fill=mcpvlight, draw=mcpgray, text=mcpdark,
-      below right=1.2cm and 2.5cm of app] (client)
+\node[box, fill=mcpvlight, draw=mcpgray, text=mcpdark] (client) at (5.5, 1.5)
       {Cliente MCP};
 
-% ---- MCP Servers ----
-\node[box, fill=mcplight, draw=mcpdark, text=mcpdark,
-      right=3.0cm of client, yshift= 0.9cm] (srv1)
+% ---- CAMADA INFERIOR: Contexto Externo (y = -1.5) ----
+% Posicionados de forma perfeitamente simétrica abaixo do Cliente MCP (x = 5.5)
+\node[box, fill=mcplight, draw=mcpdark, text=mcpdark] (srv1) at (3.0, -1.5)
       {Servidor MCP\\(base de dados)};
-\node[box, fill=mcplight, draw=mcpdark, text=mcpdark,
-      right=3.0cm of client, yshift=-0.9cm] (srv2)
+
+\node[box, fill=mcplight, draw=mcpdark, text=mcpdark] (srv2) at (8.0, -1.5)
       {Servidor MCP\\(API externa)};
 
-% ---- Arrows ----
-\draw[darr, color=mcpgray]
-      (app) -- node[above=2pt, lbl, sloped]{API de inferência} (llm);
+% ---- Setas e Conexões ----
 
+% 1. API de Inferência <-> Aplicação (Seta limpa, sem texto redundante)
 \draw[darr, color=mcpdark]
-      (app) -- node[below=2pt, lbl, sloped]{integração interna} (client);
+      (api) -- (app);
 
+% 2. Aplicação <-> Cliente MCP
 \draw[darr, color=mcpdark]
-      (client) -- node[above=2pt, lbl, sloped]{MCP} (srv1);
-\draw[darr, color=mcpdark]
-      (client) -- node[below=2pt, lbl, sloped]{MCP} (srv2);
+      (app) -- node[above=2pt, lbl]{integração interna} (client);
 
-% ---- Divider between the two "worlds" ----
+% 3. Cliente MCP <-> Servidores Externos (Ramificação simétrica)
+\draw[darr, color=mcpdark]
+      (client.south) -- node[left=2pt, lbl, pos=0.4]{MCP} (srv1.north);
+\draw[darr, color=mcpdark]
+      (client.south) -- node[right=2pt, lbl, pos=0.4]{MCP} (srv2.north);
+
+% ---- Linha Divisória de Contexto ----
 \draw[dashed, color=mcpborder, thick]
-      ($(app.east)!0.45!(client.west) + (0,2.4)$)
-   -- ($(app.east)!0.45!(client.west) + (0,-2.4)$);
+      (-7.8, 0) -- (10.2, 0);
 
-\node[lbl, rotate=90] at ($(app.east)!0.45!(client.west) + (-0.35,0)$)
-      {inferência};
-\node[lbl, rotate=90] at ($(app.east)!0.45!(client.west) + (0.45,0)$)
-      {contexto externo};
+% Títulos das Camadas
+\node[lbl, anchor=south west, text=mcpgray] at (-7.8, 0.1)
+      {\textbf{Camada da Aplicação e IA (Local)}};
+\node[lbl, anchor=north west, text=mcpgray] at (-7.8, -0.1)
+      {\textbf{Camada de Contexto Externo (Servidores)}};
 
 \end{tikzpicture}
-\caption{Arquitetura do MCP: separação entre a camada de inferência (API do modelo)
-         e a camada de contexto externo (servidores MCP).}
+\caption{Arquitetura simplificada do MCP: separação entre a API de inferência, a aplicação com cliente MCP integrado e a comunicação com servidores externos.}
 \label{fig:mcp_architecture}
-\end{figure}
-
-As capacidades disponibilizadas pelos servidores encontram-se organizadas em três
-categorias principais, ilustradas na Figura~\ref{fig:mcp_capabilities}:
-
-\begin{itemize}
-  \item \textbf{Tools}: operações que podem ser executadas pelo cliente, permitindo
-        realizar ações sobre sistemas externos, como executar comandos, consultar
-        bases de dados ou interagir com APIs.
-  \item \textbf{Resources}: informação disponibilizada pelo servidor para consulta,
-        normalmente identificada através de URIs, incluindo documentos, ficheiros de
-        configuração ou outros dados estruturados.
-  \item \textbf{Prompts}: modelos de interação reutilizáveis que podem ser
-        parametrizados pelo cliente para diferentes cenários de utilização.
-\end{itemize}
-
-\begin{figure}[h]
-\centering
-\begin{tikzpicture}[
-  every node/.style={font=\small\sffamily},
-  cat/.style  = {rectangle, rounded corners=6pt, minimum width=3.2cm,
-                 minimum height=1.8cm, align=center, text width=3.0cm},
-  icon/.style = {font=\large},
-  lbl/.style  = {font=\footnotesize\sffamily, text=mcpgray},
-]
-
-% Server box
-\node[rectangle, rounded corners=8pt, draw=mcpgray, fill=mcpvlight,
-      minimum width=11.6cm, minimum height=3.8cm] (server) {};
-\node[lbl, anchor=north west] at (server.north west) {\quad Servidor MCP};
-
-% Three categories inside
-\node[cat, fill=white, draw=mcpdark, text=mcpdark, thick,
-      left=0.4cm of server.center, xshift=-1.6cm] (tools)
-      {\textbf{Tools}\\[4pt]{\scriptsize\color{mcpgray}Executam ações\\em sistemas externos}};
-
-\node[cat, fill=white, draw=mcpdark, text=mcpdark, thick,
-      at=(server.center)] (resources)
-      {\textbf{Resources}\\[4pt]{\scriptsize\color{mcpgray}Disponibilizam\\informação via URI}};
-
-\node[cat, fill=white, draw=mcpdark, text=mcpdark, thick,
-      right=0.4cm of server.center, xshift=1.6cm] (prompts)
-      {\textbf{Prompts}\\[4pt]{\scriptsize\color{mcpgray}Modelos de interação\\reutilizáveis}};
-
-\end{tikzpicture}
-\caption{As três categorias de capacidades disponibilizadas por um servidor MCP.}
-\label{fig:mcp_capabilities}
 \end{figure}
 
 O cliente não necessita de conhecer previamente quais destas capacidades existem.
@@ -489,92 +444,79 @@ recursos e \textit{prompts} disponíveis. Esta descoberta é feita através de t
 operações definidas pelo protocolo: \texttt{tools/list}, \texttt{resources/list} e
 \texttt{prompts/list}. A invocação efetiva de uma ferramenta ou a leitura de um
 recurso são depois realizadas pelas operações correspondentes, \texttt{tools/call} e
-\texttt{resources/read}, respetivamente. Desta forma, diferentes servidores podem
-disponibilizar conjuntos distintos de funcionalidades sem que seja necessário alterar
-a lógica do cliente.
+\texttt{resources/read}, respetivamente \cite{mcp_server_concepts,mcp_client_concepts}.
+Desta forma, diferentes servidores podem disponibilizar conjuntos distintos de
+funcionalidades sem que seja necessário alterar a lógica da aplicação cliente.
 
-Quando o modelo necessita de executar uma determinada ação, o cliente seleciona a
-ferramenta apropriada, envia os parâmetros necessários para o servidor e recebe
-posteriormente o resultado da operação. A Figura~\ref{fig:mcp_sequence} representa o
-fluxo completo de comunicação, desde o estabelecimento da sessão até à execução de
-uma ferramenta.
+Quando a resposta da API de inferência indica a necessidade de executar uma ação
+externa, a aplicação utiliza o cliente MCP para selecionar a ferramenta apropriada,
+enviar os parâmetros necessários ao servidor e receber posteriormente o resultado da
+operação. A Figura~\ref{fig:mcp_sequence} representa o fluxo completo de comunicação,
+desde o estabelecimento da sessão até à execução de uma ferramenta.
 
 \begin{figure}[h]
 \centering
 \begin{tikzpicture}[
+  >=stealth,
   every node/.style={font=\small\sffamily},
-  life/.style  = {draw=mcpborder, thick, dashed},
-  head/.style  = {rectangle, rounded corners=4pt, draw, fill, text=white,
-                  minimum width=2.6cm, minimum height=0.7cm, align=center,
+  life/.style  = {draw=mcpgray, thick, dashed},
+  head/.style  = {rectangle, rounded corners=4pt, draw=mcpdark, fill=mcpvlight,
+                  minimum width=3.2cm, minimum height=0.8cm, align=center,
                   font=\small\sffamily\bfseries},
-  msg/.style   = {-stealth, thick},
-  rmsg/.style  = {stealth-, thick, dashed},
-  lbl/.style   = {font=\scriptsize\sffamily, fill=white, inner sep=1pt},
-  grp/.style   = {rectangle, rounded corners=3pt, draw=mcpborder,
-                  fill=mcplight, inner sep=4pt},
+  req/.style   = {->, thick, draw=mcpdark},
+  res/.style   = {<-, thick, dashed, draw=mcpgray},
+  notif/.style = {->, thick, dotted, draw=mcpdark},
+  lbl/.style   = {font=\scriptsize\ttfamily, fill=white, inner sep=2pt},
+  phase/.style = {font=\scriptsize\sffamily\itshape, text=mcpgray, anchor=west}
 ]
 
-% ---- Lifeline headers ----
-\node[head, fill=mcpdark]   (CH) at (0,0)   {Cliente MCP};
-\node[head, fill=mcpgray]   (SH) at (8,0)   {Servidor MCP};
+% ---- Cabeçalhos ----
+\node[head] (C) at (0,0) {Cliente MCP};
+\node[head] (S) at (8,0) {Servidor MCP};
 
-% ---- Lifelines ----
-\draw[life] (CH.south) -- ++(0,-9.6);
-\draw[life] (SH.south) -- ++(0,-9.6);
+% ---- Linhas de Vida ----
+\draw[life] (C.south) -- ++(0,-8.5);
+\draw[life] (S.south) -- ++(0,-8.5);
 
-% ---- Helper macro positions (y offsets) ----
-% 1. initialize  -1.0
-% 2. initialized -1.8
-% 3. tools/list  -2.8
-% 4. list result -3.6
-% 5. tools/call  -5.0  (after loop label)
-% 6. call result -5.8
-% 7. (loop end)  -7.0
+% ==========================================
+% Fase 1: Handshake / Inicialização
+% ==========================================
+\node[phase] at (-2.5, -1) {Inicialização};
+\draw[thick, mcpborder] (-2.5,-0.7) -- (-2.5,-3) -- (-2.3,-3);
+\draw[thick, mcpborder] (-2.5,-0.7) -- (-2.3,-0.7);
 
-% -- Phase label: Inicialização --
-\node[lbl, text=mcpdark, anchor=west] at (-2.2,-0.85) {\textit{Inicialização}};
-\draw[thick, color=mcpborder] (-2.2,-0.7) -- (-2.2,-2.5);
-\draw[thick, color=mcpborder] (-2.2,-0.7) -- (-2.1,-0.7);
-\draw[thick, color=mcpborder] (-2.2,-2.5) -- (-2.1,-2.5);
+\draw[req]   (0,-1.2) -- node[lbl]{initialize (ClientCapabilities)} (8,-1.2);
+\draw[res]   (0,-2.0) -- node[lbl]{Result (ServerCapabilities)} (8,-2.0);
+\draw[notif] (0,-2.8) -- node[lbl]{notifications/initialized} (8,-2.8);
 
-\draw[msg, color=mcpdark]
-      (0,-1.0) -- node[lbl, above]{\texttt{initialize}} (8,-1.0);
-\draw[rmsg, color=mcpgray]
-      (0,-1.8) -- node[lbl, above]{\texttt{initialized} (capacidades negociadas)} (8,-1.8);
+% ==========================================
+% Fase 2: Descoberta (Capability Discovery)
+% ==========================================
+\node[phase] at (-2.5, -4) {Descoberta};
+\draw[thick, mcpborder] (-2.5,-3.7) -- (-2.5,-5.2) -- (-2.3,-5.2);
+\draw[thick, mcpborder] (-2.5,-3.7) -- (-2.3,-3.7);
 
-% -- Phase label: Descoberta --
-\node[lbl, text=mcpdark, anchor=west] at (-2.2,-2.65) {\textit{Descoberta}};
-\draw[thick, color=mcpborder] (-2.2,-2.5) -- (-2.2,-4.5);
-\draw[thick, color=mcpborder] (-2.2,-4.5) -- (-2.1,-4.5);
+\draw[req] (0,-4.0) -- node[lbl]{tools/list} (8,-4.0);
+\draw[res] (0,-4.8) -- node[lbl]{Result (Tool[])} (8,-4.8);
 
-\draw[msg, color=mcpdark]
-      (0,-2.8) -- node[lbl, above]{\texttt{tools/list}} (8,-2.8);
-\draw[rmsg, color=mcpgray]
-      (0,-3.6) -- node[lbl, above]{lista de ferramentas disponíveis} (8,-3.6);
+% ==========================================
+% Fase 3: Execução
+% ==========================================
+\node[phase] at (-2.5, -6.5) {Execução};
+\draw[thick, mcpborder] (-2.5,-5.8) -- (-2.5,-7.8) -- (-2.3,-7.8);
+\draw[thick, mcpborder] (-2.5,-5.8) -- (-2.3,-5.8);
 
-% -- Phase label: Execução --
-\node[lbl, text=mcpdark, anchor=west] at (-2.2,-4.85) {\textit{Execução}};
-\draw[thick, color=mcpborder] (-2.2,-4.7) -- (-2.2,-6.7);
-\draw[thick, color=mcpborder] (-2.2,-6.7) -- (-2.1,-6.7);
+% Caixa de Loop mais subtil
+\draw[thick, mcpborder, rounded corners=3pt] (-1,-5.9) rectangle (9,-7.7);
+\node[fill=white, font=\scriptsize\sffamily\bfseries, text=mcpgray, inner sep=2pt] at (-0.5,-5.9) {Loop};
 
-% loop box frame (fill=none para não tapar as lifelines)
-\draw[thick, color=mcpgray, rounded corners=2pt] (-0.8,-4.7) rectangle (8.8,-6.5);
-\node[draw=mcpgray, thick, fill=white, anchor=north west, rounded corners=1pt, font=\scriptsize\sffamily\bfseries, inner sep=3pt] at (-0.8,-4.7) {loop};
-\node[font=\scriptsize\sffamily, text=mcpgray, anchor=west] at (0.2,-4.95) {[para cada ferramenta invocada]};
-
-\draw[msg, color=mcpdark]
-      (0,-5.4) -- node[lbl, above]{\texttt{tools/call} (nome + parâmetros)} (8,-5.4);
-\draw[rmsg, color=mcpgray]
-      (0,-6.2) -- node[lbl, above]{resultado da operação} (8,-6.2);
+\draw[req] (0,-6.4) -- node[lbl]{tools/call (name, args)} (8,-6.4);
+\draw[res] (0,-7.2) -- node[lbl]{Result (content)} (8,-7.2);
 
 \end{tikzpicture}
-\caption{Sequência de comunicação MCP: inicialização da sessão, descoberta de
-         capacidades e execução de ferramentas via JSON-RPC.}
+\caption{Fluxo de comunicação MCP: inicialização por \textit{handshake} JSON-RPC, descoberta de capacidades e execução de ferramentas.}
 \label{fig:mcp_sequence}
 \end{figure}
-
-Este mecanismo permite que novas funcionalidades sejam adicionadas aos servidores sem
-modificar a lógica das aplicações clientes.
 
 % -----------------------------------------------------------------------
 \subsection{Mecanismos de transporte}
@@ -589,19 +531,23 @@ Tabela~\ref{tab:mcp_transport}.
 
 \begin{table}[H]
 \centering
-\small
-\renewcommand{\arraystretch}{1.5}
+\footnotesize
+\renewcommand{\arraystretch}{1.35}
 \begin{tabularx}{\textwidth}{|>{\raggedright\arraybackslash}p{3cm}|Y|Y|}
 \hline
 \textbf{Característica} & \textbf{STDIO} & \textbf{Streamable HTTP} \\
 \hline
-\textbf{Âmbito} & Processos locais & Processos distribuídos \\
+\textbf{Âmbito principal} & Comunicação local entre a aplicação e um processo servidor iniciado na mesma máquina. & Comunicação remota ou distribuída entre clientes e servidores acessíveis por rede. \\
 \hline
-\textbf{Transporte} & \texttt{stdin} / \texttt{stdout} & HTTP \\
+\textbf{Canal de comunicação} & Fluxos padrão do processo: \texttt{stdin} para pedidos e \texttt{stdout} para respostas. & Um único endpoint HTTP (suporta \texttt{POST} e \texttt{GET}) para troca de mensagens JSON-RPC. \\
 \hline
-\textbf{Streaming} & --- & Suportado \\
+\textbf{Modelo operacional} & O cliente lança e controla o ciclo de vida do processo servidor. & O servidor é executado de forma independente e pode ser partilhado por vários clientes. \\
 \hline
-\textbf{Caso de uso típico} & Aplicações desktop (ex.: Claude Desktop) & Servidores remotos e arquiteturas cloud \\
+\textbf{Sessão e estado} & Adequado a sessões locais simples, normalmente associadas a uma instância da aplicação. & Adequado a sessões remotas, autenticação, infraestrutura partilhada e cenários multiutilizador. \\
+\hline
+\textbf{\textit{Streaming}} & Não aplicável: a troca ocorre diretamente pelos fluxos do processo, sem depender de mecanismos de rede. & Opcional: o servidor responde de forma direta (JSON) ou, quando necessário, abre um \textit{stream} SSE sobre o mesmo endpoint para enviar múltiplas mensagens ou notificações. \\
+\hline
+\textbf{Caso de uso típico} & Aplicações desktop e ferramentas locais que precisam de integrar servidores MCP sem expor rede. & Servidores remotos, integrações partilhadas, ambientes \textit{cloud} e arquiteturas distribuídas. \\
 \hline
 \end{tabularx}
 \caption{Comparação entre os dois mecanismos de transporte oficiais do MCP.}
@@ -613,15 +559,18 @@ executados localmente. Neste modo, o cliente inicia o processo correspondente ao
 servidor \textbf{MCP} e toda a comunicação é realizada através dos fluxos de entrada
 e saída padrão (\textit{stdin} e \textit{stdout}). Esta abordagem apresenta uma
 implementação simples e elimina a necessidade de configurar ligações de rede, sendo
-por isso amplamente utilizada por aplicações de ambiente de trabalho como o Claude
-Desktop.
+por isso adequada a aplicações de ambiente de trabalho e ferramentas executadas no
+mesmo ambiente da aplicação cliente.
 
 O transporte \textbf{Streamable HTTP} destina-se à comunicação entre processos
-distribuídos através da rede. Neste caso, as mensagens JSON-RPC são transportadas
-sobre HTTP, sendo igualmente possível transmitir respostas de forma incremental
-(\textit{streaming}) quando necessário. Este mecanismo substitui a abordagem
-anteriormente baseada em \textbf{HTTP} e \textbf{Server-Sent Events (SSE)},
-oferecendo uma solução mais simples e flexível para comunicações remotas.
+distribuídos através da rede. Neste caso, as mensagens JSON-RPC são trocadas através
+de um único \textit{endpoint} HTTP, que aceita pedidos \texttt{POST} e \texttt{GET}.
+A resposta do servidor pode ser devolvida diretamente ou, quando há necessidade de
+enviar várias mensagens ou notificações, transmitida de forma incremental através de
+um \textit{stream} SSE sobre esse mesmo \textit{endpoint}. Este mecanismo substitui o
+transporte legado, que assentava em dois \textit{endpoints} distintos --- um dedicado
+à ligação SSE e outro ao envio de mensagens ---, simplificando a estrutura da
+comunicação remota sem eliminar o uso de SSE.
 
 Embora a especificação atual privilegie estes dois mecanismos, diversas
 implementações disponibilizam suporte adicional para outros transportes,
@@ -635,14 +584,12 @@ comunicação bidirecional persistente e de baixa latência.
 
 Durante o desenvolvimento do protocolo foram igualmente disponibilizadas ferramentas
 que facilitam a validação de implementações. Entre estas destaca-se o \textbf{MCP
-Inspector}, distribuído através do ecossistema Node.js.
+Inspector}, ferramenta oficial de desenvolvimento distribuída através do ecossistema
+Node.js \cite{mcp_inspector}.
 
 Esta ferramenta permite estabelecer ligação a um servidor \textbf{MCP}, visualizar
 interativamente as capacidades disponibilizadas, invocar ferramentas, consultar
-recursos e analisar as mensagens JSON-RPC trocadas durante toda a sessão. A
-utilização do \textbf{MCP Inspector} revelou-se particularmente útil durante o
-desenvolvimento do protótipo, permitindo validar o comportamento do servidor e
-confirmar a conformidade da implementação com a especificação do protocolo.
+recursos e analisar as mensagens JSON-RPC trocadas durante toda a sessão.
 
 % -----------------------------------------------------------------------
 \subsection{Protótipo desenvolvido}
@@ -662,23 +609,19 @@ ferramentas registadas.
 
 Durante o desenvolvimento foram explorados os diferentes mecanismos de transporte
 suportados pela biblioteca, tendo sido igualmente utilizado o \textbf{MCP Inspector}
+\cite{mcp_inspector}
 para validar o correto funcionamento da comunicação entre cliente e servidor e
 verificar a troca de mensagens definida pela especificação.
 
-Este protótipo permitiu compreender detalhadamente o funcionamento do protocolo,
-desde o estabelecimento da sessão até à descoberta de capacidades e execução de
-ferramentas, fornecendo uma experiência prática complementar ao estudo da
-documentação oficial.
-
 \section{Estado da Arte de Gateways de IA e Soluções Semelhantes}
 
-No momento em que o desenvolvimento deste projeto teve início, a adoção de componentes dedicados ao intermédio entre aplicações e Large Language Models (LLMs) era ainda uma prática pouco comum. Existiam escassas arquiteturas formalizadas e os produtos disponíveis no mercado com o propósito de atuar como \textit{gateways} de IA eram raros. A grande parte das aplicações integrava as APIs dos fornecedores de forma direta, o que de certa forma acabava por limitar a escalabilidade e a gestão centralizada.
+No momento em que o desenvolvimento deste projeto teve início, a adoção de componentes dedicados ao intermédio entre aplicações e APIs de inferência era ainda uma prática pouco comum. Existiam escassas arquiteturas formalizadas e os produtos disponíveis no mercado com o propósito de atuar como \textit{gateways} de IA eram raros. A grande parte das aplicações integrava as APIs dos fornecedores de forma direta, o que de certa forma acabava por limitar a escalabilidade e a gestão centralizada.
 
-Com a evolução exponencial do uso de modelos de linguagem em ambientes de produção, surgiu uma necessidade de governança, de controlo de custos, de segurança e de observabilidade. No decorrer do nosso desenvolvimento, o cenário de mercado transformou-se por completo. Atualmente, existem centenas de soluções e arquiteturas adotadas por empresas que integram nativamente uma \textit{gateway} de IA nos seus sistemas. Surgiram várias abordagens que visam resolver os mesmos problemas base, mas com focos distintos:
+Com a evolução exponencial do uso de APIs de inferência em ambientes de produção, surgiu uma necessidade de governança, de controlo de custos, de segurança e de observabilidade. No decorrer do nosso desenvolvimento, o cenário de mercado transformou-se por completo. Atualmente, existem centenas de soluções e arquiteturas adotadas por empresas que integram nativamente uma \textit{gateway} de IA nos seus sistemas. Surgiram várias abordagens que visam resolver os mesmos problemas base, mas com focos distintos:
 
 \begin{itemize}
     \item \textbf{LiteLLM} \cite{litellm}: Uma solução amplamente adotada que atua como um \textit{proxy} central para unificar chamadas a dezenas de fornecedores utilizando o formato da \textbf{OpenAI}. Destaca-se por fornecer funcionalidades prontas de balanceamento de carga e controlo de orçamentos.
-    \item \textbf{RouteLLM} \cite{routellm}: Uma \textit{framework} focada no roteamento inteligente de LLMs. A sua principal proposta de valor é a otimização de custo e latência, reencaminhando pedidos mais simples para modelos mais baratos e rápidos, e reservando os modelos de maior capacidade para tarefas mais complexas.
+    \item \textbf{RouteLLM} \cite{routellm}: Uma \textit{framework} focada no roteamento inteligente de pedidos de inferência. A sua principal proposta de valor é a otimização de custo e latência, reencaminhando pedidos mais simples para fornecedores mais baratos e rápidos, e reservando configurações de maior capacidade para tarefas mais complexas.
     \item \textbf{Cloudflare AI Gateway} \cite{cloudflare_ai_gateway}: Integrado na rede global da Cloudflare, este serviço posiciona a gestão das chamadas na \textit{edge}, proporcionando benefícios significativos a nível de latência e de \textit{caching} de respostas sem exigir gestão de infraestrutura.
     \item \textbf{Kong AI Gateway} \cite{kong_ai_gateway}: Focado em ambientes empresariais robustos, expande os conceitos tradicionais de gestão de APIs (como \textit{rate limiting} e autenticação) para cobrir o tráfego de inteligência artificial, oferecendo políticas de segurança mais rígidas e suporte para ambientes complexos.
     \item \textbf{Portkey} \cite{portkey_ai}: Uma plataforma com um foco acentuado na observabilidade e operações (\textit{AI Ops}), fornecendo gestão profunda de \textit{prompts}, gestão de \textit{fallbacks} automáticos e análise semântica.
