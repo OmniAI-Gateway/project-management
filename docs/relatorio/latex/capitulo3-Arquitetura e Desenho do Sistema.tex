@@ -90,7 +90,7 @@ Embora o foco central deste projeto e do presente capítulo resida no acesso a A
 
     Esta organização permite que aplicações já compatíveis com APIs existentes possam ser integradas com esforço reduzido. Por exemplo, uma aplicação preparada para a API \textbf{Anthropic} pode alterar o seu \texttt{baseURL} para apontar para a \textbf{OmniAI Gateway}, mantendo o contrato esperado pelo cliente. O mesmo princípio aplica-se a clientes compatíveis com a API de inferência da \textbf{OpenAI} e API de inferência do \textbf{Gemini}. 
     
-    A arquitetura foi também pensada para escalamento horizontal: o \textbf{OmniAI SDK} evita estado global obrigatório, concentra estado transitório no contexto do pedido e define portas para substituir \textit{stores} em memória por \textit{backends} partilhados quando a \textbf{Gateway} é executada em múltiplas instâncias.
+    A arquitetura foi também pensada para escalamento horizontal: o \textbf{OmniAI SDK} evita estado global obrigatório, concentra estado transitório no contexto do pedido e recorre à injeção de dependências através de interfaces, permitindo a substituição de \textit{stores} em memória por \textit{backends} partilhados quando a \textbf{Gateway} opera em múltiplas instâncias
 
     \section{Modelação do Domínio Comum}
 
@@ -100,7 +100,7 @@ Embora o foco central deste projeto e do presente capítulo resida no acesso a A
 
     Para garantir a interoperabilidade, a arquitetura do \textbf{OmniAI SDK} assenta na criação de um modelo de domínio comum. A ideia foi criar um modelo de dados interoperável com os maiores fornecedores de inferência para representar pedidos, respostas e eventos dos mesmos, mas sem copiar diretamente a estrutura de nenhum deles.
 
-   Assim, o domínio funciona como um ponto intermédio estável que centraliza qualquer interação no \textbf{OmniAI SDK}. Isto significa que, independentemente de o cliente estruturar o seu pedido original no formato de um fornecedor específico (como por exemplo a \textbf{Anthropic}), esse contrato é imediatamente convertido para o domínio unificado e em seguida, para efetuar a chamada à API, o modelo comum é novamente traduzido para o formato nativo do fornecedor de destino. O mesmo processo inverso ocorre na receção da resposta, os dados que são devolvidos pela API externa são normalizados no nosso domínio comum antes de serem entregues ao cliente na estrutura esperada. Este fluxo completo de transformações está representado visualmente na Figura 3.1.
+   Assim, o domínio funciona como um ponto intermédio estável que centraliza qualquer interação no \textbf{OmniAI SDK}. Isto significa que, independentemente de o cliente estruturar o seu pedido original no formato de um fornecedor específico (como por exemplo a \textbf{Anthropic}), esse contrato é imediatamente convertido para o domínio unificado e em seguida, para efetuar a chamada à API, o modelo comum é novamente traduzido para o formato nativo do fornecedor de destino. O mesmo processo inverso ocorre na receção da resposta, os dados que são devolvidos pela API externa são normalizados no domínio comum antes de serem entregues ao cliente na estrutura esperada. Este fluxo completo de transformações está representado visualmente na Figura 3.1.
 
    
 \begin{figure}[H]
@@ -325,7 +325,55 @@ Embora o foco central deste projeto e do presente capítulo resida no acesso a A
     \subsection{{Mapa Tipificado e Extensibilidade do Domínio}}
     Nem todos os dados relevantes pertencem ao modelo mínimo de inferência. Algumas informações são específicas do fornecedor, como parâmetros avançados do \textbf{Gemini} e outras pertencem ao contexto operacional, como metadados de autenticação, IP do cliente, cabeçalhos \textbf{HTTP} ou atributos necessários para observabilidade e autorização. Para estes casos, o \textbf{OmniAI SDK} introduz a estrutura \texttt{TypedMap}.
 
-O \texttt{TypedMap} funciona como um mapa de atributos tipado por chave. Cada \texttt{AttributeKey<T>} associa um nome lógico a um tipo esperado, permitindo guardar e recuperar valores sem depender de conversões frágeis de strings. Esta abordagem é mais segura do que um \texttt{Map<String, Any?>} puro, porque cada chave transporta também a expectativa de tipo. Ao mesmo tempo, é mais flexível do que adicionar campos ao domínio sempre que surge uma necessidade nova.
+    O \texttt{TypedMap} funciona como um mapa de atributos tipado por chave. Na sua base, o conceito assenta na utilização de um \texttt{AttributeKey<T>}, que atua como um marcador tipificado. Em vez de se utilizar uma simples \textit{string} como chave, o que obrigaria a conversões de tipo manuais e inseguras no momento da leitura, cada \texttt{AttributeKey} encapsula não só o nome lógico do atributo, mas também a sua informação de tipo (\texttt{KClass<T>}). 
+    
+    A implementação desta chave demonstra como a segurança é alcançada, garantindo que atributos com o mesmo nome mas tipos diferentes não colidam, e fornecendo uma forma idiomática de instanciar novas chaves:
+
+\vspace{1em}
+\begin{lstlisting}[language=Kotlin]
+class AttributeKey<T : Any>
+    @PublishedApi
+    internal constructor(
+        val name: String,
+        val type: KClass<T>,
+    ) {
+        override fun equals(other: Any?): Boolean = 
+            (other is AttributeKey<*>) && name == other.name && type == other.type
+
+        override fun hashCode(): Int = name.hashCode() * 31 + type.hashCode()
+
+        override fun toString(): String = "Key($name: ${type.simpleName})"
+    }
+
+inline fun <reified T : Any> key(name: String) = AttributeKey(name, T::class)
+\end{lstlisting}
+\vspace{1em}
+
+    A função auxiliar \texttt{key} utiliza a reificação de tipos (\textit{reified type parameters}) da linguagem Kotlin, extraindo o tipo de forma transparente para o programador em tempo de compilação. 
+    
+    Com o \texttt{AttributeKey} estabelecido, o \texttt{TypedMap} encarrega-se do armazenamento e da gestão dos valores. Internamente, recorre a um mapa padrão, mas a sua interface pública impõe o uso das chaves tipificadas nas operações, garantindo \textit{type-safety}:
+
+\vspace{1em}
+\begin{lstlisting}[language=Kotlin]
+class TypedMap(
+    private val data: MutableMap<AttributeKey<*>, Any> = mutableMapOf(),
+) {
+    fun <T : Any> put(key: AttributeKey<T>, value: T) {
+        data[key] = value
+    }
+
+    @Suppress("UNCHECKED_CAST")
+    operator fun <T : Any> get(key: AttributeKey<T>): T? = data[key] as? T
+
+    fun <T : Any> require(key: AttributeKey<T>): T = 
+        get(key) ?: error("Missing required key: $key")
+}
+\end{lstlisting}
+\vspace{1em}
+
+    Esta abordagem revela-se significativamente mais segura do que um \texttt{Map<String, Any?>} genérico, pois cada operação de leitura assegura de imediato o tipo esperado do valor, tal como foi especificado na chave. Em simultâneo, é mais flexível do que adicionar dezenas de campos opcionais diretamente às classes de domínio sempre que surge uma nova funcionalidade no sistema.
+    
+    Para além da sua utilidade no domínio de inferência, o facto de a estrutura \texttt{TypedMap} ter sido concebida de forma totalmente genérica e agnóstica permitiu o seu reaproveitamento extensivo noutras partes críticas do sistema. Por ser independente de qualquer lógica de negócio específica, tornou-se o mecanismo padrão do \textbf{OmniAI SDK} para transporte seguro de metadados, sendo utilizada tanto no \textit{pipeline} de interceção de pedidos como nos resultados de chamadas \textbf{HTTP} e gestão de sessões do utilizador.
 
 \begin{figure}[H]
     \centering
@@ -357,7 +405,7 @@ O \texttt{TypedMap} funciona como um mapa de atributos tipado por chave. Cada \t
     \label{fig:typed-map}
 \end{figure}
 
-No domínio de inferência, a \texttt{TypedMap} aparece em \texttt{providerOptions}, permitindo preservar dados que não pertencem ao subconjunto comum mas não devem ser perdidos durante a tradução. Fora da inferência estrita, a mesma estrutura permite transportar metadados entre componentes sem criar dependências diretas entre eles. Esta característica é útil para a evolução futura do \textbf{OmniAI SDK}, porque permite que mecanismos ,como autorização, observabilidade ou políticas de execução, usem atributos adicionais sem forçar alterações constantes nas classes centrais do domínio.
+No domínio de inferência, a \texttt{TypedMap} aparece em \texttt{providerOptions}, permitindo preservar dados que não pertencem ao subconjunto comum mas não devem ser perdidos durante a tradução. Fora da inferência estrita, a mesma estrutura permite transportar metadados entre componentes sem criar dependências diretas entre eles. Esta característica é fundamental para a evolução futura do \textbf{OmniAI SDK}, porque permite que mecanismos como autorização, observabilidade ou políticas de execução, consumam e injetem atributos adicionais sem forçar alterações constantes nas classes centrais do domínio.
     
 
 
