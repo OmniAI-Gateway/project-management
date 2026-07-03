@@ -1,4 +1,4 @@
-﻿    \chapter{Estudo Prévio}
+    \chapter{Estudo Prévio}
 \section{Análise das APIs de Inferência}
 
 O estudo inicial comparou 3 APIs de inferência de utilização comum, sendo estas a \textbf{OpenAI} \cite{openai_api}, \textbf{Anthropic} \cite{anthropic_api} e \textbf{Gemini} \cite{google_gemini_api}, para este estudo, utilizou-se o \textbf{Ollama} para analisar a API da \textbf{Anthropic}, o \textbf{Groq} para a da \textbf{OpenAI}, e o \textbf{AI Studio} da própria Google para avaliar a API do \textbf{Gemini}. 
@@ -311,7 +311,7 @@ Enquanto a \textbf{OpenAI} \cite{openai_structured_outputs} e a \textbf{Anthropi
 % -----------------------------------------------------------------------
 
 O \textbf{Model Context Protocol (MCP)} é um protocolo desenvolvido pela
-Anthropic com o objetivo de normalizar a forma como aplicações consumidoras de IA disponibilizam
+Anthropic com o objetivo de normalizar a forma como aplicações consumidoras de IA, nomeadamente Agentes, disponibilizam
 contexto externo às suas APIs de inferência \cite{mcp_intro}. Em vez de cada
 integração definir uma interface própria para expor ferramentas, dados ou operações, o
 \textbf{MCP} estabelece uma interface comum entre aplicações, clientes MCP e
@@ -319,7 +319,7 @@ servidores MCP, permitindo reutilizar as mesmas capacidades em diferentes ambien
 sem acoplamento direto a um fornecedor específico.
 
 Antes do surgimento do \textbf{MCP}, cada plataforma disponibilizava mecanismos
-próprios para expor ferramentas externas ao ciclo de inferência. Embora estes
+próprios para expor ferramentas externas. Embora estes
 mecanismos oferecessem funcionalidades semelhantes, apresentavam interfaces
 incompatíveis entre si, obrigando os programadores a implementar adaptações
 específicas para cada API. Esta situação dificultava a reutilização de integrações,
@@ -332,7 +332,7 @@ Alem de padronizar as integrações, o protocolo mitiga o problema do isolamento
 \subsection{Arquitetura do protocolo}
 % -----------------------------------------------------------------------
 
-O protocolo segue uma arquitetura cliente-servidor composta por três participantes: a aplicação consumidora de IA, que integra um ou mais clientes \textbf{MCP} o cliente \textbf{MCP}, que estabelece e mantém as ligações com os servidores e o servidor \textbf{MCP}, que expõe capacidades como ferramentas, recursos e \textit{prompts} \cite{mcp_architecture,mcp_server_concepts,mcp_client_concepts}. Nesta arquitetura, os servidores disponibilizam capacidades externas, enquanto os clientes negoceiam essas capacidades e efetuam chamadas em nome da aplicação. Ao contrário das APIs de inferência, responsáveis pela geração e interpretação de respostas, o \textbf{MCP} define exclusivamente a comunicação com fontes externas de contexto. Esta separação permite isolar o acesso a ferramentas do pedido de inferência, tornando ambas as componentes independentes.
+O protocolo segue uma arquitetura cliente-servidor composta por três participantes: a aplicação consumidora de IA, que integra um ou mais clientes \textbf{MCP}; o cliente \textbf{MCP}, que estabelece e mantém as ligações com os servidores; e o servidor \textbf{MCP}, que expõe capacidades como ferramentas, recursos e \textit{prompts} \cite{mcp_architecture,mcp_server_concepts,mcp_client_concepts}.Nesta arquitetura, os servidores assumem o papel de fornecedores de contexto e funcionalidades externas. O cliente atua como o intermediário que descobre as funcionalidades que o servidor tem para oferecer e executa as operações necessárias a pedido da aplicação principal. Ao contrário das APIs de inferência, responsáveis pela geração e interpretação de respostas, o \textbf{MCP} define exclusivamente a comunicação com fontes externas de contexto. Esta separação permite isolar o acesso a ferramentas do pedido de inferência, tornando ambas as componentes independentes.
 
 A Figura~\ref{fig:mcp_architecture} ilustra esta separação de responsabilidades.
 Do lado da inferência, a aplicação comunica com o fornecedor através de uma API de
@@ -414,15 +414,26 @@ ferramentas, recursos e \textit{prompts} disponibilizados, adaptando automaticam
 o seu comportamento às funcionalidades de contexto oferecidas pelo servidor.
 
 % -----------------------------------------------------------------------
+\subsection{Formato da Comunicação}
+% -----------------------------------------------------------------------
+
+No contexto do MCP, todas as interações entre o cliente e o servidor, desde o transporte de contexto externo até à negociação e invocação de ferramentas são realizadas através da troca de mensagens \textbf{JSON-RPC 2.0}\cite{ref_jsonrpc_spec}. O JSON-RPC é um protocolo de Chamada de Procedimento Remoto (RPC) que utiliza o formato de dados JSON nas suas estruturas de comunicação.
+
+Este protocolo assenta em três pilares fundamentais. Em primeiro lugar, destaca-se por possuir uma forte interoperabilidade, sendo amplamente suportado e independente da linguagem de programação, garantindo que clientes e servidores consigam comunicar sem terem problemas de compatibilidade.
+
+Em segundo lugar, a sua estrutura simples adequa-se ao modelo do MCP. A especificação contém três tipos de mensagens distintos: os \textit{Requests}, que representam pedidos iniciados por qualquer uma das partes que aguardam uma resposta; as \textit{Responses}, que transportam o resultado ou erro emitido em resposta a um pedido; e as \textit{Notifications}, que servem para mensagens assíncronas que não requerem resposta como o envio contínuo de eventos ou atualizações.
+
+Por fim, ao utilizar nasua estrutura o formato JSON, como referido anteriormente, o conteúdo das mensagens, tal como a estrutura de parâmetros necessários para executar uma ferramenta, pode ser validado de forma direta e padronizada com recurso a JSON Schema.
+
+% -----------------------------------------------------------------------
 \subsection{Descoberta de capacidades}
 % -----------------------------------------------------------------------
 
 Uma das principais características do protocolo é a negociação dinâmica de
 capacidades (\textit{capability discovery}), realizada durante a fase de
-inicialização da sessão. O cliente inicia este processo enviando uma mensagem
-\textbf{JSON-RPC}, na qual declara a versão do protocolo
-suportada e as suas próprias capacidades (por exemplo, suporte para
-\textit{sampling} iniciado pelo servidor). O servidor responde indicando a
+inicialização da sessão. O cliente inicia este processo enviando um \textit{request}
+JSON-RPC, no qual declara a versão do protocolo
+suportada e as suas próprias capacidades. O servidor responde indicando a
 versão de protocolo acordada e o conjunto de categorias de primitivas que
 disponibiliza como \textit{tools}, \textit{resources} e \textit{prompts},
 podendo ainda especificar funcionalidades adicionais associadas a cada uma,
@@ -449,7 +460,7 @@ lista de ferramentas disponíveis (\texttt{notifications/tools/list\_changed})
 ou a atualização de um recurso subscrito  sem que seja necessário um pedido
 prévio por parte deste, dado não exigirem resposta.
 
-\begin{figure}[htbp]
+\begin{figure}[H]
 \centering
 \scalebox{0.8}{
 \begin{tikzpicture}[
@@ -529,17 +540,11 @@ prévio por parte deste, dado não exigirem resposta.
 
 \end{tikzpicture}%
 }
-\caption{Fluxo de comunicação MCP: inicialização por \textit{handshake}
-JSON-RPC, seguida da descoberta e invocação de cada tipo de primitivo
-(\textit{tools}, \textit{resources} e \textit{prompts}). Estes três blocos
-partilham a mesma sessão e podem ser exercidos pelo cliente em qualquer
-ordem, consoante as capacidades anunciadas pelo servidor na fase de
-inicialização.}
+\caption{Fluxo de comunicação MCP}
 \label{fig:mcp_sequence}
 \end{figure}
-
 % -----------------------------------------------------------------------
-\subsection{Mecanismos de transporte}
+\subsection{Mecanismos de Transporte}
 % -----------------------------------------------------------------------
 
 O protocolo define o formato das mensagens e o ciclo de comunicação entre cliente e
@@ -566,6 +571,8 @@ Tabela~\ref{tab:mcp_transport}.
 \textbf{Sessão e estado} & Adequado a sessões locais simples, normalmente associadas a uma instância da aplicação. & Adequado a sessões remotas, autenticação, infraestrutura partilhada e cenários multiutilizador. \\
 \hline
 \textbf{\textit{Streaming}} & Não aplicável: a troca ocorre diretamente pelos fluxos do processo, sem depender de mecanismos de rede. & Opcional: o mesmo \textit{endpoint} responde de forma direta (JSON) ou, quando necessário, converte-se num \textit{stream} SSE para enviar múltiplas mensagens ou notificações, sem recorrer a \textit{endpoints} adicionais. \\
+\hline
+\textbf{Autenticação e autorização} & Baseada nas permissões do sistema operativo e no controlo de acesso local do utilizador. & Requer a implementação de mecanismos adicionais (como OpenID Connect ou JWT) para garantir um acesso seguro. \\
 \hline
 \textbf{Caso de uso típico} & Aplicações desktop e ferramentas locais que precisam de integrar servidores MCP sem expor rede. & Servidores remotos, integrações partilhadas, ambientes \textit{cloud} e arquiteturas distribuídas. \\
 \hline
@@ -604,7 +611,7 @@ protocolo, o WebSocket é frequentemente utilizado em aplicações que necessita
 comunicação bidirecional persistente e de baixa latência.
 
 % -----------------------------------------------------------------------
-\subsection{Ferramentas de inspeção}
+\subsection{Ferramentas de Inspeção}
 % -----------------------------------------------------------------------
 
 Durante o desenvolvimento do protocolo foram igualmente disponibilizadas ferramentas
@@ -617,7 +624,7 @@ interativamente as capacidades disponibilizadas, invocar ferramentas, consultar
 recursos e analisar as mensagens JSON-RPC trocadas durante toda a sessão.
 
 % -----------------------------------------------------------------------
-\subsection{Protótipo desenvolvido}
+\subsection{Protótipo Desenvolvido}
 % -----------------------------------------------------------------------
 
 Para complementar o estudo da especificação foi desenvolvido um protótipo utilizando
