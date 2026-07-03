@@ -10,30 +10,31 @@ Esta separação entre \textbf{OmniAI SDK} e \textbf{OmniAI Gateway} constitui u
 
 Embora o foco central deste projeto e do presente capítulo resida no acesso a APIs de inferência e na construção de uma Gateway em torno das mesmas, uma infraestrutura de IA completa exige componentes adicionais. Nesse sentido, foi posteriormente integrado de forma nativa no \textbf{SDK} um \textbf{MCP Broker}, que atua em paralelo com a Gateway de inferência, sendo responsável pela exposição e gestão de ferramentas externas via \textit{Model Context Protocol}. Os detalhes arquiteturais específicos de implementação não se encontram nesta secção, estando concentrados no Capítulo5.
 
-
 \begin{figure}[H]
     \centering
     \resizebox{\textwidth}{!}{%
     \begin{tikzpicture}[
         node distance=1.2cm and 1.2cm,
         box/.style={rectangle, draw, rounded corners, align=center, text width=4.2cm, minimum height=1.2cm, inner sep=5pt, thick},
+        % Estilo específico para forçar o tamanho exato igual no topo
+        topBox/.style={box, minimum width=4.8cm, text width=4.5cm, minimum height=1.4cm},
         clientsBox/.style={box, text width=2.8cm},
         entryBox/.style={box, text width=2.2cm},
         sdkBox/.style={box, minimum width=4.5cm, text width=4.0cm, fill=blue!10, minimum height=1.2cm},
-        interceptorBox/.style={box, minimum width=2.4cm, text width=2.4cm, minimum height=0.8cm, fill=white},
+        interceptorBox/.style={rectangle, draw, rounded corners, align=center, text width=2.8cm, minimum height=0.8cm, inner sep=4pt, thick, fill=white},
         group/.style={rectangle, draw, rounded corners, inner sep=15pt, thick},
         sdkGroupStyle/.style={rectangle, draw, dashed, rounded corners, inner sep=10pt, thick},
         arrow/.style={-Latex, thick}
     ]
         % --- CLIENTS ---
-        \node[clientsBox] (clients) {Clientes Externos\\ \footnotesize{(Aplicações, REST)}};
+        \node[clientsBox] (clients) {App Baseada em Gen AI};
 
         % --- GATEWAY INTERNAL COMPONENTS ---
         \node[entryBox, right=1.5cm of clients] (entryInf) {Endpoints\\HTTP};
         \node[sdkBox, right=0.8cm of entryInf] (infGateway) {\textbf{Inference Gateway}\\ \footnotesize{(Core, Pipeline, Adapters)}};
         
-        % Massive spacing to absolutely prevent overlapping on the right side
-        \node[sdkBox, below=3.5cm of infGateway] (mcpBroker) {\textbf{MCP Broker}\\ \footnotesize{(Transporte HTTP/STDIO,\\Gestão de Ferramentas)}};
+        % --- MCP Broker ---
+        \node[sdkBox, below=1.5cm of infGateway] (mcpBroker) {\textbf{MCP Broker}\\ \footnotesize{(Transporte HTTP/STDIO,\\Gestão de Ferramentas)}};
 
         % Align MCP Clients with MCP Broker
         \node[clientsBox, at=(clients |- mcpBroker)] (mcpClients) {Clientes MCP};
@@ -42,49 +43,72 @@ Embora o foco central deste projeto e do presente capítulo resida no acesso a A
         \draw[arrow] (entryInf.east) -- (infGateway.west);
         \draw[arrow] (mcpClients.east) -- (mcpBroker.west);
 
-        % Interceptors on top of SDK
-        \node[interceptorBox, above=0.8cm of infGateway, xshift=-1.4cm] (int1) {Interceptor 1};
-        \node[interceptorBox, above=0.8cm of infGateway, xshift=1.4cm] (int2) {Interceptor 2};
-        \draw[arrow] (int1.south) -- (int1.south |- infGateway.north);
-        \draw[arrow] (int2.south) -- (int2.south |- infGateway.north);
+        % --- INTERCEPTORS STACK ---
+        \coordinate (interceptorsBase) at ([xshift=-1.0cm, yshift=1.3cm]infGateway.north); 
+        
+        \node[interceptorBox] at ([xshift=6pt, yshift=6pt]interceptorsBase) (intBg2) {};
+        \node[interceptorBox] at ([xshift=3pt, yshift=3pt]interceptorsBase) (intBg1) {};
+        \node[interceptorBox] at (interceptorsBase) (interceptors) {Interceptors};
+        
+        \draw[arrow] (interceptors.south) -- (interceptors.south |- infGateway.north);
 
-        % SDK Group
-        \node[sdkGroupStyle, fit=(infGateway)(mcpBroker), label={[align=center, font=\bfseries]above:OmniAI SDK}] (sdkGroup) {};
+        % --- GRUPOS ---
+        % O grupo do SDK é desenhado sem label na declaração principal
+        \node[sdkGroupStyle, fit=(infGateway)(mcpBroker)] (sdkGroup) {};
+        
+        % O Label do SDK é adicionado como uma caixa branca por cima da borda inferior (south) do tracejado
+        \node[fill=white, font=\bfseries, inner sep=2pt] (sdkLabel) at (sdkGroup.south) {OmniAI SDK};
+        
+        % Grupo da Gateway (inclui o label do sdk para garantir que a margem externa envolve tudo)
+        \node[group, fit=(entryInf)(sdkGroup)(sdkLabel)(intBg2)(interceptors), label={[align=left, font=\bfseries, anchor=south west]north west:Aplicação: OmniAI Gateway}] (gatewayGroup) {};
 
-        % Grouping them in "Aplicação Gateway"
-        \node[group, fit=(entryInf)(sdkGroup)(int1)(int2), label={[align=center, font=\bfseries]above:Aplicação: OmniAI Gateway}] (gatewayGroup) {};
+        % --- TOP SIDE (Serviços de Suporte) ---
+        \coordinate (topCenter) at (gatewayGroup.north);
+        % Usam o novo estilo 'topBox' para garantir dimensões perfeitamente simétricas
+        \node[topBox] (auth) at ([xshift=-2.6cm, yshift=2.0cm]topCenter) {\textit{Servidor de Autorização}\\ \footnotesize{(OIDC / OAuth2)}};
+        \node[topBox] (telemetry) at ([xshift=2.6cm, yshift=2.0cm]topCenter) {Observabilidade e Telemetria\\ \footnotesize{(OpenTelemetry)}};
 
-        % --- RIGHT SIDE (External Services) ---
+        % Seta da Inference Gateway para cima (Auth e Telemetria)
+        \coordinate (infGatewayTopRight) at ([xshift=1.5cm]infGateway.north);
+        \coordinate (gatewayTop) at (infGatewayTopRight |- gatewayGroup.north);
+        \coordinate (forkTop) at ([yshift=0.8cm]gatewayTop); 
+        
+        \draw[thick] (infGatewayTopRight) -- (forkTop);
+        \draw[arrow] (forkTop) -| (auth.south);
+        \draw[arrow] (forkTop) -| (telemetry.south);
+
+        % --- RIGHT SIDE (Serviços Externos de Inferência / MCP / REST) ---
         \coordinate (providersPos) at (gatewayGroup.east |- infGateway);
         \node[box, right=1.5cm of providersPos] (providers) {Fornecedores de Inferência\\ \footnotesize{(OpenAI, Anthropic, Gemini)}};
-        \node[box, above=1.2cm of providers] (auth) {\textit{Servidor de Autorização}\\ \footnotesize{(OIDC / OAuth2)}};
-        \node[box, below=1.2cm of providers] (telemetry) {Observabilidade e Telemetria\\ \footnotesize{(OpenTelemetry)}};
-        
+
         \coordinate (mcpServersPos) at (gatewayGroup.east |- mcpBroker);
-        \node[box, right=1.5cm of mcpServersPos] (mcpServers) {Servidores MCP\\ \footnotesize{(Ferramentas Externas)}};
+        
+        % Blocos externos alinhados à direita
+        \node[box, right=1.5cm of mcpServersPos, yshift=0.7cm] (mcpServers) {Servidores MCP\\ \footnotesize{(Ferramentas Externas)}};
+        \node[box, right=1.5cm of mcpServersPos, yshift=-0.7cm] (restApis) {APIs REST\\ \footnotesize{(Serviços Externos)}};
 
-        % Outputs Inference
-        \coordinate (forkInf) at ([xshift=0.7cm]providersPos);
-        \draw[thick] (infGateway.east) -- (forkInf);
-        \draw[arrow] (forkInf) |- (auth.west);
-        \draw[arrow] (forkInf) -- (providers.west);
-        \draw[arrow] (forkInf) |- (telemetry.west);
-
-        % Outputs MCP
-        \draw[arrow] (mcpBroker.east) -- (mcpServers.west);
+        % Outputs (Setas diretas e bifurcadas)
+        \draw[arrow] (infGateway.east) -- (providers.west);
+        
+        % Nova ramificação: O ponto de fork é calculado a partir do limite direito da Gateway (mcpServersPos) 
+        % e empurrado 0.75cm para a direita, colocando-o perfeitamente no espaço em branco fora do grupo.
+        \coordinate (mcpForkRight) at ([xshift=0.75cm]mcpServersPos);
+        \draw[thick] (mcpBroker.east) -- (mcpForkRight);
+        \draw[arrow] (mcpForkRight) |- (mcpServers.west);
+        \draw[arrow] (mcpForkRight) |- (restApis.west);
 
     \end{tikzpicture}%
     }
-    \caption{Arquitetura de Alto Nível: O \textbf{OmniAI SDK} utilizado para instanciar uma \textbf{OmniAI Gateway}, com a \textbf{Inference Gateway} a abstrair integrações externas padronizadas e o \textbf{MCP Broker} a gerir ferramentas.}
+\caption{Arquitetura de alto nível: \textbf{OmniAI SDK} integrada numa Gateway, nomeadamente uma \textbf{OmniAI Gateway}.}
     \label{fig:top-level}
 \end{figure}
 
-    \begin{figure}[H]
-        \centering
-        \includegraphics[width=0.95\textwidth]{../images/Arqui}
-        \caption{Visão da integração entre \textbf{Ktor}, \textit{inbounds}, \textit{pipeline}, \textit{interceptors}, \textit{outbounds} e \textbf{HTTP} client no \textbf{OmniAI SDK}}
-        \label{fig:arquitet-sdk}
-    \end{figure}
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.95\textwidth]{../images/Arqui}
+\caption{Visão da integração entre \textbf{Ktor}, \textit{inbounds}, \textit{pipeline}, \textit{interceptors}, \textit{outbounds} e \textbf{HTTP} client no \textbf{OmniAI SDK}}
+\label{fig:arquitet-sdk}
+\end{figure}
 
     A Figura~\ref{fig:top-level} mostra que a \textbf{OmniAI Gateway} não contém a lógica essencial de tradução, despacho ou resiliência. Essa lógica pertence ao \textbf{OmniAI SDK} e é apenas instanciada pela aplicação final. A Figura~\ref{fig:arquitet-sdk} aproxima a visão interna isto é um conector \textbf{HTTP} recebe o corpo do pedido, converte-o para um DTO de contrato, invoca um \textit{inbound adapter}, e este chama um \texttt{DispatcherPort}. A partir desse ponto, a execução pode seguir por um \textit{dispatcher} direto ou por um \textit{dispatcher} apoiado numa \textit{pipeline}. No final, um \textit{outbound adapter} traduz o pedido comum para o contrato do fornecedor e utiliza um cliente \textbf{HTTP} abstrato para executar a chamada real.
 
@@ -153,8 +177,8 @@ Embora o foco central deste projeto e do presente capítulo resida no acesso a A
 
     \subsubsection{{Modelo Comum de Pedido}}
 
-    O \texttt{CommonRequest} é o modelo base que normaliza qualquer pedido a LLMs, garantindo um contrato único e consistente, independentemente do fornecedor. A estrutura foi desenhada para manter os elementos essenciais de geração (fornecedor, modelo e mensagens) e, ao mesmo tempo, permitir extensões controladas via configuração e opções específicas do \textit{provider}.
-    Como se observa na Figura 3.2, o \texttt{CommonRequest} agrega diretamente o \texttt{provider}, o \texttt{model} e a lista de \texttt{messages}, que representam o histórico conversacional. Cada \texttt{CommonRequestMessage} contém o papel (\texttt{CommonRole}) e o conteúdo em partes (\texttt{RequestContentPart}), permitindo combinar texto, JSON ou chamadas a ferramentas. A configuração de geração é isolada em \texttt{CommonGenerationConfig}, enquanto as ferramentas disponíveis são descritas por \texttt{CommonTool} e controladas por \texttt{ToolChoice}. Por fim, \texttt{SystemPrompt} e \texttt{providerOptions} suportam personalizações globais e específicas do fornecedor, mantendo o core estável e extensível.
+    O modelo de pedido comum, designado por \texttt{CommonRequest}, é a base que normaliza qualquer pedido a LLMs, garantindo um contrato único e consistente, independentemente do fornecedor. A sua estrutura foi desenhada para manter os elementos essenciais da geração de texto -- nomeadamente o fornecedor, o modelo e as mensagens -- permitindo, simultaneamente, extensões controladas através de configuração e opções específicas do fornecedor.
+    Como se observa na Figura 3.2, o pedido comum agrega diretamente as propriedades \texttt{provider}, \texttt{model} e a lista de \texttt{messages}, que representam o histórico conversacional. Cada mensagem do pedido é materializada em \texttt{CommonRequestMessage} e contém o papel da entidade comunicante na propriedade \texttt{CommonRole}, bem como o conteúdo dividido em partes através de \texttt{RequestContentPart}. Esta divisão permite combinar texto, JSON ou chamadas a ferramentas. A configuração de geração é isolada na classe \texttt{CommonGenerationConfig}, enquanto as ferramentas disponíveis são descritas pela classe \texttt{CommonTool} e controladas pela política \texttt{ToolChoice}. Por fim, as propriedades globais \texttt{SystemPrompt} e específicas \texttt{providerOptions} suportam personalizações de contexto, mantendo o núcleo da aplicação estável e extensível.
 
 
     \begin{figure}[H]
@@ -222,7 +246,7 @@ Embora o foco central deste projeto e do presente capítulo resida no acesso a A
 
     \subsubsection{{Modelo Comum de Resposta e Eventos}}
 
-    O \texttt{CommonResponse} é o modelo base que normaliza as respostas devolvidas pelos diferentes fornecedores, garantindo um contrato único e consistente para o cliente. A estrutura foi desenhada para representar o resultado final da geração, mantendo as escolhas (\texttt{CommonChoice}) com o respetivo índice e a razão de término (\texttt{FinishReason}). Cada escolha contém uma mensagem (\texttt{CommonResponseMessage}) com o papel (\texttt{CommonRole}) e o conteúdo em partes (\texttt{Response\allowbreak Content\allowbreak Part}), permitindo combinar texto, JSON, chamadas a ferramentas ou recusas. A informação de uso (\texttt{CommonUsage}) isola o consumo de \textit{tokens} e facilita métricas e contabilização. Por fim, \texttt{providerOptions} preserva metadados específicos do fornecedor, mantendo o núcleo do domínio estável e extensível.
+    O modelo de resposta comum, sob a designação \texttt{CommonResponse}, é a base que normaliza as respostas devolvidas pelos diferentes fornecedores, garantindo um contrato único e consistente para o cliente. A sua estrutura foi desenhada para representar o resultado final da geração, mantendo as várias opções de resposta -- as escolhas representadas pela classe \texttt{CommonChoice} -- juntamente com o respetivo índice e a razão de término indicada por \texttt{FinishReason}. Cada escolha contém uma mensagem de resposta, definida em \texttt{CommonResponseMessage}, que estipula o papel da entidade na propriedade \texttt{CommonRole} e o seu conteúdo segmentado em partes através de \texttt{ResponseContentPart}, permitindo assim combinar texto, JSON, chamadas a ferramentas ou recusas do modelo. A informação de utilização isolada em \texttt{CommonUsage} quantifica o consumo de \textit{tokens} e facilita a extração de métricas e contabilização. Por fim, a propriedade \texttt{providerOptions} preserva metadados específicos do fornecedor, mantendo o núcleo do domínio estável e extensível.
 
     \begin{figure}[H]
         \centering
@@ -405,13 +429,16 @@ class TypedMap(
     \label{fig:typed-map}
 \end{figure}
 
-No domínio de inferência, a \texttt{TypedMap} aparece em \texttt{providerOptions}, permitindo preservar dados que não pertencem ao subconjunto comum mas não devem ser perdidos durante a tradução. Fora da inferência estrita, a mesma estrutura permite transportar metadados entre componentes sem criar dependências diretas entre eles. Esta característica é fundamental para a evolução futura do \textbf{OmniAI SDK}, porque permite que mecanismos como autorização, observabilidade ou políticas de execução, consumam e injetem atributos adicionais sem forçar alterações constantes nas classes centrais do domínio.
+No domínio de inferência, a estrutura \texttt{TypedMap} é utilizada na propriedade de domínio comum \texttt{providerOptions}, permitindo preservar dados que não pertencem ao subconjunto padronizado, mas que não devem ser perdidos durante o processo de tradução entre formatos. Fora da inferência estrita, a mesma estrutura permite transportar metadados entre componentes sem criar dependências diretas entre eles. Esta característica é fundamental para a evolução futura do \textbf{OmniAI SDK}, porque permite que mecanismos como autorização, observabilidade ou políticas de execução, consumam e injetem atributos adicionais sem forçar alterações constantes nas classes centrais do domínio.
     
 
 
 \section{Arquitetura do Sistema}
 
-A Arquitetura Hexagonal, também conhecida como padrão de Portas e Adaptadores, foi escolhida neste projeto para garantir que a lógica principal do sistema permaneça independente de detalhes técnicos e de integrações externas. Em vez de o \textit{core} da aplicação depender diretamente de bibliotecas, protocolos ou APIs específicas, toda a comunicação com o exterior acontece através de interfaces bem definidas, enquanto os adaptadores tratam das implementações concretas \cite{gfg_hexagonal_architecture, hexagonal_ports, netflix_hexagonal}.
+\subsection{O Módulo Core e o Núcleo da Aplicação}
+No contexto do \textbf{OmniAI SDK}, o domínio comum apresentado na secção anterior, juntamente com as interfaces fundamentais de comunicação, encontra-se centralizado no módulo \texttt{core}. Este módulo atua como o núcleo lógico do sistema, agregando as entidades, os contratos genéricos e as portas (interfaces) que definem o comportamento da aplicação, sem possuir qualquer dependência para com bibliotecas externas de rede ou fornecedores específicos. A adoção do termo \textit{core} ao longo deste documento refere-se especificamente a este núcleo agnóstico, responsável por garantir a estabilidade e as fundações da arquitetura.
+
+A Arquitetura Hexagonal, também conhecida como padrão de Portas e Adaptadores, foi escolhida neste projeto para garantir que esta lógica principal do sistema permaneça independente de detalhes técnicos e de integrações externas. Em vez de o \textit{core} (núcleo) da aplicação depender diretamente de bibliotecas, protocolos ou APIs específicas, toda a comunicação com o exterior acontece através de interfaces bem definidas, enquanto os adaptadores tratam das implementações concretas \cite{gfg_hexagonal_architecture, hexagonal_ports, netflix_hexagonal}.
 
 Esta separação torna-se especialmente importante no contexto de uma \textit{Gateway} de Inteligência Artificial, uma vez que o sistema atua como ponto central de comunicação entre clientes \textbf{HTTP}, fornecedores de inferência, mecanismos de autenticação e serviços de observabilidade. Sem um isolamento arquitetural claro, a lógica de domínio acabaria inevitavelmente dependente de \textit{SDKs} externos, formatos proprietários e detalhes específicos de integração de cada fornecedor.
 
