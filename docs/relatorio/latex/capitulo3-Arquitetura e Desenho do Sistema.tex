@@ -435,7 +435,7 @@ No domínio de inferência, a estrutura \texttt{TypedMap} é utilizada na propri
 
 \section{Arquitetura do Sistema}
 
-\subsection{O Módulo Core}
+\subsection{Core}
 No contexto do \textbf{OmniAI SDK}, o domínio comum apresentado na secção anterior, juntamente com as interfaces fundamentais de comunicação, encontra-se centralizado no módulo \texttt{core}. Este módulo atua como o centro do sistema, contendo as entidades, os contratos genéricos e as portas (interfaces) que definem o comportamento da aplicação, sem possuir qualquer dependência para com bibliotecas externas de rede ou fornecedores específicos. A adoção do termo \textit{core} ao longo deste documento refere-se especificamente a este móduloresponsável por garantir a estabilidade e as bases centrais da arquitetura.
 
 A Arquitetura Hexagonal, também conhecida como padrão de Portas e Adaptadores, foi escolhida neste projeto para garantir que esta lógica principal do sistema permaneça independente de detalhes técnicos e de integrações externas. Em vez de o \textit{core} da aplicação depender diretamente de bibliotecas, protocolos ou APIs específicas, toda a comunicação com o exterior acontece através de interfaces bem definidas, enquanto os adaptadores tratam das implementações concretas \cite{gfg_hexagonal_architecture, hexagonal_ports, netflix_hexagonal}.
