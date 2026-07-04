@@ -77,6 +77,11 @@ Embora o foco central deste projeto e do presente capítulo resida no acesso a A
         \draw[arrow] (forkTop) -| (auth.south);
         \draw[arrow] (forkTop) -| (telemetry.south);
 
+        % --- LIGAÇÃO NOVA: MCP Broker -> Auth (Não Implementado) ---
+        % Mais encostado à esquerda (0.2cm da margem dos clientes), criando a curva perfeita.
+        \coordinate (mcpRouteX) at ([xshift=0.2cm]clients.east);
+        \draw[arrow, dashed, rounded corners] ([yshift=0.2cm]mcpBroker.west) -| (mcpRouteX |- auth.west) -- (auth.west);
+
         % --- RIGHT SIDE (Serviços Externos de Inferência / MCP / REST) ---
         \coordinate (providersPos) at (gatewayGroup.east |- infGateway);
         \node[box, right=1.5cm of providersPos] (providers) {Fornecedores de Inferência\\ \footnotesize{(OpenAI, Anthropic, Gemini)}};

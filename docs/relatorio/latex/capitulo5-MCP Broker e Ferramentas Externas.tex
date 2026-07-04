@@ -2,62 +2,198 @@
 
 O \textbf{MCP Broker} surge como uma extensão natural da \textbf{Gateway}: deixar de a tratar apenas como um ponto de entrada para inferência e aproximá-la de uma \textit{gateway} de IA mais completa. Em muitos cenários, um modelo só consegue produzir uma resposta útil se puder consultar recursos externos, chamar ferramentas ou executar ações controladas. É nesse espaço que entra o \textbf{Model Context Protocol (MCP)}.
 
-O que foi concretamente implementado neste módulo é uma \textbf{MCP Gateway} funcional: um servidor MCP autónomo que lê ficheiros de configuração \textbf{YAML} de forma declarativa, regista automaticamente as ferramentas neles descritas, e expõe-as a qualquer cliente MCP compatível, como o \textbf{MCP Inspector}. Com isto, a Gateway deixa de ser apenas um \textit{proxy} de inferência e passa a ser uma infraestrutura de IA mais completa: consegue não só encaminhar pedidos de geração de texto, como também disponibilizar ferramentas externas a modelos e clientes de forma organizada, centralizada e sem necessidade de alterar código para adicionar novas integrações.
+O que foi concretamente implementado neste módulo é uma \textbf{MCP Gateway} funcional: um servidor MCP autónomo que lê ficheiros de configuração \textbf{YAML} de forma declarativa, regista automaticamente as ferramentas neles descritas, e expõe-as a qualquer cliente MCP compatível, como o \textbf{MCP Inspector}. Adicionalmente, o Broker é capaz de se ligar a outros servidores MCP externos e de expor as suas ferramentas como proxies locais, funcionando como um ponto de agregação centralizado. Com isto, a Gateway deixa de ser apenas um \textit{proxy} de inferência e passa a ser uma infraestrutura de IA mais completa.
 
-A implementação assenta em duas bibliotecas principais: \texttt{io.modelcontextprotocol:kotlin-sdk} (versão 0.13.0) \cite{mcp_kotlin_sdk}, que fornece o servidor MCP, os tipos do protocolo e os transportes suportados (\textit{stdio}, SSE, WebSocket); e \texttt{net.mamoe.yamlkt} (versão 0.13.0) \cite{yamlkt_ref}, que é responsável por desserializar os ficheiros YAML de configuração em objetos Kotlin de forma declarativa. O cliente HTTP utilizado para comunicar com as APIs externas é o \textbf{Ktor} \cite{ktor_ref}.
+A implementação assenta em duas bibliotecas principais: \texttt{io.modelcontextprotocol:kotlin-sdk} (versão 0.13.0) \cite{mcp_kotlin_sdk}, que fornece o servidor MCP, os tipos do protocolo e os transportes suportados (\textit{stdio}, SSE, Streamable HTTP, WebSocket); e \texttt{net.mamoe.yamlkt} (versão 0.13.0) \cite{yamlkt_ref}, que é responsável por desserializar os ficheiros YAML de configuração em objetos Kotlin de forma declarativa. O cliente HTTP utilizado para comunicar com as APIs externas é o \textbf{Ktor} \cite{ktor_ref}.
 
 
 \section{Visão Geral do Sistema}
 
-A Figura~\ref{fig:mcp-gateway-flow} sintetiza o papel da Gateway neste módulo, evidenciando os dois papéis que desempenha em simultâneo: é \textbf{Servidor MCP} para o cliente (Inspector ou Claude) e é \textbf{cliente HTTP} para as APIs externas.
+A arquitetura global do sistema prevê que o \textbf{MCP Broker} opere em conjunto com um \textbf{Authorization Server} (AS) para garantir a autenticação e autorização via OAuth 2.1. Contudo, uma vez que este mecanismo de segurança já foi integralmente implementado e comprovado na Gateway de Inferência, a sua integração direta no Broker foi omitida nesta Prova de Conceito (PoC), encontrando-se assinalada a cinza no diagrama. 
+
+A Figura~\ref{fig:mcp-gateway-flow} ilustra o papel do Broker neste módulo: recebe ligações de clientes MCP, expõe ferramentas e contextos, e encarrega-se de as concretizar, seja através de chamadas HTTP a APIs externas, seja fazendo proxy de ferramentas descobertas noutros servidores MCP.
 
 \begin{figure}[H]
 \centering
 \begin{tikzpicture}[
-    node distance=2cm and 3.5cm,
+    node distance=2.2cm and 4.2cm,
     box/.style={rectangle, draw=black!80, thick, rounded corners=4pt, minimum width=3.4cm, minimum height=1.1cm, align=center, font=\small},
+    notimpl/.style={rectangle, draw=black!60, fill=black!20, dashed, thick, rounded corners=4pt, minimum width=3.4cm, minimum height=1.1cm, align=center, font=\small},
     arrow/.style={->, >=stealth, thick},
-    dasharrow/.style={->, >=stealth, dashed, thick, draw=gray!80}
+    dasharrow/.style={->, >=stealth, dashed, thick, draw=gray!90}
 ]
 
+% Nós Principais
 \node[box] (yaml) {Ficheiros \textbf{YAML}\\(\texttt{mcp-configs/})};
 
-\node[box, right=3.0cm of yaml] (gateway) {\textbf{MCP Gateway}\\Servidor MCP};
+\node[box, right=3.5cm of yaml] (gateway) {\textbf{MCP Broker}\\Servidor MCP};
 
-\node[box, above right=1.2cm and 2.6cm of gateway] (client) {\textbf{MCP Inspector}};
+\node[box, above right=1cm and 2.5cm of gateway] (client) {\textbf{Cliente MCP}\\(Inspector / Claude)};
 
-\node[box, below right=1.2cm and 2.6cm of gateway] (api) {API Externa\\(GitHub, Postman\ldots)};
+\node[box, below right=1cm and 2.5cm of gateway] (api) {API Externa\\(GitHub, Postman\ldots)};
 
-% Arranque
+\node[box, below=1.8cm of gateway] (extmcp) {Servidor MCP\\Externo};
+
+% Authorization Server (Não implementado)
+\node[notimpl, above left=1cm and 1.5cm of gateway] (as) {\textbf{Authorization Server}\\(IdP / OAuth 2.1)};
+
+% Ligações - Arranque
 \draw[arrow] (yaml) -- node[above, font=\scriptsize, align=center]{pipeline de arranque\\(parse + map + registo)} (gateway);
 
-% Protocolo MCP
+% Ligações - Segurança (Não implementadas)
+\draw[dasharrow] (client) to[bend right=15] node[above, sloped, font=\scriptsize]{1. obtém token} (as);
+\draw[dasharrow] (gateway) to[bend right=15] node[below, sloped, font=\scriptsize]{valida token} (as);
+
+% Ligações - Protocolo MCP
 \draw[arrow] (gateway) to[bend left=15] node[above, sloped, font=\scriptsize]{\texttt{tools/list} (JSON Schema)} (client);
 \draw[arrow] (client) to[bend left=15] node[below, sloped, font=\scriptsize]{\texttt{tools/call} (argumentos)} (gateway);
 
-% HTTP
+% Ligações - HTTP
 \draw[dasharrow] (gateway) to[bend right=15] node[above, sloped, font=\scriptsize]{pedido HTTP (Ktor)} (api);
 \draw[dasharrow] (api) to[bend right=15] node[below, sloped, font=\scriptsize]{resposta JSON} (gateway);
 
+% Ligações - Proxy MCP
+\draw[dasharrow] (gateway) to[bend right=15] node[left, font=\scriptsize]{proxy MCP} (extmcp);
+\draw[dasharrow] (extmcp) to[bend right=15] node[right, font=\scriptsize]{ferramentas} (gateway);
+
+% Legenda (Quadrado cinza)
+\node[notimpl, minimum width=0.6cm, minimum height=0.4cm] (legend_box) at ([yshift=-3.5cm, xshift=2.0cm]yaml.south) {};
+\node[anchor=west, font=\scriptsize, align=left] at (legend_box.east) {\,-- Arquitetura planeada (Não implementado na PoC)};
+
 \end{tikzpicture}
-\caption{Visão geral da MCP Gateway: registo de ferramentas via YAML e execução de pedidos HTTP a APIs externas.}
+\caption{Visão geral do MCP Broker: integração planeada com o servidor de autorização, registo de ferramentas via YAML, execução de pedidos HTTP a APIs externas e proxy de servidores MCP externos.}
 \label{fig:mcp-gateway-flow}
 \end{figure}
 
 
-\section{Descrição das Ferramentas em YAML}
+\section{Modelos de Domínio e DTOs}
 
-A configuração das ferramentas é feita em ficheiros \textbf{YAML} colocados na pasta \texttt{mcp-configs/}. Cada ferramenta é descrita de forma declarativa, sem escrever código: basta indicar o nome, a descrição, o URL de destino, o método HTTP, os cabeçalhos, e os \textit{schemas} de entrada. Para permitir um roteamento preciso dos argumentos, o \textit{schema} de entrada está dividido em três secções distintas:
+O MCP Broker organiza a sua configuração em duas camadas distintas: os \textbf{DTOs} (Data Transfer Objects), que representam a estrutura dos ficheiros YAML, e os \textbf{modelos de domínio}, que são os objetos internos sobre os quais a lógica do Broker efetivamente opera. Esta separação evita que o código fique dependente do formato de serialização.
+
+\subsection{DTOs de Configuração}
+
+Os DTOs representam diretamente a estrutura dos ficheiros YAML e são anotados com \texttt{@Serializable}, a anotação da biblioteca \texttt{kotlinx.serialization}, para que o \texttt{yamlkt} os consiga desserializar automaticamente. O \texttt{BrokerConfigDto} é o objeto de entrada, agregando as três listas de configuração possíveis.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[
+    box/.style={rectangle, draw=black!80, thick, rounded corners=4pt, inner sep=6pt, align=left, font=\footnotesize\ttfamily},
+    arrow/.style={->, >=stealth, thick}
+]
+
+\node[box] (broker) {
+    \textbf{BrokerConfigDto}\\
+    tools: List<ToolConfigDto>\\
+    contexts: List<ContextConfigDto>\\
+    mcpServers: List<McpClientConfigDto>
+};
+
+\node[box, right=2cm of broker, yshift=2.5cm] (tool) {
+    \textbf{ToolConfigDto}\\
+    name: String\\
+    targetUrl: String\\
+    pathSchema: YamlMap?\\
+    bodySchema: YamlMap?
+};
+
+\node[box, right=2cm of broker, yshift=0cm] (context) {
+    \textbf{ContextConfigDto}\\
+    name: String\\
+    uri: String\\
+    content: String
+};
+
+\node[box, right=2cm of broker, yshift=-2.5cm] (mcp) {
+    \textbf{McpClientConfigDto}\\
+    name: String\\
+    transport: TransportType\\
+    args: List<String>
+};
+
+\draw[arrow] (broker.east) -- ++(1,0) |- (tool.west);
+\draw[arrow] (broker.east) -- (context.west);
+\draw[arrow] (broker.east) -- ++(1,0) |- (mcp.west);
+
+\end{tikzpicture}
+\caption{Hierarquia dos DTOs de configuração.}
+\label{fig:dtos}
+\end{figure}
+
+\subsection{Modelos de Domínio}
+
+Após a fase de mapeamento, os DTOs dão lugar aos objetos de domínio. Estes objetos são independentes do formato de serialização e contêm os tipos já convertidos, facilitando o seu uso no resto da aplicação.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[
+    box/.style={rectangle, draw=black!80, thick, rounded corners=4pt, inner sep=6pt, align=left, font=\footnotesize\ttfamily},
+    arrow/.style={->, >=stealth, thick}
+]
+
+\node[box] (broker) {
+    \textbf{BrokerConfig}\\
+    tools: List<RestToolDefinition>\\
+    contexts: List<ContextDefinition>\\
+    mcpClients: List<McpClientConfig>
+};
+
+\node[box, right=1.2cm of broker, yshift=2.5cm] (tool) {
+    \textbf{RestToolDefinition}\\
+    name: String\\
+    targetUrl: String\\
+    pathSchema: JsonObject?\\
+    bodySchema: JsonObject?
+};
+
+\node[box, right=1.2cm of broker, yshift=0cm] (context) {
+    \textbf{ContextDefinition}\\
+    name: String\\
+    uri: String\\
+    content: String
+};
+
+\node[box, right=1.2cm of broker, yshift=-2.5cm] (mcp) {
+    \textbf{McpClientConfig}\\
+    name: String\\
+    transport: TransportType\\
+    args: List<String>
+};
+
+\draw[arrow] (broker.east) -- ++(0.6,0) |- (tool.west);
+\draw[arrow] (broker.east) -- (context.west);
+\draw[arrow] (broker.east) -- ++(0.6,0) |- (mcp.west);
+
+\end{tikzpicture}
+\caption{Modelos de domínio e a substituição das estruturas YAML por equivalentes em JSON.}
+\label{fig:domain-models}
+\end{figure}
+
+A diferença mais relevante entre os DTOs e os modelos de domínio está na representação dos schemas de entrada. No DTO, estes campos são deserializados como \texttt{YamlMap}, preservando a estrutura em árvore do YAML. No modelo de domínio, essa estrutura é convertida para \texttt{JsonObject}, o tipo nativo da biblioteca \texttt{kotlinx.serialization}, garantindo que os tipos de cada valor (inteiro, booleano, objeto aninhado, etc.) são preservados corretamente.
+
+
+\section{Configuração Declarativa em YAML}
+
+Toda a configuração do Broker é feita através de ficheiros \textbf{YAML} colocados numa pasta de configuração. Cada ficheiro pode declarar três secções independentes:
 
 \begin{itemize}
-    \item \textbf{\texttt{pathSchema}}: parâmetros que são substituídos diretamente no URL, através de \textit{placeholders} do tipo \texttt{\{chave\}}.
-    \item \textbf{\texttt{querySchema}}: parâmetros que são acrescentados ao URL como \textit{query string} (ex: \texttt{?filtro=activo}).
+    \item \textbf{\texttt{tools}}: ferramentas REST que o Broker expõe nativamente.
+    \item \textbf{\texttt{contexts}}: conteúdo estático exposto na forma de recursos.
+    \item \textbf{\texttt{mcpServers}}: servidores MCP externos aos quais o Broker se liga.
+\end{itemize}
+
+\subsection{Descrição de Ferramentas REST}
+
+A configuração de uma ferramenta REST é feita de forma declarativa, sem escrever código. Basta indicar o nome, a descrição, o URL de destino, o método HTTP, os cabeçalhos, e as secções de entrada de dados. Para permitir um roteamento preciso dos argumentos, a validação de entrada divide-se em três partes:
+
+\begin{itemize}
+    \item \textbf{\texttt{pathSchema}}: parâmetros que são substituídos diretamente no URL, através da sintaxe de chavetas no formato \texttt{\{chave\}}.
+    \item \textbf{\texttt{querySchema}}: parâmetros que são acrescentados ao URL como variáveis de interrogação.
     \item \textbf{\texttt{bodySchema}}: parâmetros que são enviados no corpo do pedido HTTP como JSON, suportando tipos complexos como objetos aninhados, arrays, números e booleanos.
 \end{itemize}
 
-O exemplo seguinte ilustra uma ferramenta que utiliza simultaneamente os três tipos de \textit{schema}:
+O exemplo seguinte ilustra uma ferramenta que utiliza simultaneamente os três tipos referidos:
 
-\begin{lstlisting}[caption={Exemplo de ferramenta com os três tipos de schema.}]
+\begin{lstlisting}[caption={Exemplo de ferramenta REST configurada via YAML.}]
 tools:
   - name: "test_url_vs_body"
     description: "Ferramenta de teste com path, query e body."
@@ -79,37 +215,101 @@ tools:
             type: "boolean"
 \end{lstlisting}
 
-\section{Pipeline de Transformação: do YAML ao Servidor MCP}
+\subsection{Contextos Estáticos como Recursos}
 
-Quando a Gateway arranca, percorre um pipeline de transformação bem definido que começa nos ficheiros YAML e termina no registo das ferramentas no servidor MCP:
+Para além das ferramentas REST, o Broker permite declarar \textbf{contextos estáticos} que são expostos como recursos MCP. Um contexto é um bloco de texto associado a um URI fixo, que os clientes MCP podem ler diretamente. É útil para partilhar, por exemplo, documentação de APIs ou instruções de sistema que o modelo deve ter em conta.
+
+\begin{lstlisting}[caption={Exemplo de contexto estático exposto como recurso MCP.}]
+contexts:
+  - name: "github-api-schema"
+    uri: "context://github-api-schema"
+    description: "Esquema da API GitHub para auxiliar o modelo."
+    mimeType: "text/plain"
+    content: |
+      A API GitHub usa autenticacao via token Bearer.
+      Endpoints relevantes: GET /repos/{owner}/{repo}
+\end{lstlisting}
+
+\subsection{Proxy de Servidores MCP Externos}
+
+O Broker pode também ligar-se a outros servidores MCP no papel de cliente e expor as ferramentas desses servidores como se fossem locais. Esta funcionalidade de \textit{proxy} é parametrizada na secção \texttt{mcpServers}, onde se indica o nome, o tipo de transporte e os parâmetros de inicialização:
+
+\begin{lstlisting}[caption={Exemplo de configuração de proxy para um servidor MCP externo.}]
+mcpServers:
+  - name: "filesystem-mcp"
+    transport: STDIO
+    command: "npx"
+    args:
+      - "-y"
+      - "@modelcontextprotocol/server-filesystem"
+      - "/workspace"
+\end{lstlisting}
+
+Quando o Broker arranca, liga-se a cada servidor externo configurado e descobre as suas ferramentas. Essas ferramentas são então registadas localmente com o prefixo do nome do servidor (por exemplo, \texttt{filesystem-mcp\_read\_file}), ficando disponíveis para qualquer cliente MCP ligado ao Broker como se fossem ferramentas locais.
+
+
+\section{Arranque e Inicialização do Broker}
+
+Quando o Broker arranca, percorre uma sequência de passos bem definida antes de estar pronto a receber ligações:
 
 \begin{enumerate}
-    \item \textbf{Leitura do YAML (\texttt{YamlConfigParser})}: A classe \texttt{YamlConfigParser} lê todos os ficheiros YAML presentes na pasta de configuração e utiliza a biblioteca \texttt{yamlkt} para os desserializar em objetos \texttt{ToolConfigDto}. Estes objetos são estruturas de dados simples que espelham diretamente a estrutura do ficheiro YAML, incluindo os \textit{schemas} parciais representados como \texttt{YamlMap}.
+    \item \textbf{Leitura do YAML}: O \texttt{YamlConfigParser} lê todos os ficheiros presentes na pasta de configuração e desserializa cada um num \texttt{BrokerConfigDto}, usando a biblioteca \texttt{yamlkt}. Os schemas de entrada ficam nesta fase representados como \texttt{YamlMap}.
 
-    \item \textbf{Mapeamento para o Domínio (\texttt{ConfigMapper})}: O \texttt{ConfigMapper} converte cada \texttt{ToolConfigDto} num \texttt{BrokerTool}, que é o objeto de domínio central do módulo. É nesta fase que os \textit{schemas} em bruto do tipo \texttt{YamlMap} são transformados em \texttt{JsonObject} tipados do Kotlin, através de uma função de conversão recursiva. Esta função preserva os tipos reais de cada valor: inteiros permanecem inteiros, booleanos permanecem booleanos, e estruturas aninhadas como objetos e arrays são convertidas fielmente — sem o erro comum de coagir todos os valores para \textit{strings}.
+    \item \textbf{Mapeamento para o Domínio}: O \texttt{ConfigMapper} converte cada DTO no modelo de domínio correspondente. Os \texttt{YamlMap} dos schemas são transformados recursivamente em \texttt{JsonObject}, preservando os tipos nativos de cada valor.
 
-    \item \textbf{Registo no Servidor MCP (\texttt{ToolRegistrar})}: O \texttt{ToolRegistrar} pega em cada \texttt{BrokerTool} e regista-o no servidor MCP. Para cada ferramenta, constrói um \textbf{JSON Schema} unificado, fundindo os três \textit{schemas} parciais (\texttt{pathSchema}, \texttt{querySchema} e \texttt{bodySchema}) numa única estrutura \texttt{inputSchema} no formato \textbf{JSON Schema} padrão — o mesmo utilizado pelo OpenAPI e compreendido nativamente pelos modelos de linguagem. Este \textit{schema} unificado é o que o cliente MCP usa para descobrir os campos de cada ferramenta e desenhar o formulário de invocação.
+    \item \textbf{Registo de Ferramentas REST}: O \texttt{ToolRegistrar} percorre a lista de \texttt{RestToolDefinition} e regista cada ferramenta no servidor MCP, usando o Kotlin MCP SDK. Para cada uma, gera automaticamente um JSON Schema unificado a partir dos três schemas parciais (\texttt{pathSchema}, \texttt{querySchema} e \texttt{bodySchema}), que é o que o cliente recebe ao fazer \texttt{tools/list}.
 
-    \item \textbf{Abertura do Canal de Comunicação}: A Gateway estabelece uma sessão de transporte \textbf{Stdio} (\texttt{StdioServerTransport}), ficando bloqueada à espera de mensagens do cliente MCP. Toda a comunicação do protocolo MCP flui por este canal.
+    \item \textbf{Registo de Contextos}: O \texttt{ContextRegistrar} publica cada \texttt{ContextDefinition} como um recurso MCP, usando igualmente o Kotlin MCP SDK. Cada recurso fica acessível pelo URI declarado no YAML.
+
+    \item \textbf{Ligação a Servidores Externos}: O \texttt{McpClientManager} estabelece ligação a cada servidor MCP externo configurado. O \texttt{ProxyToolRegistrar} descobre as ferramentas disponíveis em cada um e regista-as localmente, de forma a que o Broker possa encaminhar as chamadas.
+
+    \item \textbf{Arranque do Servidor}: Por fim, o \texttt{BrokerServer} inicia os transportes configurados (Stdio, SSE, Streamable HTTP ou WebSocket) e fica a aguardar ligações de clientes MCP.
 \end{enumerate}
 
-\section{Fluxo de Execução: do Cliente à API Externa}
 
-Após o arranque, a Gateway aguarda a ligação de um cliente MCP. A interação completa resume-se a apenas duas mensagens de protocolo:
+\section{Hot-Reload de Configuração}
+
+O Broker suporta \textbf{hot-reload} dos ficheiros YAML em tempo de execução, sem necessidade de reiniciar. Existe uma rotina dedicada que monitoriza de forma contínua o diretório de configuração. Sempre que uma modificação é detetada pelo sistema operativo, despoleta-se um novo ciclo de recarga. O serviço reconstrói a árvore de dependências, aplica o mapeamento e atualiza a representação exposta no servidor, procedendo de maneira transparente para quem já se encontre ligado.
+
+
+\section{DSL de Configuração Programática}
+
+O Broker expõe uma \textbf{DSL Kotlin} para ser instanciado programaticamente, através da função \texttt{mcpBroker\{\}}. Esta abordagem é útil quando o Broker é integrado numa aplicação maior, como um servidor Ktor já existente:
+
+\vspace{0.5em}
+\begin{lstlisting}[caption={Exemplo de configuração do MCP Broker via DSL Kotlin.}, language=Kotlin]
+val broker = mcpBroker {
+    info(name = "omni-mcp-broker", version = "1.0.0")
+
+    configDirectory("./mcp-configs")
+
+    httpClient(
+        HttpClient(CIO) {
+            install(ContentNegotiation) { json() }
+        }
+    )
+
+    clientTransportFactory(McpClientTransportFactory())
+
+    serverTransport(
+        ServerTransportConfig.Stdio(
+            input  = SystemFileSystem.source(Path("/dev/stdin")),
+            output = SystemFileSystem.sink(Path("/dev/stdout")),
+        )
+    )
+}
+
+broker.start()
+\end{lstlisting}
+\vspace{0.5em}
+
+
+\section{Fluxo de Execução}
+
+Depois de inicializado, o Broker comporta-se como qualquer servidor MCP: os clientes falam com ele usando o protocolo MCP padrão. Quando um cliente faz \texttt{tools/list}, recebe a lista completa de ferramentas disponíveis, incluindo tanto as ferramentas REST locais como as que foram descobertas nos servidores externos. Quando invoca uma ferramenta com \texttt{tools/call}, o Broker sabe exatamente o que fazer com base no registo feito no arranque:
 
 \begin{itemize}
-    \item \textbf{\texttt{tools/list}}: O cliente pede a lista de ferramentas disponíveis. A biblioteca MCP responde automaticamente com o JSON Schema de todas as ferramentas registadas. O cliente usa esta informação para descobrir as ferramentas e os seus parâmetros — sem mais nenhum pedido à Gateway.
-
-    \item \textbf{\texttt{tools/call}}: Quando o utilizador decide invocar uma ferramenta e envia os argumentos preenchidos, a biblioteca MCP interceta a mensagem, identifica a ferramenta pelo nome e invoca o bloco de execução registado pelo \texttt{ToolRegistrar}. Este bloco delega a execução ao \texttt{RestToolExecutor}.
+    \item Se for uma ferramenta REST, o \texttt{RestToolExecutor} constrói e executa o pedido HTTP correspondente usando o \texttt{HttpClient}, a interface genérica de cliente HTTP injetada no Broker. Os argumentos são distribuídos pelo URL (path e query) e pelo corpo do pedido, conforme o declarado nos schemas.
+    \item Se for uma ferramenta em proxy, o Broker reencaminha a chamada para o servidor MCP externo e devolve a resposta tal como a recebeu.
+    \item Se for um contexto, o cliente pode lê-lo diretamente via \texttt{resources/read}, recebendo o conteúdo estático associado ao URI.
 \end{itemize}
-
-O \texttt{RestToolExecutor} é o componente que efetua o roteamento dos argumentos e a execução do pedido HTTP. Recebe os argumentos enviados pelo cliente e o \texttt{BrokerTool} correspondente, e distribui cada argumento pelo destino correto com base nos \textit{schemas} declarados:
-
-\begin{itemize}
-    \item Argumentos do \texttt{pathSchema} são substituídos nos \textit{placeholders} \texttt{\{chave\}} do URL.
-    \item Argumentos do \texttt{querySchema} são anexados ao URL como parâmetros de \textit{query string}.
-    \item Argumentos do \texttt{bodySchema} são serializados para JSON e enviados no corpo do pedido HTTP, com preservação fiel dos tipos de dados.
-\end{itemize}
-
-O pedido HTTP é executado pelo \textbf{Ktor}, e a resposta da API externa percorre o caminho inverso até ser devolvida ao cliente MCP que iniciou a invocação.
-
