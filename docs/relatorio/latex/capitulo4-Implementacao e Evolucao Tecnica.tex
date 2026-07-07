@@ -32,8 +32,6 @@ Assim esta decisão permitiu que a aplicação evolua de um formato monolítico 
 
 A análise de \textit{trade-offs} partiu de três critérios principais: preservar a estabilidade da versão demonstrável, manter o \textbf{OmniAI SDK} reutilizável e extensível independentemente da aplicação final e evitar que funcionalidades experimentais introduzissem acoplamento excessivo no domínio comum.
 
-Neste contexto, importa recordar que a \textbf{OmniAI Gateway} apresentada neste projeto corresponde apenas a uma instanciação concreta construída sobre o \textbf{OmniAI SDK}. Assim, várias decisões arquiteturais foram tomadas não apenas a pensar na \textit{Proof of Concept}, mas sobretudo na preservação do nosso \textbf{SDK} enquanto infraestrutura reutilizável para futuras \textit{gateways}, integrações e ambientes de execução.
-
 As decisões seguintes não representam funcionalidades abandonadas, mas sim escolhas conscientes de âmbito para garantir que a primeira versão permanecesse estável, testável e arquiteturalmente coerente:
 
 \begin{itemize}
@@ -63,7 +61,7 @@ Na prática, esta separação permitiu preservar o \textbf{SDK} como uma fundaç
     \section{Implementação da Camada \textbf{HTTP}}
     \label{sec:gateway-ktor-server}
 
-    A camada de exposição \textbf{HTTP} da \textbf{Gateway} é implementada no módulo \texttt{gateway-ktor-server}. Este módulo estabelece a ponte entre o servidor web (\textbf{Ktor}) e os \textit{inbound adapters} do domínio, garantindo que o núcleo do sistema permanece agnóstico em relação à tecnologia de transporte de entrada.
+    A camada de exposição \textbf{HTTP} de entrada da \textbf{Gateway} (responsável por receber os pedidos dos clientes) é implementada no módulo \texttt{gateway-ktor-server}. Este módulo estabelece a ponte entre o servidor web (\textbf{Ktor}) e os \textit{inbound adapters} do domínio, garantindo que o núcleo do sistema permanece agnóstico em relação à tecnologia de transporte de entrada.
 
     A implementação baseia-se num padrão de conectores (\texttt{InboundConnector}) que regista rotas específicas para cada contrato suportado. O módulo expõe três funções de extensão sobre a interface de encaminhamento (\texttt{Route}) do \textbf{Ktor}:
 
@@ -756,7 +754,7 @@ Na receção de uma resposta unária da \textbf{Anthropic} (\texttt{Anthropic\al
     \section{Evolução para a Pipeline de Interceptors}
     A \textit{pipeline} foi implementada como um \textit{adapter} de \textit{dispatcher}. Isto é, os \textit{inbounds} não recebem uma \textit{pipeline}; recebem sempre um \texttt{DispatcherPort}. Quando a aplicação escolhe \texttt{use\allowbreak Native\allowbreak Pipeline}, o \textbf{SDK} monta uma \texttt{GatewayPipeline} com \textit{interceptors} e um \textit{dispatcher} terminal, e depois expõe essa cadeia através de \texttt{PipelineBackedDispatcher}. Se a aplicação não quiser a \textit{pipeline}, pode fornecer diretamente um \textit{dispatcher} próprio através de \texttt{useCustomDispatcher}.
 
-    Esta decisão evita que a \textit{pipeline} se torne uma dependência obrigatória da arquitetura. Um consumidor que pretenda apenas tradução de contratos e despacho direto pode usar um \textit{dispatcher} simples. Um consumidor que precise de segurança, observabilidade e resiliência pode ativar a \textit{pipeline} nativa. Um consumidor com necessidades próprias pode implementar outro \texttt{DispatcherPort}, por exemplo com seleção por custo, políticas externas, filas internas ou integração com outro orquestrador.
+    Esta decisão evita que a \textit{pipeline} se torne uma dependência obrigatória da arquitetura. Um consumidor que pretenda apenas tradução de contratos e despacho direto pode usar um \textit{dispatcher} simples. Um consumidor que precise de segurança, observabilidade e resiliência pode ativar a \textit{pipeline} incluida. Um consumidor com necessidades próprias pode implementar outro \texttt{DispatcherPort}, por exemplo com seleção por custo, políticas externas, filas internas ou integração com outro orquestrador.
 
     \begin{table}[H]
         \centering
@@ -827,7 +825,7 @@ Na receção de uma resposta unária da \textbf{Anthropic} (\texttt{Anthropic\al
 
     A implementação distingue chamadas unárias de \textit{streaming}. Em respostas progressivas, o \textit{interceptor} não bloqueia a execução; usa operadores de fluxo para observar eventos e emitir métricas no encerramento do \textit{stream}. Assim mede a duração total da interação, e não apenas o tempo até ao primeiro fragmento.
 
-    A arquitetura segue inversão de dependência através da porta \texttt{MetricsPort}. O \textbf{OmniAI SDK} define instrumentos comuns, como \texttt{counter}, \texttt{histogram} e \texttt{upDownCounter}, enquanto o \textit{adapter} concreto no \textit{target} \textbf{JVM} exporta para \textbf{OpenTelemetry}. O uso do \textbf{OpenTelemetry Protocol} (\textbf{OTLP}) foi escolhido porque o \textbf{OTLP} define a codificação, transporte e entrega de dados de telemetria entre fontes, coletores e \textit{backends} \cite{opentelemetry_otlp}. Esta escolha evita prender o \textbf{OmniAI SDK} a \textbf{Prometheus}, \textbf{Grafana}, \textbf{Datadog} ou outro \textit{backend} específico: o \textbf{SDK} emite telemetria num formato aberto, o Collector recebe e processa esses dados, e a infraestrutura decide para onde exportar.
+    A arquitetura segue inversão de dependência através da porta \texttt{MetricsPort}. O \textbf{OmniAI SDK} define primitivas de métricas comuns, como \texttt{counter}, \texttt{histogram} e \texttt{upDownCounter}, enquanto o \textit{adapter} concreto no \textit{target} \textbf{JVM} exporta para \textbf{OpenTelemetry}. O uso do \textbf{OpenTelemetry Protocol} (\textbf{OTLP}) foi escolhido porque o \textbf{OTLP} define a codificação, transporte e entrega de dados de telemetria entre fontes, coletores e \textit{backends} \cite{opentelemetry_otlp}. Esta escolha evita o acoplamento do \textbf{OmniAI SDK} a ferramentas específicas como \textbf{Prometheus}, \textbf{Grafana}, \textbf{Datadog} ou outro \textit{backend} específico: o \textbf{SDK} emite telemetria num formato aberto, o Collector recebe e processa esses dados, e a infraestrutura decide para onde exportar.
 
     Esta decisão é especialmente importante numa \textbf{Gateway} de IA. O mesmo \textbf{OmniAI SDK} pode ser usado por uma aplicação simples em desenvolvimento, por um POC local com \textbf{Prometheus}/\textbf{Grafana} ou por uma instalação futura com outro \textit{backend} de observabilidade. A \textbf{OpenTelemetry} apresenta-se precisamente como especificação aberta e agnóstica de fornecedor \cite{opentelemetry_what_is}; por isso, a instrumentação fica no \textbf{OmniAI SDK}, mas a escolha operacional do \textit{backend} permanece fora do domínio.
 

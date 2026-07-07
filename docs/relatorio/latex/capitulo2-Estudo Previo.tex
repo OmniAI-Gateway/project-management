@@ -540,7 +540,7 @@ prévio por parte deste, dado não exigirem resposta.
 
 \end{tikzpicture}%
 }
-\caption{Fluxo de comunicação MCP}
+\caption{Fluxo de comunicação MCP - Adaptado da Documentação do MCP \cite{mcp_architecture}}
 \label{fig:mcp_sequence}
 \end{figure}
 % -----------------------------------------------------------------------
@@ -619,14 +619,9 @@ Em contrapartida, quando a comunicação ocorre através de
 especificação recomenda a utilização do padrão \textbf{OAuth 2.1}. Neste modelo,
 o servidor MCP desempenha o papel de \textit{Resource Server}, aceitando apenas
 pedidos autenticados com \textit{access tokens} válidos, previamente obtidos
-pelo cliente junto de um \textit{Identity Provider} (IdP).
+pelo cliente junto de um \textit{Authorization Server} (AS).
 
-Além da autenticação, o MCP incentiva a utilização de \textit{OAuth scopes} para
-implementar uma autorização granular. Desta forma, é possível limitar os
-recursos e as ferramentas a que cada cliente ou agente de IA pode aceder,
-seguindo o princípio do menor privilégio (\textit{Principle of Least
-Privilege}), reduzindo assim a superfície de ataque e o impacto potencial de um
-acesso indevido.
+Além da autenticação, o MCP utiliza \textit{OAuth scopes},ou seja, identificadores que representam permissões,como ler um ficheiro ou executar uma funcionalidade para gerir o que cada agente de IA pode fazer. Isto permite configurar quais as ferramentas e os dados que são disponibilizados ao cliente, garantindo que o agente tem apenas acesso aos recursos estritamente necessários para executar a tarefa.
 
 % -----------------------------------------------------------------------
 \subsection{Ferramentas de Inspeção}
@@ -675,5 +670,5 @@ Desta pesquisa, destacaram-se as seguintes soluções semelhantes:
     \item \textbf{OpenRouter} \cite{openrouter}: Funciona como um ponto de unificação que disponibiliza acesso a varios modelos através de uma única API. A sua principal vantagem é a interoperabilidade e a facilidade de mudar entre diferentes fornecedores, conseguido ainda ter um mercado centralizado de modelos, o que simplifica drasticamente a gestão de credenciais e a faturação para os utilizadores.
 \end{itemize}
 
-Para além destas soluções, a necessidade deste tipo de componente provou ser tão grande que várias das principais empresas de base tecnológica optaram por construir as suas próprias soluções internas. Um caso notável, que demonstra a centralidade de uma \textit{gateway} de IA em arquiteturas de larga escala, foi reportado pela \textbf{Uber} \cite{uber_ai_gateway}. A empresa construiu a sua própria arquitetura interna no interior da sua plataforma de \textit{machine learning} (Michelangelo) como forma de resolver a fragmentação de acessos e garantir um controlo de segurança unificado. Isto tornou-se crucial num ecossistema em que múltiplos agentes de IA distintos necessitam de interagir em harmonia, requerendo uma forte gestão centralizada de identidades e permissões.
+Para além das soluções comerciais, a necessidade de gerir o acesso a modelos levou empresas a desenvolver as suas próprias \textit{gateways} internas. A Uber[39], por exemplo, integrou este componente na sua plataforma de machine learning (Michelangelo) para resolver a fragmentação de acessos e garantir um controlo de segurança unificado. Esta infraestrutura revelou-se indispensável para coordenar vários agentes de IA a serem utilizados em simultâneo, exigindo uma rigorosa gestão centralizada de identidades e permissões.
 
