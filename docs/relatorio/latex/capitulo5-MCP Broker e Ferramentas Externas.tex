@@ -2,16 +2,16 @@
 
 O \textbf{MCP Broker} surge como uma extensão natural da \textbf{Gateway}: deixar de a tratar apenas como um ponto de entrada para inferência e aproximá-la de uma \textit{gateway} de IA mais completa. Em muitos cenários, um modelo só consegue produzir uma resposta útil se puder consultar recursos externos, chamar ferramentas ou executar ações controladas. É nesse espaço que entra o \textbf{Model Context Protocol (MCP)}.
 
-O que foi concretamente implementado neste módulo é uma \textbf{MCP Gateway} funcional: um servidor MCP autónomo que lê ficheiros de configuração \textbf{YAML} de forma declarativa, regista automaticamente as ferramentas neles descritas, e expõe-as a qualquer cliente MCP compatível, como o \textbf{MCP Inspector}. Adicionalmente, o \textit{Broker} é capaz de se ligar a outros servidores MCP externos e de expor as suas ferramentas como proxies locais, funcionando como um ponto de agregação centralizado. Com isto, a Gateway deixa de ser apenas um \textit{proxy} de inferência e passa a ser uma infraestrutura de IA mais completa.
+O que foi concretamente implementado neste módulo é uma \textbf{MCP Gateway} funcional: um servidor MCP autónomo que lê ficheiros de configuração \textbf{YAML} de forma declarativa, regista automaticamente as ferramentas neles descritas, e expõe-as a qualquer cliente MCP compatível, como o \textbf{MCP Inspector}. Adicionalmente, o \textbf{MCP Broker} é capaz de se ligar a outros servidores MCP externos e de expor as suas ferramentas como proxies locais, funcionando como um ponto de agregação centralizado. Com isto, a Gateway deixa de ser apenas um \textit{proxy} de inferência e passa a ser uma infraestrutura de IA mais completa.
 
 A implementação assenta em duas bibliotecas principais: \texttt{io.modelcontextprotocol:kotlin-sdk} (versão 0.13.0) \cite{mcp_kotlin_sdk}, que fornece o servidor MCP, os tipos do protocolo e os transportes suportados (\textit{stdio}, SSE, Streamable HTTP, WebSocket); e \texttt{net.mamoe.yamlkt} (versão 0.13.0) \cite{yamlkt_ref}, que é responsável por desserializar os ficheiros YAML de configuração em objetos Kotlin de forma declarativa. O cliente HTTP utilizado para comunicar com as APIs externas é o \textbf{Ktor} \cite{ktor_ref}.
 
 
 \section{Visão Geral do Sistema}
 
-A arquitetura global do sistema prevê que o \textbf{MCP Broker} opere em conjunto com um \textbf{Authorization Server} (AS) para garantir a autenticação e autorização via OAuth 2.1. Contudo, uma vez que este mecanismo de segurança já foi integralmente implementado e comprovado na Gateway de Inferência, a sua integração direta no Broker foi omitida nesta Prova de Conceito (PoC), encontrando-se assinalada a cinza no diagrama. 
+A arquitetura global do sistema prevê que o MCP Broker opere em conjunto com um \textbf{Authorization Server} (AS) para garantir a autenticação e autorização via OAuth 2.1. Contudo, uma vez que este mecanismo de segurança já foi integralmente implementado e comprovado na Gateway de Inferência, a sua integração direta no MCP Broker foi omitida nesta Prova de Conceito (PoC), encontrando-se assinalada a cinza no diagrama. 
 
-A Figura~\ref{fig:mcp-gateway-flow} ilustra o papel do Broker neste módulo: recebe ligações de clientes MCP, expõe ferramentas e contextos, e encarrega-se de as concretizar, seja através de chamadas HTTP a APIs externas, seja fazendo proxy de ferramentas descobertas noutros servidores MCP.
+A Figura~\ref{fig:mcp-gateway-flow} ilustra o papel do MCP Broker neste módulo: recebe ligações de clientes MCP, expõe ferramentas e contextos, e encarrega-se de as concretizar, seja através de chamadas HTTP a APIs externas, seja fazendo proxy de ferramentas descobertas noutros servidores MCP.
 
 \begin{figure}[H]
 \centering
@@ -68,7 +68,7 @@ A Figura~\ref{fig:mcp-gateway-flow} ilustra o papel do Broker neste módulo: rec
 
 \section{Modelos de Domínio e DTOs}
 
-O MCP Broker organiza a sua configuração em duas camadas distintas: os \textbf{DTOs} (Data Transfer Objects), que representam a estrutura dos ficheiros YAML, e os \textbf{modelos de domínio}, que são os objetos internos sobre os quais a lógica do Broker efetivamente opera. Esta separação evita que o código fique dependente do formato de serialização.
+O MCP Broker organiza a sua configuração em duas camadas distintas: os \textbf{DTOs} (Data Transfer Objects), que representam a estrutura dos ficheiros YAML, e os \textbf{modelos de domínio}, que são os objetos internos sobre os quais a lógica do MCP Broker efetivamente opera. Esta separação evita que o código fique dependente do formato de serialização.
 
 \subsection{DTOs de Configuração}
 
@@ -173,12 +173,12 @@ A diferença mais relevante entre os DTOs e os modelos de domínio está na repr
 
 \section{Configuração Declarativa em YAML}
 
-Toda a configuração do Broker é feita através de ficheiros \textbf{YAML} colocados numa pasta de configuração. Cada ficheiro pode declarar três secções independentes:
+Toda a configuração do MCP Broker é feita através de ficheiros \textbf{YAML} colocados numa pasta de configuração. Cada ficheiro pode declarar três secções independentes:
 
 \begin{itemize}
-    \item \textbf{\texttt{tools}}: ferramentas REST que o Broker expõe nativamente.
+    \item \textbf{\texttt{tools}}: ferramentas REST que o MCP Broker expõe nativamente.
     \item \textbf{\texttt{contexts}}: conteúdo estático exposto na forma de recursos.
-    \item \textbf{\texttt{mcpServers}}: servidores MCP externos aos quais o Broker se liga.
+    \item \textbf{\texttt{mcpServers}}: servidores MCP externos aos quais o MCP Broker se liga.
 \end{itemize}
 
 \subsection{Descrição de Ferramentas REST}
@@ -217,7 +217,7 @@ tools:
 
 \subsection{Contextos Estáticos como Recursos}
 
-Para além das ferramentas REST, o Broker permite declarar \textbf{contextos estáticos} que são expostos como recursos MCP. Um contexto é um bloco de texto associado a um URI fixo, que os clientes MCP podem ler diretamente. É útil para partilhar, por exemplo, documentação de APIs ou instruções de sistema que o modelo deve ter em conta.
+Para além das ferramentas REST, o MCP Broker permite declarar \textbf{contextos estáticos} que são expostos como recursos MCP. Um contexto é um bloco de texto associado a um URI fixo, que os clientes MCP podem ler diretamente. É útil para partilhar, por exemplo, documentação de APIs ou instruções de sistema que o modelo deve ter em conta.
 
 \begin{lstlisting}[caption={Exemplo de contexto estático exposto como recurso MCP.}]
 contexts:
@@ -232,7 +232,7 @@ contexts:
 
 \subsection{Proxy de Servidores MCP Externos}
 
-O Broker pode também ligar-se a outros servidores MCP no papel de cliente e expor as ferramentas desses servidores como se fossem locais. Esta funcionalidade de \textit{proxy} é parametrizada na secção \texttt{mcpServers}, onde se indica o nome, o tipo de transporte e os parâmetros de inicialização:
+O MCP Broker pode também ligar-se a outros servidores MCP no papel de cliente e expor as ferramentas desses servidores como se fossem locais. Esta funcionalidade de \textit{proxy} é parametrizada na secção \texttt{mcpServers}, onde se indica o nome, o tipo de transporte e os parâmetros de inicialização:
 
 \begin{lstlisting}[caption={Exemplo de configuração de proxy para um servidor MCP externo.}]
 mcpServers:
@@ -245,10 +245,10 @@ mcpServers:
       - "/workspace"
 \end{lstlisting}
 
-Quando o Broker arranca, liga-se a cada servidor externo configurado e descobre as suas ferramentas. Essas ferramentas são então registadas localmente com o prefixo do nome do servidor (por exemplo, \texttt{filesystem-mcp\_read\_file}), ficando disponíveis para qualquer cliente MCP ligado ao Broker como se fossem ferramentas locais.
+Quando o MCP Broker arranca, liga-se a cada servidor externo configurado e descobre as suas ferramentas. Essas ferramentas são então registadas localmente com o prefixo do nome do servidor (por exemplo, \texttt{filesystem-mcp\_read\_file}), ficando disponíveis para qualquer cliente MCP ligado ao MCP Broker como se fossem ferramentas locais.
 
 
-\section{Arranque e Inicialização do Broker}
+\section{Arranque e Inicialização do MCP Broker}
 
 Quando o Broker arranca, percorre uma sequência de passos bem definida antes de estar pronto a receber ligações:
 
@@ -261,7 +261,7 @@ Quando o Broker arranca, percorre uma sequência de passos bem definida antes de
 
     \item \textbf{Registo de Contextos}: O \texttt{ContextRegistrar} publica cada \texttt{ContextDefinition} como um recurso MCP, usando igualmente o Kotlin MCP SDK. Cada recurso fica acessível pelo URI declarado no YAML.
 
-    \item \textbf{Ligação a Servidores Externos}: O \texttt{McpClientManager} estabelece ligação a cada servidor MCP externo configurado. O \texttt{ProxyToolRegistrar} descobre as ferramentas disponíveis em cada um e regista-as localmente, de forma a que o Broker possa encaminhar as chamadas.
+    \item \textbf{Ligação a Servidores Externos}: O \texttt{McpClientManager} estabelece ligação a cada servidor MCP externo configurado. O \texttt{ProxyToolRegistrar} descobre as ferramentas disponíveis em cada um e regista-as localmente, de forma a que o MCP Broker possa encaminhar as chamadas.
 
     \item \textbf{Arranque do Servidor}: Por fim, o \texttt{BrokerServer} inicia os transportes configurados (Stdio, SSE, Streamable HTTP ou WebSocket) e fica a aguardar ligações de clientes MCP.
 \end{enumerate}
@@ -269,12 +269,12 @@ Quando o Broker arranca, percorre uma sequência de passos bem definida antes de
 
 \section{Hot-Reload de Configuração}
 
-O Broker suporta \textbf{hot-reload} dos ficheiros YAML em tempo de execução, sem necessidade de reiniciar. Existe uma rotina dedicada que monitoriza de forma contínua o diretório de configuração. Sempre que uma modificação é detetada pelo sistema operativo, despoleta-se um novo ciclo de recarga. O serviço reconstrói a árvore de dependências, aplica o mapeamento e atualiza a representação exposta no servidor, procedendo de maneira transparente para quem já se encontre ligado.
+O MCP Broker suporta \textbf{hot-reload} dos ficheiros YAML em tempo de execução, sem necessidade de reiniciar. Existe uma rotina dedicada que monitoriza de forma contínua o diretório de configuração. Sempre que uma modificação é detetada pelo sistema operativo, despoleta-se um novo ciclo de recarga. O serviço reconstrói a árvore de dependências, aplica o mapeamento e atualiza a representação exposta no servidor, procedendo de maneira transparente para quem já se encontre ligado.
 
 
 \section{DSL de Configuração Programática}
 
-O Broker expõe uma \textbf{DSL Kotlin} para ser instanciado programaticamente, através da função \texttt{mcpBroker\{\}}. Esta abordagem é útil quando o Broker é integrado numa aplicação maior, como um servidor Ktor já existente:
+O MCP Broker expõe uma \textbf{DSL Kotlin} para ser instanciado programaticamente, através da função \texttt{mcpBroker\{\}}. Esta abordagem é útil quando o MCP Broker é integrado numa aplicação maior, como um servidor Ktor já existente:
 
 \vspace{0.5em}
 \begin{lstlisting}[caption={Exemplo de configuração do MCP Broker via DSL Kotlin.}, language=Kotlin]
@@ -306,7 +306,7 @@ broker.start()
 
 \section{Fluxo de Execução}
 
-Depois de inicializado, o Broker comporta-se como qualquer servidor MCP: os clientes falam com ele usando o protocolo MCP padrão. Quando um cliente faz \texttt{tools/list}, recebe a lista completa de ferramentas disponíveis, incluindo tanto as ferramentas REST locais como as que foram descobertas nos servidores externos. Quando invoca uma ferramenta com \texttt{tools/call}, o Broker sabe exatamente o que fazer com base no registo feito no arranque:
+Depois de inicializado, o Broker comporta-se como qualquer servidor MCP: os clientes comunicam com ele usando o protocolo MCP padrão. Quando um cliente realiza o pedido \texttt{tools/list}, recebe a lista completa de ferramentas disponíveis, incluindo tanto as ferramentas REST locais como as que foram descobertas nos servidores externos. Quando invoca uma ferramenta com \texttt{tools/call}, o Broker sabe exatamente o que fazer com base no registo feito no arranque:
 
 \begin{itemize}
     \item Se for uma ferramenta REST, o \texttt{RestToolExecutor} constrói e executa o pedido HTTP correspondente usando o \texttt{HttpClient}, a interface genérica de cliente HTTP injetada no Broker. Os argumentos são distribuídos pelo URL (path e query) e pelo corpo do pedido, conforme o declarado nos schemas.

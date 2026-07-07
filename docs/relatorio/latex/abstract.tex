@@ -11,33 +11,11 @@ minimiza o acoplamento tecnológico e o esforço de integração, garantindo res
 
 \renewcommand{\abstractname}{Abstract}
 \begin{abstract}
-The absence of a common protocol for communicating with Large Language Models (LLMs) 
-forces applications to integrate diverse access interfaces and bespoke implementations 
-for external tool invocation. Currently, each provider (such as \textbf{OpenAI} \cite{openai_api}, 
-\textbf{Anthropic} \cite{anthropic_api}, and \textbf{Gemini} \cite{google_gemini_api}) imposes its own 
-data structures, streaming lifecycles, and tool calling patterns \cite{ibm_tool_calling}\cite{toolCallingCycle}. 
-To address this technological fragmentation, this project proposes the development of the 
-\textbf{OmniAI SDK}, a Software Development Kit built using \textbf{Kotlin Multiplatform} (\textbf{KMP}) \cite{kmp_ref}. 
-The primary objective of this library is to provide the foundational infrastructure required 
-to rapidly instantiate and configure an \textbf{OmniAI Gateway} (a centralized entry point 
-dedicated to inference access, security, observability, and more). Based on the principles 
-of Hexagonal Architecture (\textit{Ports and Adapters}) \cite{hexagonal_ports}, 
-the \textbf{OmniAI SDK} isolates domain logic and supports bidirectional communication 
-compatible with reference API standards, namely \textbf{OpenAI} \cite{openai_api}, \textbf{Anthropic} \cite{anthropic_api}, 
-and \textbf{Gemini} \cite{google_gemini_api}. The system implements an extensible and configurable 
-\textit{pipeline}, inspired by the Servlet filter and filter chain model \cite{java_servlet_filter}\cite{java_servlet_filterchain}, 
-which executes pre-built \textit{interceptors} for authorization, authentication, metrics, 
-\textit{rate limiting}, \textit{circuit breaker}, and \textit{fallback}, while allowing 
-the user of the \textbf{OmniAI SDK} to add custom interceptors. Additionally, the Software 
-Development Kit features an \textbf{MCP Broker} module to evolve the \textbf{OmniAI Gateway} from a simple 
-inference gateway into a comprehensive \textit{AI Gateway}, adding external tool management 
-to the \textbf{OmniAI Gateway} using the \textbf{Model Context Protocol (MCP)} \cite{mcp_protocol}. 
-Distributed as a multiplatform solution for \textbf{JVM} environments, via \textbf{Maven}, and \textbf{Node.js}/\textbf{TypeScript}, 
-via \textbf{NPM}, the \textbf{OmniAI SDK} was validated through the construction of an \textbf{OmniAI Gateway}, 
-a Proof of Concept that leverages the library to demonstrate a real-world gateway deployment. 
-The evaluation demonstrates that the solution minimizes technological coupling and integration 
-effort, ensuring resilience, scalability, and centralization across AI clients, such as 
-\textbf{Claude Code} \cite{claude_code}, among others.
+The development of applications leveraging Generative Artificial Intelligence (Gen AI) has grown exponentially. However, the lack of a common protocol for communicating with Large Language Models (LLMs) forces these applications to integrate different access interfaces and custom implementations for invoking external tools. Currently, each provider (such as \textbf{OpenAI} \cite{openai_api}, \textbf{Anthropic} \cite{anthropic_api}, and \textbf{Gemini} \cite{google_gemini_api}) imposes its own data structures, \textit{streaming} lifecycles, and patterns for \textit{tool calling} \cite{ibm_tool_calling}\cite{toolCallingCycle}. To address this technological fragmentation, this project proposes the development of the \textbf{OmniAI SDK}, a \textit{Software Development Kit} built in \textbf{Kotlin Multiplatform} (\textbf{KMP}) \cite{kmp_ref}. The main objective of this library is to provide the necessary foundational infrastructure to quickly instantiate and configure an \textbf{OmniAI Gateway} (a centralized entry point dedicated to inference access, security, observability, and others).
+
+Based on the principles of Hexagonal Architecture (\textit{Ports and Adapters}) \cite{hexagonal_ports}, the \textbf{OmniAI SDK} isolates the domain logic and supports bidirectional communication compatible with the standards of reference APIs, namely \textbf{OpenAI} \cite{openai_api}, \textbf{Anthropic} \cite{anthropic_api}, and \textbf{Gemini} \cite{google_gemini_api}. The system implements an extensible and configurable \textit{pipeline}, inspired by the \textbf{Servlets} filter and filter chain model \cite{java_servlet_filter}\cite{java_servlet_filterchain}, which executes pre-built \textit{interceptors} for authorization, authentication, metrics, \textit{rate limiting}, \textit{circuit breaking}, and \textit{fallback}. Additionally, custom \textit{interceptors} can be added by the \textbf{OmniAI SDK} user.
+
+Furthermore, the \textit{Software Development Kit} includes an \textbf{MCP Broker} module to evolve the \textbf{OmniAI Gateway} from an inference \textit{gateway} into a full-fledged \textit{AI Gateway}, by adding external tool management capabilities using the \textbf{Model Context Protocol (MCP)} \cite{mcp_protocol}. Distributed as a multiplatform solution for \textbf{JVM} environments via \textbf{Maven}, and for \textbf{Node.js}/\textbf{TypeScript} via \textbf{NPM}, the \textbf{OmniAI SDK} was validated through the construction of an \textbf{OmniAI Gateway}, a \textit{Proof of Concept} that utilizes the library to demonstrate the creation of a real-world \textit{gateway}. The evaluation demonstrates that the solution minimizes technological coupling and integration effort, ensuring resilience, scalability, and centralization when using AI clients, such as \textbf{Claude Code} \cite{claude_code}, among others.
 \end{abstract}
 
 \tableofcontents
