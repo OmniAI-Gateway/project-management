@@ -5,7 +5,7 @@ O estudo inicial comparou 3 APIs de inferência de utilização comum, sendo est
 
 Este estudo não teve apenas um papel de descrever as APIs, mas sim servir como base e ponto de partida para observar os conceitos que podiam ser normalizados no \textbf{OmniAI SDK} e os pontos onde a normalização teria de preservar extensões específicas de cada fornecedor. Para esse efeito, foram executados e documentados pedidos focados apenas em formato textual de pedidos de geração simples, pedidos com \textit{streaming}, pedidos com \textit{tool calling}, respostas com contabilização de \textit{tokens} e casos de configuração de geração.
 
-O estudo das APIs de inferência mostrou que estas partilham diversos conceitos semelhantes, mas permitem a utilização dos mesmos de maneira diferente. A \textbf{OpenAI} organiza a interação em torno de \texttt{chat/completions}, com \texttt{messages}, \texttt{choices}, \texttt{tool\_calls} e eventos incrementais baseados em \texttt{delta} \cite{openai_api}. A \textbf{Anthropic} usa uma API de \texttt{messages}, onde o \texttt{system prompt} está no nível de topo, o campo \texttt{max\_tokens} é obrigatório, e o conteúdo da resposta é uma lista de blocos como \texttt{text}, \texttt{tool\_use} ou \texttt{thinking} \cite{anthropic_api}. A \textbf{Gemini} modela o pedido como \texttt{contents} compostos por \texttt{parts}, agrupa parâmetros em \texttt{generationConfig}, representa ferramentas por \texttt{functionDeclarations} e introduz conceitos próprios como \texttt{thought signatures} e \texttt{thinkingConfig} \cite{google_gemini_api}. Ao longo deste capítulo as diferenças e semelhanças iram ser apresentadas em mais detalhe.
+O estudo das APIs de inferência mostrou que estas partilham diversos conceitos semelhantes, mas permitem a utilização dos mesmos de maneira diferente. A \textbf{OpenAI} organiza a interação em torno de \texttt{chat/completions}, com \texttt{messages}, \texttt{choices}, \texttt{tool\_calls} e eventos incrementais baseados em \texttt{delta} \cite{openai_api}. A \textbf{Anthropic} usa uma API de \texttt{messages}, onde o \texttt{system prompt} está no nível de topo, o campo \texttt{max\_tokens} é obrigatório, e o conteúdo da resposta é uma lista de blocos como \texttt{text}, \texttt{tool\_use} ou \texttt{thinking} \cite{anthropic_api}. A \textbf{Gemini} modela o pedido como \texttt{contents} compostos por \texttt{parts}, agrupa parâmetros em \texttt{generationConfig}, representa ferramentas por \texttt{functionDeclarations} e introduz conceitos próprios como \texttt{thought signatures} e \texttt{thinkingConfig} \cite{google_gemini_api}. Ao longo deste capítulo as diferenças e semelhanças vão ser apresentadas em mais detalhe.
 
 \subsection{Construção do Pedido}
 
@@ -44,7 +44,7 @@ O estudo das APIs de inferência mostrou que estas partilham diversos conceitos 
     \label{tab:api-request-comparison}
 \end{table}
 
-    Com base nos pedidos executados durante o estudo, foi possível identificar os campos JSON mais relevantes de cada fornecedor. Na Figura~\ref{fig:json-request-skeletons} indentificou se as estruturas dessas mensagens, evidenciando as diferenças de organização e de nomenclatura entre os três fornecedores. Os exemplos JSON completos dos pedidos encontram-se no Apêndice~\ref{apx:json-requests}.
+    Com base nos pedidos executados durante o estudo, identificou se os campos JSON mais relevantes de cada fornecedor. A Figura~\ref{fig:json-request-skeletons} indentifia as estruturas dessas mensagens, evidenciando as diferenças de organização e de nomenclatura entre os três fornecedores. Os exemplos JSON completos dos pedidos encontram-se no Apêndice~\ref{apx:json-requests}.
 
 \begin{figure}[H]
     \centering
@@ -155,7 +155,7 @@ O estudo das APIs de inferência mostrou que estas partilham diversos conceitos 
     \label{fig:json-request-skeletons}
 \end{figure}
 
-A análise dos campos de pedido revela que, embora os três fornecedores partilhem conceitos equivalentes, cada um organiza o corpo JSON de forma distinta. A \textbf{OpenAI} \cite{openai_api} e a \textbf{Anthropic} \cite{anthropic_api} colocam a maioria dos parâmetros de configuração como propriedades na raiz do objeto, enquanto a \textbf{Gemini} agrupa-os dentro de \texttt{generationConfig} \cite{google_gemini_api}. A diferença mais notável está na identificação do modelo. Neste caso, a \textbf{OpenAI} e a \textbf{Anthropic} incluem-na no corpo do pedido, enquanto a \textbf{Gemini} a incorpora diretamente no URI da chamada \textbf{HTTP}, tornando o \textit{endpoint} dinâmico. O \textit{system prompt} também diverge consideravelmente: a \textbf{OpenAI} trata-o como uma mensagem com o papel \texttt{system} \cite{openai_api}, a \textbf{Anthropic} eleva-o a uma propriedade de topo \cite{anthropic_api}, e a \textbf{Gemini} define-o através de um objeto \texttt{system\_instruction} separado \cite{google_gemini_api}. Estas diferenças tornam evidente que uma tradução superficial dos nomes dos campos seria insuficiente para construir uma abstração e um domínio comum que seja capaz de cobrir os três fornecedores de inferência.
+A análise dos campos de pedido revela que, embora os três fornecedores partilhem conceitos equivalentes, cada um organiza o corpo JSON de forma distinta. A \textbf{OpenAI} \cite{openai_api} e a \textbf{Anthropic} \cite{anthropic_api} colocam a maioria dos parâmetros de configuração como propriedades na raiz do objeto, enquanto a \textbf{Gemini} agrupa-os dentro de \texttt{generationConfig} \cite{google_gemini_api}. A diferença mais notável está na identificação do modelo.Neste caso, a \textbf{OpenAI} e a \textbf{Anthropic} incluem-na no corpo do pedido, enquanto a \textbf{Gemini} a incorpora diretamente no URI do pedido \textbf{HTTP}, tornando o \textit{endpoint} dinâmico ou seja, o próprio URL da chamada varia consoante o modelo que se pretende utilizar. O \textit{system prompt} também diverge consideravelmente: a \textbf{OpenAI} trata-o como uma mensagem com o papel \texttt{system} \cite{openai_api}, a \textbf{Anthropic} eleva-o a uma propriedade de topo \cite{anthropic_api}, e a \textbf{Gemini} define-o através de um objeto \texttt{system\_instruction} separado \cite{google_gemini_api}. Estas diferenças tornam evidente que uma tradução superficial dos nomes dos campos seria insuficiente para construir uma abstração e um domínio comum que seja capaz de cobrir os três fornecedores de inferência.
 
 \subsection{Processamento da Resposta}
 
@@ -289,7 +289,7 @@ A análise dos campos de pedido revela que, embora os três fornecedores partilh
     \label{fig:json-response-skeletons}
 \end{figure}
 
-A comparação das respostas reforça a perceção de que as três APIs divergem significativamente na organização estrutural, apesar de exprimirem os mesmos conceitos. A interface da \textbf{OpenAI} integra a resposta dentro de um \textit{array} denominado \texttt{choices}, que contém um objeto \texttt{message} \cite{openai_api}; a interface da \textbf{Anthropic} expõe o conteúdo diretamente na raiz através de um \textit{array} \texttt{content} com blocos tipados \cite{anthropic_api}; e a interface da \textbf{Gemini} utiliza \texttt{candidates} com \texttt{parts} e conceitos adicionais, como \texttt{thoughtSignature} \cite{google_gemini_api}. 
+A análise às respostas mostra que, embora os conceitos base sejam idênticos, a forma como cada API organiza os dados é muito diferente. A interface da \textbf{OpenAI} integra a resposta dentro de um \textit{array} denominado \texttt{choices}, que contém um objeto \texttt{message} \cite{openai_api}; a interface da \textbf{Anthropic} expõe o conteúdo diretamente na raiz através de um \textit{array} \texttt{content} com blocos tipados \cite{anthropic_api}; e a interface da \textbf{Gemini} utiliza \texttt{candidates} com \texttt{parts} e conceitos adicionais, como \texttt{thoughtSignature} \cite{google_gemini_api}. 
 
 Um aspeto particularmente relevante é a representação dos argumentos em chamadas de ferramenta: a \textbf{OpenAI} serializa-os como uma \textit{string} JSON dentro do campo \texttt{arguments}, obrigando a uma desserialização adicional \cite{openai_api}, enquanto a \textbf{Anthropic} e a \textbf{Gemini} devolvem JSON nativo nos campos \texttt{input} \cite{anthropic_api} e \texttt{args} \cite{google_gemini_api}, respetivamente. A contabilização de \textit{tokens} também difere na nomenclatura e granularidade: a API da \textbf{Gemini}, por exemplo, expõe um campo adicional \texttt{thoughtsTokenCount} que permite distinguir os \textit{tokens} de raciocínio dos \textit{tokens} de conteúdo efetivo \cite{google_gemini_api}.
 
@@ -417,7 +417,7 @@ o seu comportamento às funcionalidades de contexto oferecidas pelo servidor.
 \subsection{Formato da Comunicação}
 % -----------------------------------------------------------------------
 
-No contexto do MCP, todas as interações entre o cliente e o servidor, desde o transporte de contexto externo até à negociação e invocação de ferramentas são realizadas através da troca de mensagens \textbf{JSON-RPC 2.0}\cite{ref_jsonrpc_spec}. O JSON-RPC é um protocolo de Chamada de Procedimento Remoto (RPC) que utiliza o formato de dados JSON nas suas estruturas de comunicação.
+No contexto do MCP, todas as interações entre o cliente e o servidor, desde o transporte de contexto externo até à negociação e invocação de ferramentas são realizadas através da troca de mensagens \textbf{JSON-RPC 2.0}\cite{ref_jsonrpc_spec}. O JSON-RPC é um protocolo de Chamada de Procedimento Remoto (RPC, \textit{Remote Procedure Call}) que utiliza o formato de dados JSON nas suas estruturas de comunicação.
 
 Este protocolo assenta em três pilares fundamentais. Em primeiro lugar, destaca-se por possuir uma forte interoperabilidade, sendo amplamente suportado e independente da linguagem de programação, garantindo que clientes e servidores consigam comunicar sem terem problemas de compatibilidade.
 
@@ -580,9 +580,7 @@ Tabela~\ref{tab:mcp_transport}.
 \end{table}
 
 O transporte \textbf{STDIO} destina-se principalmente à comunicação entre processos
-executados localmente. Neste modo, o cliente inicia o processo correspondente ao
-servidor \textbf{MCP} e toda a comunicação é realizada através dos fluxos de entrada
-e saída padrão (\textit{stdin} e \textit{stdout}). Esta abordagem apresenta uma
+executados localmente. Neste modo, o cliente inicia o processo correspondente ao servidor MCP e toda a comunicação é realizada através do \textit{standard input} e \textit{standard output}. Esta abordagem apresenta uma
 implementação simples e elimina a necessidade de configurar ligações de rede, sendo
 por isso adequada a aplicações de ambiente de trabalho e ferramentas executadas no
 mesmo ambiente da aplicação cliente.
@@ -590,10 +588,7 @@ mesmo ambiente da aplicação cliente.
 O transporte \textbf{Streamable HTTP} destina-se à comunicação entre processos
 distribuídos através da rede. Neste caso, as mensagens JSON-RPC são trocadas através
 de um único \textit{endpoint} HTTP, que aceita pedidos \texttt{POST} e \texttt{GET}.
-A resposta do servidor pode ser devolvida diretamente ou, quando há necessidade de
-enviar várias mensagens ou notificações, essa mesma ligação pode ser convertida de
-forma incremental num \textit{stream} SSE, sem que seja necessário recorrer a um
-\textit{endpoint} adicional. Este mecanismo substitui o transporte 
+A resposta do servidor pode ser devolvida diretamente ou, quando há necessidade de enviar várias mensagens ou notificações, a ligação é mantida aberta e passa a funcionar como um \textit{stream} SSE, sem que seja necessário recorrer a um \textit{endpoint} adicional. Este mecanismo substitui o transporte 
 \textit{HTTP+SSE}, definido na versão da especificação de novembro de 2024
 (\texttt{2024-11-05}), que assentava em dois \textit{endpoints} distintos, um
 dedicado à ligação SSE (\texttt{/sse}) e outro ao envio de mensagens
@@ -637,7 +632,7 @@ acesso indevido.
 \subsection{Ferramentas de Inspeção}
 % -----------------------------------------------------------------------
 
-Durante o desenvolvimento do protocolo foram igualmente disponibilizadas ferramentas
+Durante o desenvolvimento do protocolo foram igualmente utilizadas ferramentas
 que facilitam a validação de implementações. Entre estas destaca-se o \textbf{MCP
 Inspector}, ferramenta oficial de desenvolvimento distribuída através do ecossistema
 Node.js \cite{mcp_inspector}.
