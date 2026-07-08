@@ -3,7 +3,8 @@
 
 O estudo inicial comparou 3 APIs de inferência de utilização comum, sendo estas a \textbf{OpenAI} \cite{openai_api}, \textbf{Anthropic} \cite{anthropic_api} e \textbf{Gemini} \cite{google_gemini_api}, para este estudo, utilizou-se o \textbf{Ollama} para analisar a API da \textbf{Anthropic}, o \textbf{Groq} para a da \textbf{OpenAI}, e o \textbf{AI Studio} da própria Google para avaliar a API do \textbf{Gemini}. 
 
-Este estudo não teve apenas um papel de descrever as APIs, mas sim servir como base e ponto de partida para observar os conceitos que podiam ser normalizados no \textbf{OmniAI SDK} e os pontos onde a normalização teria de preservar extensões específicas de cada fornecedor. Para esse efeito, foram executados e documentados pedidos focados apenas em formato textual de pedidos de geração simples, pedidos com \textit{streaming}, pedidos com \textit{tool calling}, respostas com contabilização de \textit{tokens} e casos de configuração de geração.
+
+Este estudo teve o papel de descrever as APIs de inferência e, além disso, serviu como ponto de partida para observar quais os conceitos das mesmas que podiam ser normalizados para um domínio comum e os pontos em que a normalização teria de preservar extensões específicas de cada fornecedor. Para esse efeito, foram executados e documentados pedidos focados apenas no formato textual, incluindo pedidos de geração simples, pedidos com \textit{streaming}, pedidos com \textit{tool calling}, respostas com contabilização de \textit{tokens} e casos de configuração de geração.
 
 O estudo das APIs de inferência mostrou que estas partilham diversos conceitos semelhantes, mas permitem a utilização dos mesmos de maneira diferente. A \textbf{OpenAI} organiza a interação em torno de \texttt{chat/completions}, com \texttt{messages}, \texttt{choices}, \texttt{tool\_calls} e eventos incrementais baseados em \texttt{delta} \cite{openai_api}. A \textbf{Anthropic} usa uma API de \texttt{messages}, onde o \texttt{system prompt} está no nível de topo, o campo \texttt{max\_tokens} é obrigatório, e o conteúdo da resposta é uma lista de blocos como \texttt{text}, \texttt{tool\_use} ou \texttt{thinking} \cite{anthropic_api}. A API do \textbf{Gemini} modela o pedido como \texttt{contents} compostos por \texttt{parts}, agrupa parâmetros em \texttt{generationConfig}, representa ferramentas por \texttt{functionDeclarations} e introduz conceitos próprios como \texttt{thought signatures} e \texttt{thinkingConfig} \cite{google_gemini_api}. Ao longo deste capítulo as diferenças e semelhanças vão ser apresentadas em mais detalhe.
 
@@ -44,7 +45,7 @@ O estudo das APIs de inferência mostrou que estas partilham diversos conceitos 
     \label{tab:api-request-comparison}
 \end{table}
 
-    Com base nos pedidos executados durante o estudo, identificou se os campos JSON mais relevantes de cada fornecedor. A Figura~\ref{fig:json-request-skeletons} indentifica as estruturas dessas mensagens, evidenciando as diferenças de organização e de nomenclatura entre os três fornecedores. Os exemplos JSON completos dos pedidos encontram-se no Apêndice~\ref{apx:json-requests}.
+    Com base nos pedidos executados durante o estudo, identificou se os campos JSON mais relevantes de cada fornecedor. A Figura~\ref{fig:json-request-skeletons} demonstra as estruturas dessas mensagens, evidenciando as diferenças de organização e de nomenclatura entre os três fornecedores. Os exemplos JSON completos dos pedidos encontram-se no Apêndice~\ref{apx:json-requests}.
 
 \begin{figure}[H]
     \centering
@@ -155,7 +156,7 @@ O estudo das APIs de inferência mostrou que estas partilham diversos conceitos 
     \label{fig:json-request-skeletons}
 \end{figure}
 
-A análise dos campos de pedido revela que, embora os três fornecedores partilhem conceitos equivalentes, cada um organiza o corpo JSON de forma distinta. A \textbf{OpenAI} \cite{openai_api} e a \textbf{Anthropic} \cite{anthropic_api} colocam a maioria dos parâmetros de configuração como propriedades na raiz do objeto, enquanto a \textbf{Gemini} agrupa-os dentro de \texttt{generationConfig} \cite{google_gemini_api}. A diferença mais notável está na identificação do modelo.Neste caso, a \textbf{OpenAI} e a \textbf{Anthropic} incluem-na no corpo do pedido, enquanto a \textbf{Gemini} a incorpora diretamente no URI do pedido \textbf{HTTP}, tornando o \textit{endpoint} dinâmico ou seja, o próprio URL da chamada varia consoante o modelo que se pretende utilizar. O \textit{system prompt} também diverge consideravelmente: a \textbf{OpenAI} trata-o como uma mensagem com o papel \texttt{system} \cite{openai_api}, a \textbf{Anthropic} eleva-o a uma propriedade de topo \cite{anthropic_api}, e a \textbf{Gemini} define-o através de um objeto \texttt{system\_instruction} separado \cite{google_gemini_api}. Estas diferenças tornam evidente que uma tradução superficial dos nomes dos campos seria insuficiente para construir uma abstração e um domínio comum que seja capaz de cobrir os três fornecedores de inferência.
+Com esta analise conseguimos demonstrar que, embora os três fornecedores partilhem alguns conceitos equivalentes, cada um organiza o corpo do JSON de forma distinta. A \textbf{OpenAI} \cite{openai_api} e a \textbf{Anthropic} \cite{anthropic_api} colocam a maioria dos parâmetros de configuração como propriedades na raiz do objeto, enquanto a \textbf{Gemini} agrupa-os dentro de \texttt{generationConfig} \cite{google_gemini_api}. A diferença mais notável está na identificação do modelo. Neste caso, a \textbf{OpenAI} e a \textbf{Anthropic} incluem-na no corpo do pedido, enquanto o \textbf{Gemini} incorpora-a diretamente no URI do pedido \textbf{HTTP}, tornando o \textit{endpoint} dinâmico ou seja, o próprio URL da chamada varia consoante o modelo que se pretende utilizar. O \textit{system prompt} também diverge, neste caso, a \textbf{OpenAI} trata-o como uma mensagem com o papel \texttt{system} \cite{openai_api}, a \textbf{Anthropic} eleva-o a uma propriedade de topo \cite{anthropic_api}, e a \textbf{Gemini} define-o através de um objeto \texttt{system\_instruction} separado \cite{google_gemini_api}. Estas diferenças tornam evidente que uma mera traducao dos nomes dos campos nao iria ser o suficiente para criar um dominio comum. 
 
 \subsection{Processamento da Resposta}
 
@@ -190,7 +191,7 @@ A análise dos campos de pedido revela que, embora os três fornecedores partilh
     \label{tab:api-response-comparison}
 \end{table}
 
-    À semelhança dos pedidos, a estrutura JSON das respostas foi esquematizada para evidenciar as difereças e semelhanças de cada resposta de cada fornecedor. A Figura~\ref{fig:json-response-skeletons} apresenta essa comparação estrutural. Os exemplos JSON completos das respostas encontram-se no Apêndice~\ref{apx:json-responses}.
+    À semelhança dos pedidos, a estrutura JSON das respostas foi esquematizada para demonstrar as difereças e semelhanças de cada resposta de cada fornecedor. A Figura~\ref{fig:json-response-skeletons} apresenta essa comparação com exemplos de respostas genericos. Os exemplos JSON completos das respostas encontram-se no Apêndice~\ref{apx:json-responses}.
 
 \begin{figure}[H]
     \centering
