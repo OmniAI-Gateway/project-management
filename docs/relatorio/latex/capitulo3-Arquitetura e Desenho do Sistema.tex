@@ -183,9 +183,13 @@ Embora o foco central deste projeto e do presente capítulo resida no acesso a A
     \end{itemize}
 
     \subsubsection{{Modelo Comum de Pedido}}
+O modelo de pedido comum, designado por \texttt{CommonRequest}, representa o domínio comum utilizado para descrever pedidos de inferência de forma independente do fornecedor.Como é possivel observar na Figura~\ref{fig:commonrequest-classes}, esta classe agrega os campos \texttt{provider}, que identifica o fornecedor de destino, \texttt{model}, que identifica o modelo a utilizar, e \texttt{messages}, que contém o histórico conversacional.
 
-    O modelo de pedido comum, designado por \texttt{CommonRequest}, é a base que normaliza qualquer pedido a LLMs, garantindo um contrato único e consistente, independentemente do fornecedor. A sua estrutura foi desenhada para manter os elementos essenciais da geração de texto -- nomeadamente o fornecedor, o modelo e as mensagens -- permitindo, simultaneamente, extensões controladas através de configuração e opções específicas do fornecedor.
-    Como se observa na Figura 3.2, o pedido comum agrega diretamente as propriedades \texttt{provider}, \texttt{model} e a lista de \texttt{messages}, que representam o histórico conversacional. Cada mensagem do pedido é materializada em \texttt{CommonRequestMessage} e contém o papel da entidade comunicante na propriedade \texttt{CommonRole}, bem como o conteúdo dividido em partes através de \texttt{RequestContentPart}. Esta divisão permite combinar texto, JSON ou chamadas a ferramentas. A configuração de geração é isolada na classe \texttt{CommonGenerationConfig}, enquanto as ferramentas disponíveis são descritas pela classe \texttt{CommonTool} e controladas pela política \texttt{ToolChoice}. Por fim, as propriedades globais \texttt{SystemPrompt} e específicas \texttt{providerOptions} suportam personalizações de contexto.
+Cada elemento de \texttt{messages} é representado por \texttt{CommonRequestMessage}, composto pelo papel da mensagem (\texttt{CommonRole}) e por uma lista de \texttt{RequestContentPart}. A utilização de partes de conteúdo permite representar diferentes tipos de informação, como texto, objetos JSON ou chamadas a ferramentas, sem alterar a estrutura do pedido.
+
+Os parâmetros de geração encontram-se agrupados em \texttt{CommonGenerationConfig}, enquanto as ferramentas disponibilizadas ao modelo são representadas por \texttt{CommonTool}. A política de utilização dessas ferramentas é definida através de \texttt{ToolChoice}.
+
+Os campos que não podem ser representados pelo domínio comum são adicionados através de \texttt{provider\allowbreak Options}. Este campo utiliza o mapa tipificado que irá ser apresentado, para transportar opções específicas de cada fornecedor sem introduzir essas particularidades no modelo comum. Por sua vez, o campo \texttt{systemPrompt} permite definir instruções globais para o modelo quando suportadas pelo fornecedor
 
     \begin{figure}[H]
         \centering
