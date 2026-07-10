@@ -108,6 +108,8 @@
         \label{fig:p3}
     \end{figure}
 
+    A Figura \ref{fig:p1} apresenta um cenário em que uma aplicação comunica diretamente com um fornecedor de inferência, ficando dependente da sua API e da respetiva chave de autenticação. A Figura \ref{fig:p2} evidencia que, à medida que o número de aplicações aumenta, também aumenta o número de integrações e de chaves de API a gerir de forma independente. Finalmente, a Figura \ref{fig:p3} demonstra que a substituição do fornecedor obriga à adaptação da integração existente, consequência do forte acoplamento às interfaces específicas de cada fornecedor.
+
     A existência de múltiplos fornecedores de LLMs e a ausência de um protocolo comum implicam
     diferentes interfaces de acesso aos modelos, estruturas específicas de pedidos e respostas, modelos distintos de contabilização de \textit{tokens}, custos variáveis e implementações particulares para invocação de funções externas (ver Figuras \ref{fig:p1}--\ref{fig:p3}). Por exemplo, a API da \textbf{OpenAI} \cite{openai_api} organiza a interação em torno de \textit{chat completions} e \textit{tool calls}; a API da \textbf{Anthropic} \cite{anthropic_api} utiliza uma arquitetura baseada em messages e blocos de conteúdo; e a API do \textbf{Gemini} \cite{google_gemini_api} estrutura a geração através de contents, parts, function declarations e configurações de geração próprias.
 
