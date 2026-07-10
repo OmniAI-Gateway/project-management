@@ -175,7 +175,7 @@ Embora o foco central deste projeto e do presente capítulo resida no acesso a A
 \end{figure}
 
     \subsection{{Estrutura do Domínio Comum}}
-    O domínio comum do \textbf{OmniAI SDK} que consite no conjunto de classes e relações que padroniza as interações com os diferentes fornecedores divide-se em dois blocos principais: \texttt{CommonRequest} e \texttt{CommonResponse}/\texttt{CommonResponseEvent}.
+    O domínio comum do \textbf{OmniAI SDK} que consite no conjunto de classes e relações que padroniza as interações com os diferentes fornecedores divide-se em dois blocos principais, \texttt{CommonRequest} e \texttt{CommonResponse}/\texttt{CommonResponseEvent}.
 
     \begin{itemize}
         \item O \texttt{CommonRequest} define a estrutura dos pedidos enviados ao modelo.
@@ -183,9 +183,9 @@ Embora o foco central deste projeto e do presente capítulo resida no acesso a A
     \end{itemize}
 
     \subsubsection{{Modelo Comum de Pedido}}
-O modelo de pedido comum, designado por \texttt{CommonRequest}, representa o domínio comum utilizado para descrever pedidos de inferência de forma independente do fornecedor.Como é possivel observar na Figura~\ref{fig:commonrequest-classes}, esta classe agrega os campos \texttt{provider}, que identifica o fornecedor de destino, \texttt{model}, que identifica o modelo a utilizar, e \texttt{messages}, que contém o histórico conversacional.
+O modelo de pedido comum, designado por \texttt{CommonRequest}, representa o domínio comum utilizado para descrever pedidos de inferência de forma independente do fornecedor. Como é possivel observar na Figura~\ref{fig:commonrequest-classes}, esta classe agrega os campos \texttt{provider}, que identifica o fornecedor de destino, \texttt{model}, que identifica o modelo a utilizar, e \texttt{messages}, que contém o histórico conversacional.
 
-Cada elemento de \texttt{messages} é representado por \texttt{CommonRequestMessage}, composto pelo papel da mensagem (\texttt{CommonRole}) e por uma lista de \texttt{RequestContentPart}. A utilização de partes de conteúdo permite representar diferentes tipos de informação, como texto, objetos JSON ou chamadas a ferramentas, sem alterar a estrutura do pedido.
+Cada elemento de \texttt{messages} é representado por \texttt{CommonRequestMessage}, composto pelo papel de quem executa o pedido (\texttt{CommonRole}) e por uma lista de \texttt{RequestContentPart}. A utilização de partes de conteúdo permite representar diferentes tipos de informação, como texto, objetos JSON ou chamadas a ferramentas, sem alterar a estrutura do pedido.
 
 Os parâmetros de geração encontram-se agrupados em \texttt{CommonGenerationConfig}, enquanto as ferramentas disponibilizadas ao modelo são representadas por \texttt{CommonTool}. A política de utilização dessas ferramentas é definida através de \texttt{ToolChoice}.
 
@@ -256,7 +256,12 @@ Os campos que não podem ser representados pelo domínio comum são adicionados 
 
     \subsubsection{{Modelo Comum de Resposta e Eventos}}
 
-    O modelo de resposta comum, sob a designação \texttt{CommonResponse}, é a base que normaliza as respostas devolvidas pelos diferentes fornecedores. A sua estrutura foi desenhada para representar o resultado final da geração, mantendo as várias opções de resposta -- as escolhas representadas pela classe \texttt{CommonChoice} -- juntamente com o respetivo índice e a razão de término indicada por \texttt{FinishReason}. Cada escolha contém uma mensagem de resposta, definida em \texttt{CommonResponseMessage}, que estipula o papel da entidade na propriedade \texttt{CommonRole} e o seu conteúdo segmentado em partes através de \texttt{ResponseContentPart}, permitindo assim combinar texto, JSON, chamadas a ferramentas ou recusas do modelo. A informação de utilização isolada em \texttt{CommonUsage} quantifica o consumo de \textit{tokens} e facilita a extração de métricas e contabilização. Por fim, a propriedade \texttt{providerOptions} preserva metadados específicos do fornecedor.
+    O modelo de resposta comum, designado por \texttt{CommonResponse}, representa o domínio comum utilizado para descrever as respostas produzidas pelos diferentes fornecedores. Como ilustrado na Figura~\ref{fig:commonresponse-classes}, esta classe agrega uma lista de \texttt{CommonChoice}, correspondente às diferentes respostas devolvidas pelo modelo.
+
+    Cada \texttt{CommonChoice} contém o índice da escolha, a respetiva razão de término (\texttt{FinishReason}) e uma mensagem representada por \texttt{CommonResponseMessage}. Esta mensagem é composta pelo papel de quem executa o pedido que gerou esta resposta(\texttt{CommonRole}) e por uma lista de \texttt{ResponseContentPart}, permitindo representar diferentes tipos de conteúdo, como texto, objetos JSON, chamadas a ferramentas ou recusas do modelo.
+
+    A informação relativa ao consumo de \textit{tokens} encontra-se agrupada em \texttt{CommonUsage}, que disponibiliza as métricas de utilização devolvidas pelo fornecedor. Os campos que não podem ser representados pelo domínio comum são adicionados através de \texttt{provider\allowbreak Options}, utilizando o mapa tipificado para preservar metadados específicos de cada fornecedor sem introduzir dependências no modelo comum.
+
     \begin{figure}[H]
         \centering
         \includegraphics[width=0.95\textwidth]{../images/EstruturaClassesCommonResponseV2.drawio.png}
@@ -306,7 +311,7 @@ Os campos que não podem ser representados pelo domínio comum são adicionados 
     \label{tab:response-parametros}
 \end{table}
 
-    O \texttt{CommonResponseEvent} complementa o \texttt{CommonResponse} ao representar respostas em \textit{streaming} como uma sequência ordenada de eventos. Esta abordagem permite construir a saída de forma incremental: primeiro sinaliza o início da resposta, depois o arranque de cada escolha, segue com deltas de texto ou de argumentos de ferramentas e, por fim, reporta o fecho da escolha, o uso de \textit{tokens} e a conclusão (ou erro) do \textit{stream}. Cada evento partilha um conjunto mínimo de metadados (fornecedor, identificador, modelo e sequência) que asseguram consistência e reordenação determinística.
+    O \texttt{CommonResponseEvent} complementa o \texttt{CommonResponse} ao representar respostas em \textit{streaming}. Permitindo construir uma resposta de forma incremental, primeiro sinaliza o início da resposta, depois o arranque de cada escolha, segue com deltas de texto ou de argumentos de ferramentas e, por fim, reporta o fecho da escolha, o uso de \textit{tokens} e a conclusão (ou erro) do \textit{stream}. Cada evento partilha um conjunto mínimo de metadados (fornecedor, identificador, modelo e sequência) que assegura consistência durante a comunicação.
 
     \begin{table}[H]
     \centering
@@ -356,7 +361,7 @@ Os campos que não podem ser representados pelo domínio comum são adicionados 
 \end{table}
 
     \subsection{{Mapa Tipificado e Extensibilidade do Domínio}}
-    Nem todos os dados relevantes pertencem ao modelo mínimo de inferência. Algumas informações são específicas do fornecedor, como parâmetros avançados do \textbf{Gemini} e outras pertencem ao contexto operacional, como metadados de autenticação, IP do cliente, cabeçalhos \textbf{HTTP} ou atributos necessários para observabilidade e autorização. Para estes casos, o \textbf{OmniAI SDK} introduz a estrutura \texttt{TypedMap}.
+    Nem todos os dados relevantes pertencem ao modelo mínimo de inferência. Algumas informações são específicas do fornecedor e outras pertencem ao contexto operacional. Para estes casos, o \textbf{OmniAI SDK} introduz a estrutura \texttt{TypedMap}.
 
     O \texttt{TypedMap} funciona como um mapa de atributos tipado por chave. Na sua base, o conceito assenta na utilização de um \texttt{AttributeKey<T>}, que atua como um marcador tipificado. Em vez de se utilizar uma simples \textit{string} como chave, o que obrigaria a conversões de tipo manuais e inseguras no momento da leitura, cada \texttt{AttributeKey} encapsula não só o nome lógico do atributo, mas também a sua informação de tipo (\texttt{KClass<T>}). 
     
@@ -404,43 +409,9 @@ class TypedMap(
 \end{lstlisting}
 \vspace{1em}
 
-    Esta abordagem revela-se significativamente mais segura do que um \texttt{Map<String, Any?>} genérico, pois cada operação de leitura assegura de imediato o tipo esperado do valor, tal como foi especificado na chave. Em simultâneo, é mais flexível do que adicionar dezenas de campos opcionais diretamente às classes de domínio sempre que surge uma nova funcionalidade no sistema.
+    Esta abordagem revela-se mais segura do que um \texttt{Map<String, Any?>} genérico, pois cada operação de leitura assegura o tipo esperado do valor, tal como foi especificado na chave. Em simultâneo, é mais flexível do que adicionar dezenas de campos opcionais diretamente às classes de domínio sempre que surge uma nova funcionalidade no sistema.
     
-    Para além da sua utilidade no domínio de inferência, o facto de a estrutura \texttt{TypedMap} ter sido concebida de forma totalmente genérica e agnóstica permitiu o seu reaproveitamento extensivo noutras partes críticas do sistema. Por ser independente de qualquer lógica de negócio específica, tornou-se o mecanismo padrão do \textbf{OmniAI SDK} para transporte seguro de metadados, sendo utilizada tanto no \textit{pipeline} de interceção de pedidos como nos resultados de chamadas \textbf{HTTP} e gestão de sessões do utilizador.
-
-\begin{figure}[H]
-    \centering
-    \resizebox{0.9\textwidth}{!}{%
-        \begin{tikzpicture}[
-            node distance=1.1cm and 1.0cm,
-            box/.style={rectangle, draw, rounded corners, align=center, minimum width=3.4cm, minimum height=0.9cm},
-            map/.style={rectangle, draw, rounded corners, align=left, minimum width=5.0cm, minimum height=2.7cm, fill=gray!10},
-            arrow/.style={-Latex, thick}
-        ]
-            \node[box] (auth) {Metadados de autenticação};
-            \node[box, below=of auth] (http) {Cabeçalhos e IP do cliente};
-            \node[box, below=of http] (provider) {Opções específicas do fornecedor};
-
-            \node[map, right=2.0cm of http] (typedmap) {\texttt{TypedMap}\\[0.2cm]
-            \texttt{AttributeKey<String>}\\
-            \texttt{AttributeKey<AuthResult>}\\
-            \texttt{AttributeKey<Set<String>>}\\
-            \texttt{AttributeKey<Int>}};
-
-            \node[box, right=2.0cm of typedmap] (consumers) {Componentes do \textbf{SDK}\\ leem atributos tipados};
-
-            \draw[arrow] (auth.east) -- (typedmap.west);
-            \draw[arrow] (http.east) -- (typedmap.west);
-            \draw[arrow] (provider.east) -- (typedmap.west);
-            \draw[arrow] (typedmap.east) -- (consumers.west);
-        \end{tikzpicture}}
-    \caption{Utilização da \texttt{TypedMap} para transportar atributos extensíveis}
-    \label{fig:typed-map}
-\end{figure}
-
-No domínio de inferência, a estrutura \texttt{TypedMap} é utilizada na propriedade de domínio comum \texttt{providerOptions}, permitindo preservar dados que não pertencem ao subconjunto padronizado, mas que não devem ser perdidos durante o processo de tradução entre formatos. Fora da inferência estrita, a mesma estrutura permite transportar metadados entre componentes sem criar dependências diretas entre eles. Esta característica é fundamental para a evolução futura do \textbf{OmniAI SDK}, porque permite que mecanismos como autorização, observabilidade ou políticas de execução, consumam e injetem atributos adicionais sem forçar alterações constantes nas classes centrais do domínio.
-    
-
+    Para além da sua utilidade no domínio de inferência, o facto de a estrutura \texttt{TypedMap} ter sido concebida de forma totalmente genérica permitiu o seu reaproveitamento noutras partes do sistema, tornando-se o mecanismo padrão do \textbf{OmniAI SDK} para guardar metadados, sendo utilizada tanto no \textit{pipeline} de interceção de pedidos como nos resultados de chamadas \textbf{HTTP} e outras partes do SDK.
 
 \section{Arquitetura do Sistema}
 
