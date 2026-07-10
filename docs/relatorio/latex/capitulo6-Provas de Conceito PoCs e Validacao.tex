@@ -79,3 +79,11 @@
     \section{Limites da Validação}
     A validação realizada confirma o consumo do \textbf{OmniAI SDK} pelo Proof of Concept, a exposição \textbf{HTTP} com \textbf{Ktor}, a integração com \textbf{Logto}, o uso de \textbf{Prometheus}/\textbf{Grafana} e a compatibilidade com clientes reais ou semi-reais. No entanto, existem limites importantes. O Proof of Concept ainda não demonstra invocação de ferramentas via \textbf{MCP Broker}, nem políticas avançadas de roteamento por custo, latência ou qualidade. Estes pontos dependem de trabalho futuro sobre o módulo \texttt{mcp-broker}, sobre políticas de \textit{dispatcher} e sobre \textit{stores} distribuídos para cenários multi-instância.
 
+    \section{Testes}
+    A testabilidade foi um princípio que tivemos em atenção no desenvolvimento do \textbf{OmniAI SDK}, sendo utilizada de forma sistemática para validar o funcionamento individual de cada módulo.
+
+    No que diz respeito aos \textbf{contratos (\texttt{contracts})}, os testes foram implementados recorrendo aos \textbf{SDKs oficiais} dos respetivos fornecedores (\textit{OpenAI}, \textit{Anthropic}, \textit{Gemini}). A estratégia consistiu em instanciar os clientes oficiais num ambiente de teste e capturar os pedidos gerados através de um servidor HTTP simulado (\textit{mock server}). Os \textit{payloads} intercetados foram posteriormente desserializados através dos DTOs do SDK. Na prática, isto serve para validar que as classes internas do projeto representam exatamente a mesma estrutura JSON que as APIs oficiais utilizam, prevenindo erros de conversão.
+
+    Relativamente aos \textbf{tradutores Inbound e Outbound}, os testes foram focados na validação bidirecional da transformação de dados. Nos tradutores \textit{inbound}, garantiu-se que os pedidos formatados para um fornecedor específico são corretamente mapeados para o modelo unificado de domínio (\texttt{CommonResponse}, \texttt{CommonRequest}), validando-se o processamento de papéis (\textit{roles}), de chamadas a ferramentas (\textit{tool calls}) e de \textit{streaming}. De igual modo, os módulos \textit{outbound} foram testados na sua capacidade de converter o modelo unificado para o formato final esperado.
+
+    
