@@ -198,61 +198,7 @@ Os campos que não podem ser representados pelo domínio comum são adicionados 
         \label{fig:commonrequest-classes}
     \end{figure}
 
-    Para sistematizar a estrutura apresentada na Figura 3.2, a Tabela~\ref{tab:request-parametros} agrega todos os parâmetros relevantes do domínio de \textit{Request}, incluindo o objeto principal e os tipos diretamente associados. O objetivo é apresentar o significado funcional de cada campo no fluxo de construção do pedido.
-
-
-    \begin{table}[H]
-    \centering
-    \scriptsize % Fonte ligeiramente mais pequena para evitar overflow no rodapé
-    \setlength{\tabcolsep}{3.5pt} % Menos espaço nas laterais para aproveitar melhor a largura
-    \renewcommand{\arraystretch}{1.15}
-    \begin{tabularx}{\textwidth}{|>{\raggedright\arraybackslash}p{2.9cm}|>{\raggedright\arraybackslash}p{2.6cm}|>{\raggedright\arraybackslash}p{2.6cm}|>{\raggedright\arraybackslash}X|}
-    \hline
-    \textbf{Elemento} & \textbf{Campo} & \textbf{Tipo} & \textbf{Descrição} \\ \hline
-
-    CommonRequest & provider & Provider & Fornecedor alvo da chamada. \\ \hline
-    CommonRequest & model & String & Identificador do modelo a utilizar. \\ \hline
-    CommonRequest & messages & List<Common\-RequestMessage> & Histórico de mensagens enviado ao modelo. \\ \hline
-    CommonRequest & systemPrompt & SystemPrompt? & Prompt de sistema global (opcional). \\ \hline
-    CommonRequest & config & Common\-GenerationConfig? & Parâmetros de geração (opcional). \\ \hline
-    CommonRequest & tools & List<CommonTool> & Ferramentas disponíveis para chamadas de função. \\ \hline
-    CommonRequest & toolChoice & ToolChoice? & Política de seleção de ferramentas. \\ \hline
-    CommonRequest & jsonResponse & Boolean & Indica se a resposta deve ser forçada a JSON. \\ \hline
-    CommonRequest & providerOptions & TypedMap & Opções específicas do fornecedor. \\ \hline
-
-    CommonRequest\-Message & role & CommonRole & Papel da mensagem (SYSTEM, USER, ASSISTANT, TOOL). \\ \hline
-    CommonRequest\-Message & content & List<Request\-ContentPart> & Conteúdo segmentado da mensagem. \\ \hline
-
-    SystemPrompt & text & String & Conteúdo do prompt de sistema. \\ \hline
-
-    Common\-GenerationConfig & temperature & Double? & Grau de aleatoriedade da geração. \\ \hline
-    Common\-GenerationConfig & maxTokens & Int? & Limite máximo de \textit{tokens} de saída. \\ \hline
-    Common\-GenerationConfig & topP & Double? & Probabilidade cumulativa. \\ \hline
-    Common\-GenerationConfig & stopSequences & List<String>? & Sequências que interrompem a geração. \\ \hline
-
-    CommonTool & name & String & Nome da ferramenta. \\ \hline
-    CommonTool & description & String & Descrição funcional da ferramenta. \\ \hline
-    CommonTool & parametersSchema & JsonObjectMap & Esquema JSON dos parâmetros. \\ \hline
-
-    ToolChoice & Auto / None / Required / Specific & -- & Estratégia de uso de ferramentas (auto, nenhuma, obrigatório ou lista específica). \\ \hline
-    ToolChoiceAuto & -- & -- & Subtipo sem campos (seleção automática). \\ \hline
-    ToolChoiceNone & -- & -- & Subtipo sem campos (sem ferramentas). \\ \hline
-    ToolChoiceRequired & -- & -- & Subtipo sem campos (uso obrigatório). \\ \hline
-    ToolChoiceSpecific & toolNames & List<String> & Lista de ferramentas permitidas. \\ \hline
-
-    Provider & value & String & Identificador textual do fornecedor. \\ \hline
-    TypedMap & data & Map<String, Any?> & Mapa genérico de opções específicas do fornecedor. \\ \hline
-
-    RequestContentPart & TextPart & text: String & Conteúdo textual. \\ \hline
-    RequestContentPart & JsonPart & json: JsonValue & Conteúdo JSON estruturado. \\ \hline
-    RequestContentPart & ToolCallPart & toolCallId,\newline functionName,\newline argumentsJson & Chamada a ferramenta com argumentos. \\ \hline
-    RequestContentPart & ToolResultPart & toolCallId,\newline content & Resultado de execução de ferramenta. \\ \hline
-
-    \end{tabularx}
-    \caption{Parâmetros do domínio de \texttt{CommonRequest}.}
-    \label{tab:request-parametros}
-\end{table}
-
+    Para sistematizar a estrutura apresentada na Figura 3.4, a Tabela~\ref{tab:request-parametros} agrega todos os parâmetros relevantes do domínio de \textit{Request}, incluindo o objeto principal e os tipos diretamente associados. O objetivo é apresentar o significado funcional de cada campo no fluxo de construção do pedido. Para uma visão completa do modelo de domínio, consultar o Apêndice~\ref{apendice:dominio}.
 
     \subsubsection{{Modelo Comum de Resposta e Eventos}}
 
@@ -269,96 +215,10 @@ Os campos que não podem ser representados pelo domínio comum são adicionados 
         \label{fig:commonresponse-classes}
     \end{figure}
 
-    A Tabela~\ref{tab:response-parametros} reúne os campos do domínio de \texttt{CommonResponse}, incluindo o objeto base, as escolhas e os eventos de \textit{streaming}.
+    A Tabela~\ref{tab:response-parametros} reúne os campos do domínio de \texttt{CommonResponse}, incluindo o objeto base, as escolhas e os eventos de \textit{streaming}. Para uma descrição detalhada de todos os tipos do domínio de resposta, consultar o Apêndice~\ref{apendice:dominio}.
 
-        \begin{table}[H]
-    \centering
-    \scriptsize
-    \setlength{\tabcolsep}{4pt}
-    \renewcommand{\arraystretch}{1.2}
-    \begin{tabularx}{\textwidth}{|>{\raggedright\arraybackslash}p{3.4cm}|>{\raggedright\arraybackslash}p{2.2cm}|>{\raggedright\arraybackslash}p{3.8cm}|>{\raggedright\arraybackslash}X|}
-        \hline
-        \textbf{Elemento} & \textbf{Campo} & \textbf{Tipo} & \textbf{Descrição} \\ \hline
+    O \texttt{CommonResponseEvent} complementa o \texttt{CommonResponse} ao representar respostas em \textit{streaming}. Permitindo construir uma resposta de forma incremental, primeiro sinaliza o início da resposta, depois o arranque de cada escolha, segue com deltas de texto ou de argumentos de ferramentas e, por fim, reporta o fecho da escolha, o uso de \textit{tokens} e a conclusão (ou erro) do \textit{stream}. Cada evento partilha um conjunto mínimo de metadados (fornecedor, identificador, modelo e sequência) que assegura consistência durante a comunicação, conforme detalhado na Tabela~\ref{tab:response-events-parametros}.
 
-        CommonResponse & \textit{provider} & Provider & Fornecedor que produziu a resposta. \\ \hline
-        CommonResponse & id & String & Identificador do pedido/execução. \\ \hline
-        CommonResponse & model & String & Identificador do modelo utilizado. \\ \hline
-        CommonResponse & choices & List<CommonChoice> & Lista de escolhas geradas. \\ \hline
-        CommonResponse & usage & CommonUsage? & Contabilização de \textit{tokens} (opcional). \\ \hline
-        CommonResponse & providerOptions & Map<String, Any?> & Metadados específicos do fornecedor. \\ \hline
-
-        CommonChoice & index & Int & Índice da escolha. \\ \hline
-        CommonChoice & message & CommonResponseMessage & Mensagem com papel e conteúdo. \\ \hline
-        CommonChoice & finishReason & FinishReason? & Razão de término da escolha (opcional). \\ \hline
-
-        CommonResponseMessage & role & CommonRole & Papel da mensagem. \\ \hline
-        CommonResponseMessage & content & List<ResponseContentPart> & Conteúdo segmentado da resposta. \\ \hline
-
-        CommonUsage & inputTokens & Int? & Tokens de entrada. \\ \hline
-        CommonUsage & outputTokens & Int? & Tokens de saída. \\ \hline
-        CommonUsage & totalTokens & Int? & Total de \textit{tokens}. \\ \hline
-
-        % Correção solicitada: O enum foi para a coluna 'Tipo' e formatado com quebras limpas
-        FinishReason & -- & STOP / LENGTH / \newline TOOL\_CALL / \newline CONTENT\_FILTER / \newline OTHER & Motivo de conclusão da geração. \\ \hline
-
-        ResponseContentPart & TextPart & text: String & Segmento textual. \\ \hline
-        ResponseContentPart & JsonPart & json: JsonValue & Segmento JSON estruturado. \\ \hline
-        ResponseContentPart & ToolCallPart & toolCallId, \newline functionName, \newline argumentsJson & Chamada a ferramenta. \\ \hline
-        ResponseContentPart & RefusalPart & reason: String & Recusa do modelo com justificação. \\ \hline
-
-    \end{tabularx}
-    \caption{Parâmetros do domínio de \textit{Response} (CommonResponse).}
-    \label{tab:response-parametros}
-\end{table}
-
-    O \texttt{CommonResponseEvent} complementa o \texttt{CommonResponse} ao representar respostas em \textit{streaming}. Permitindo construir uma resposta de forma incremental, primeiro sinaliza o início da resposta, depois o arranque de cada escolha, segue com deltas de texto ou de argumentos de ferramentas e, por fim, reporta o fecho da escolha, o uso de \textit{tokens} e a conclusão (ou erro) do \textit{stream}. Cada evento partilha um conjunto mínimo de metadados (fornecedor, identificador, modelo e sequência) que assegura consistência durante a comunicação.
-
-    \begin{table}[H]
-    \centering
-    \scriptsize
-    \setlength{\tabcolsep}{4pt}
-    \renewcommand{\arraystretch}{1.2}
-    \begin{tabularx}{\textwidth}{|>{\raggedright\arraybackslash}p{3.5cm}|>{\raggedright\arraybackslash}p{2.5cm}|>{\raggedright\arraybackslash}p{2.0cm}|>{\raggedright\arraybackslash}X|}
-        \hline
-        \textbf{Elemento} & \textbf{Campo} & \textbf{Tipo} & \textbf{Descrição} \\ \hline
-
-        CommonResponse\newline Event & \textit{provider} & Provider & Fornecedor associado ao evento. \\ \hline
-        CommonResponse\newline Event & id & String & Identificador do pedido/execução. \\ \hline
-        CommonResponse\newline Event & model & Model & Modelo utilizado no evento. \\ \hline
-        CommonResponse\newline Event & sequence & Long & Ordem do evento no \textit{stream}. \\ \hline
-        CommonResponse\newline Event & \textit{provider}\newline EventType & String? & Tipo bruto do evento do fornecedor (opcional). \\ \hline
-
-        ResponseStarted & -- & -- & Início do \textit{streaming} da resposta. \\ \hline
-
-        ChoiceStarted & choiceIndex & Int & Índice da escolha iniciada. \\ \hline
-        ChoiceStarted & role & CommonRole? & Papel associado à escolha (opcional). \\ \hline
-
-        TextDeltaEvent & choiceIndex & Int & Índice da escolha que recebe o delta. \\ \hline
-        TextDeltaEvent & text & String & Fragmento incremental de texto. \\ \hline
-
-        ToolCall\newline StartedEvent & choiceIndex & Int & Índice da escolha. \\ \hline
-        ToolCall\newline StartedEvent & toolCallIndex & Int & Índice da chamada a ferramenta. \\ \hline
-        ToolCall\newline StartedEvent & toolCallId & String & Identificador da chamada a ferramenta. \\ \hline
-        ToolCall\newline StartedEvent & functionName & String & Nome da função invocada. \\ \hline
-
-        ToolCallArguments\newline DeltaEvent & choiceIndex & Int & Índice da escolha. \\ \hline
-        ToolCallArguments\newline DeltaEvent & toolCallIndex & Int & Índice da chamada a ferramenta. \\ \hline
-        ToolCallArguments\newline DeltaEvent & arguments\newline Fragment & String & Fragmento incremental de argumentos. \\ \hline
-
-        ChoiceFinished & choiceIndex & Int & Índice da escolha terminada. \\ \hline
-        ChoiceFinished & finishReason & FinishReason? & Razão de término (opcional). \\ \hline
-
-        UsageReported & usage & CommonUsage & Contabilização de \textit{tokens} reportada. \\ \hline
-
-        ResponseCompleted & -- & -- & Conclusão do \textit{streaming} da resposta. \\ \hline
-
-        ResponseErrored & message & String & Mensagem de erro. \\ \hline
-        ResponseErrored & retryable & Boolean & Indica se o erro é recuperável. \\ \hline
-
-    \end{tabularx}
-    \caption{Parâmetros do domínio de \textit{Response} (CommonResponseEvent).}
-    \label{tab:response-events-parametros}
-\end{table}
 
     \subsection{{Mapa Tipificado e Extensibilidade do Domínio}}
     Nem todos os dados relevantes pertencem ao modelo mínimo de inferência. Algumas informações são específicas do fornecedor e outras pertencem ao contexto operacional. Para estes casos, o \textbf{OmniAI SDK} introduz a estrutura \texttt{TypedMap}.
