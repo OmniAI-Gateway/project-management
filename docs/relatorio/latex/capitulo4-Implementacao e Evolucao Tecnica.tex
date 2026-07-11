@@ -9,7 +9,7 @@
 
     As ferramentas de desenvolvimento incluíram Git, IntelliJ IDEA, o cliente \textbf{HTTP} do IDE para pedidos \textbf{REST}, \textbf{Docker Compose} para \textbf{Logto} \cite{logto_docs}, \textbf{PostgreSQL} \cite{postgresql_ref}, \textbf{OpenTelemetry Collector} \cite{opentelemetry_what_is}, \textbf{Prometheus} \cite{prometheus_ref} e \textbf{Grafana} \cite{grafana_ref}, além de clientes reais como \textbf{Claude Code} e SDKs oficiais dos fornecedores. Também foram usados assistentes de apoio, como Gemini no \textit{browser} e agentes de programação como o \textbf{Antigravity} e \textbf{Codex}, para pesquisa, comparação de documentação e aceleração de tarefas, mantendo a validação no código, nos testes e nos cenários executados. Foi criada uma \textit{pipeline} de \textbf{Continuous Integration} (CI) \cite{CI_ref}  que executa \texttt{./gradlew clean build}  e \texttt{./gradlew check}, que realizam build ao projeto e executam testes unitarios, como passo evolutivo, está prevista a criação de uma \textit{pipeline} de \textbf{Continuous Deployment} (CD) para publicar as versões do nosso \textit{Software Development Kit},o \textbf{OmniAI SDK} em Maven e NPM.
 
-    \section{A Primeira Iteração da \textit{\textbf{Gateway}}}
+    \section{A Primeira Iteração da \textit{Gateway}}
 
     A primeira iteração do projeto consistiu numa \textbf{Gateway} \textbf{HTTP} construída diretamente, responsável por receber pedidos de clientes e encaminhá-los para fornecedores de inferência. Esta fase foi útil para validar rapidamente a viabilidade da solução, testar pedidos reais e compreender diferenças práticas entre as diferentes API's dos fornecedores, neste caso da \textbf{OpenAI} \cite{openai_api}, \textbf{Anthropic}\cite{anthropic_api} e \textbf{Gemini}\cite{google_gemini_api}.
 
@@ -56,7 +56,7 @@ A refatorização substituiu esse modelo por um contrato pequeno e explícito: o
 
 Esta alteração teve impacto direto na modularidade da arquitetura. Os \textit{inbounds} passaram a depender apenas da porta \texttt{DispatcherPort}; os \textit{outbounds} ficaram responsáveis exclusivamente pela tradução de contratos e comunicação externa; e as preocupações transversais foram deslocadas para a \textit{pipeline} de \textit{interceptors}. Como consequência, a \textbf{OmniAiGateway} deixou de representar uma implementação rigidamente acoplada à infraestrutura interna e passou a funcionar como uma composição configurável construída sobre o \textbf{OmniAI SDK}.
 
-    \section{Implementação da Camada \textbf{HTTP}}
+    \section{Implementação da Camada HTTP}
     \label{sec:gateway-ktor-server}
 
     A camada de exposição \textbf{HTTP} de entrada da \textbf{Gateway} (responsável por receber os pedidos dos clientes) é implementada no módulo \texttt{gateway-ktor-server}. Este módulo estabelece a ponte entre o servidor web (\textbf{Ktor}) e os \textit{inbound adapters} do domínio, garantindo que o núcleo do sistema permanece agnóstico em relação à tecnologia de transporte de entrada.
@@ -93,7 +93,7 @@ Esta alteração teve impacto direto na modularidade da arquitetura. Os \textit{
        \item \textbf{Resposta:} Os resultados unários são diretamente serializados para JSON. Em contraste, as respostas em \textit{streaming} originam um \texttt{Flow} reativo, onde cada evento emitido é individualmente serializado em JSON e transmitido de forma progressiva ao cliente através de \textit{Server-Sent Events} (\textbf{SSE}).
     \end{enumerate}
 
-    \section{Implementação do HttpTransportClient em \textbf{Ktor}}
+    \section{Implementação do HttpTransportClient em Ktor}
     \label{sec:ktor-transport-impl}
 
     A abstração de chamadas \textbf{HTTP} de saída é garantida pela interface \texttt{HttpTransportClient}, descrita na Secção~\ref{subsec:http-transport-client}. A implementação concreta fornecida pelo \textit{SDK}, \texttt{KtorHttpTransportClient}, assenta no cliente \textbf{HTTP} \textbf{Ktor} e reside no módulo \texttt{contracts:ktor-http}. 

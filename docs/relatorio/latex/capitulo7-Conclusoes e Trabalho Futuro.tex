@@ -24,6 +24,9 @@
 
     Outra melhoria importante é aprofundar o \textbf{MCP Broker}, incluindo carregamento efetivo de ferramentas via \textbf{YAML}, execução completa dos \textit{handlers} \textbf{MCP} e suporte robusto a \textbf{SSE} e \textbf{WebSocket}. Também será relevante melhorar as políticas de roteamento, permitindo decisões com base em custo, latência, disponibilidade, qualidade do modelo, plano do cliente e limites de utilização.
 
-    Por fim, a camada de segurança pode evoluir para políticas de autorização mais expressivas, integração com PDPs externos, introspeção real de \textit{tokens} opacos e mapeamento mais fino entre \textit{claims}, planos e quotas. Estas melhorias permitiriam aproximar a \textbf{OmniAI Gateway} de uma solução pronta para ambientes \textit{multi-tenant} e produção.
-
+    Por fim, a camada de segurança pode evoluir para políticas de autorização mais expressivas, integração com PDPs externos, introspeção real de \textit{tokens} opacos e mapeamento mais fino entre \textit{claims}, planos e quotas. A nível de infraestrutura, perspetiva-se a adoção de um cofre de segredos (\textit{Key Vault}) \cite{ref_keyVault}  para o armazenamento e gestão centralizada e segura das \textit{API Keys} de inferência. 
+    
+    Na parte da testabilidade também será fundamental alargar a validação do sistema através da implementação de testes de integração mais abrangentes e de (\textit{stress testing}), garantindo a estabilidade em casos de cenários de uso intensivo. 
+    
+    Estas melhorias permitiriam aproximar a \textbf{OmniAI Gateway} de uma solução robusta e pronta para ambientes \textit{multi-tenant} \cite{ref_MultiTenant} e de produção.
 
