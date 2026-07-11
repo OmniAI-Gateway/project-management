@@ -7,7 +7,7 @@ import kotlinx.coroutines.withContext
 import org.omniai.sdk.interceptors.metrics.Tracer
 
 class JvmTracer(
-    private val openTelemetry: OpenTelemetry,
+    openTelemetry: OpenTelemetry,
     instrumentationScopeName: String = "omniai-gateway-sdk",
 ) : Tracer {
     private val tracer = openTelemetry.getTracer(instrumentationScopeName)

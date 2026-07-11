@@ -338,14 +338,28 @@ metrics {
         \label{fig:metrics-gateway}
     \end{figure}
 
+
+    \subsection{Interceptor de \textit{Tracing}}
+
+    O \texttt{TracingInterceptor} cria um \textit{span} para cada pedido processado pela \textbf{Gateway}. Quando utilizado em conjunto com o \textbf{OpenTelemetry}, permite acompanhar o percurso de execução do pedido, correlacionando informação como latência, erros e chamadas a serviços externos. Esta capacidade facilita a observação do comportamento da aplicação e a identificação da origem de eventuais falhas ou degradações de desempenho.
+
+    A funcionalidade é abstraída pela interface \texttt{Tracer}, que define o método genérico \texttt{withSpan} para executar um bloco de código no contexto de um \textit{span}. Na plataforma \textbf{JVM}, esta interface é implementada por \texttt{JvmTracer}, responsável pela integração com o \textbf{OpenTelemetry} e pela propagação automática do contexto de \textit{tracing} entre corrotinas. O \textit{TracingInterceptor} é ativado através da configuração do \texttt{tracer}, passando a instrumentar automaticamente os pedidos processados pela \textbf{Gateway}.
+
+    \vspace{0.5em}
+    \begin{lstlisting}[language=kotlin, caption={Instalação do \textit{interceptor} de \textit{tracing} via configuração de métricas}]
+metrics {
+    tracer = telemetryRuntime.tracer
+}
+    \end{lstlisting}
+
     \subsection{Interceptor de Autenticação}
     A autenticação é realizada pelo \texttt{AuthenticationInterceptor}. A \textbf{Gateway} atua como \textit{Resource Server}, recebe pedidos para recursos protegidos, extrai o \textit{access token} do cabeçalho \texttt{Authorization: Bearer <token>} e valida se esse token foi emitido por um servidor de autorização confiável \cite{rfc6749,rfc6750,oauth_resource_server}. Esta responsabilidade é essencial numa AI \textbf{Gateway}, porque a camada central passa a proteger acesso a modelos, custos, quotas e dados operacionais.
 
-    A \textbf{Gateway} não deve atuar como \textit{Authorization Server}: não emite \textit{tokens}, não gere credenciais dos clientes e não substitui sistemas como \textbf{Logto} ou \textbf{Keycloak}. O seu papel é o de API protegida. Por isso, valida \textit{tokens} recebidos, confirma se foram emitidos para a audiência esperada e só depois permite que o pedido avance na \textit{pipeline} para os próximos \textit{interceptors}. Esta separação reduz responsabilidade de segurança dentro do \textbf{SDK} e permite integrar diferentes fornecedores de identidade sem alterar o contrato dos clientes.
+    A \textbf{Gateway} não deve atuar como \textit{Authorization Server}, não emite \textit{tokens}, não gere credenciais dos clientes e não substitui sistemas como \textbf{Logto} ou \textbf{Keycloak}. O seu papel é o de API protegida. Por isso, valida \textit{tokens} recebidos, confirma se foram emitidos para a audiência esperada e só depois permite que o pedido avance na \textit{pipeline} para os próximos \textit{interceptors}. Esta separação reduz responsabilidade de segurança dentro do \textbf{SDK} e permite integrar diferentes fornecedores de identidade sem alterar o contrato dos clientes.
 
     O fluxo inicia-se no \textit{adapter} \textbf{HTTP}, que propaga o token para o domínio através de metadados. O \textit{interceptor} classifica o token: se tiver três segmentos, é tratado como \textbf{JWT}; caso contrário, como token opaco. Esta distinção permite escolher entre validação local por assinatura e validação remota por introspeção.
 
-    No modo \textit{OIDC Discovery} (RFC 8414), a \textbf{Gateway} obtém dinamicamente metadados do \textit{Authorization Server}, como \textit{issuer}, \texttt{jwks\_uri} e \textit{endpoint} de introspeção \cite{rfc8414}. Todo este fluxo encontra-se ilustrado na Figura 5.4. Para JWTs, valida o \texttt{kid}, obtém a chave pública no \textbf{JWKS}, verifica assinatura e confirma \textit{claims} como \texttt{exp}, \texttt{nbf}, \texttt{iss} e \texttt{aud} \cite{rfc7519,rfc7517,rfc7515}. Para \textit{tokens} opacos, usa introspeção \textbf{OAuth2} \cite{rfc7662}.
+    No modo \textit{OIDC Discovery} (RFC 8414)\cite{ref_oidc}, a \textbf{Gateway} obtém dinamicamente metadados do \textit{Authorization Server}, como \textit{issuer}, \texttt{jwks\_uri} e \textit{endpoint} de introspeção \cite{rfc8414}. Todo este fluxo encontra-se ilustrado na Figura 5.4. Para JWTs, valida o \texttt{kid}, obtém a chave pública no \textbf{JWKS}, verifica assinatura e confirma \textit{claims} como \texttt{exp}, \texttt{nbf}, \texttt{iss} e \texttt{aud} \cite{rfc7519,rfc7517,rfc7515}. Para \textit{tokens} opacos, usa introspeção \textbf{OAuth2} \cite{rfc7662}.
 
     \begin{figure}[H]
         \centering
@@ -443,13 +457,13 @@ security {
 
 
     \subsection{Interceptor de \textit{Rate Limiting} }
-    O \texttt{RateLimitInterceptor} aplica limites de utilização antes da chamada ao fornecedor. Numa AI \textbf{Gateway}, este mecanismo tem dois objetivos principais: proteger o sistema contra abuso ou tráfego excessivo e controlar custos associados a chamadas de inferência. A limitação de taxa é uma estratégia comum para impor um teto de ações repetidas num intervalo temporal, reduzindo abuso de APIs, força bruta e carga excessiva \cite{cloudflare_rate_limiting}.
+    O \texttt{RateLimitInterceptor} aplica limites de utilização antes da chamada ao fornecedor. Numa AI \textbf{Gateway}, este mecanismo tem dois objetivos principais, proteger o sistema contra abuso ou tráfego excessivo e controlar custos associados a chamadas de inferência. A limitação de taxa é uma estratégia comum para impor um teto de ações repetidas num intervalo temporal, reduzindo abuso de APIs, força bruta e carga excessiva \cite{cloudflare_rate_limiting}.
 
-    A importância deste \textit{interceptor} é maior do que numa API tradicional, porque cada pedido pode representar custo financeiro direto, consumo de quotas externas e ocupação prolongada de ligações em \textit{streaming}. Sem \textit{rate limiting}, um cliente mal configurado, uma automação em ciclo ou um utilizador abusivo pode saturar a \textbf{Gateway}, esgotar quotas nos fornecedores e degradar o serviço para clientes legítimos. O \textit{interceptor} permite aplicar justiça operacional: cada cliente, plano, modelo ou fornecedor pode ter limites próprios.
+    A importância deste \textit{interceptor} é maior do que numa API tradicional, porque cada pedido pode representar custo financeiro direto, consumo de quotas externas e ocupação prolongada de ligações em \textit{streaming}. Sem \textit{rate limiting}, um cliente mal configurado, uma automação em ciclo ou um utilizador abusivo pode sobrecarregar a \textbf{Gateway}, esgotar quotas nos fornecedores e degradar o serviço para clientes legítimos.O \textit{interceptor} permite controlar o consumo de recursos através da definição de limites específicos para cada cliente, plano, modelo ou fornecedor.
 
     A lógica é orientada por políticas. Cada \texttt{RateLimitPolicy} extrai dados do \texttt{GatewayContext} e devolve \texttt{RateLimitTarget}. Um \textit{target} contém uma chave, como cliente/modelo/plano, e uma \texttt{RateLimitDefinition}, composta por limite, tipo e janela temporal. Isto permite políticas diferentes por cliente, plano, modelo ou fornecedor.
 
-    O store atual em memória usa buckets protegidos por \texttt{Mutex}. Quando um pedido chega, o \textit{interceptor} tenta consumir uma unidade em todos os buckets aplicáveis. Se todos permitirem consumo, a cadeia continua. Se algum limite estiver esgotado, devolve \texttt{TooManyRequestsError} com \texttt{retryAfter}. Esta resposta permite que clientes bem comportados reduzam ritmo em vez de insistirem. Para desenvolvimento e instância única, este modelo é suficiente; em escalamento horizontal, o contrato \texttt{RateLimitStore} permite substituir a implementação por \textbf{Redis} ou outro \textit{backend} partilhado. Essa substituição é necessária quando várias instâncias da \textbf{Gateway} devem partilhar a mesma visão de quota.
+    A implementação atual da \textit{store} em memória mantém um conjunto de \textit{buckets} associados aos limites configurados. Quando um pedido chega, o \textit{interceptor} tenta consumir uma unidade em todos os \textit{buckets} aplicáveis. Se todos permitirem o consumo, o pedido prossegue; caso contrário, é devolvido um \texttt{TooManyRequestsError} com o campo \texttt{retryAfter}, indicando quando o cliente poderá voltar a tentar. Esta informação permite que clientes bem implementados ajustem o ritmo dos pedidos em vez de repetirem tentativas imediatamente. A implementação em memória é suficiente para desenvolvimento ou para uma única instância da \textbf{Gateway}. Em cenários de escalabilidade horizontal, a interface \texttt{RateLimitStore} permite substituir esta implementação por um mecanismo partilhado, como \textbf{Redis}, garantindo que todas as instâncias partilham a mesma informação sobre as quotas disponíveis.
 
     A configuração deste mecanismo recorre ao seguinte bloco:
 
@@ -465,13 +479,13 @@ interceptors {
     \end{lstlisting}
 
     \subsection{Interceptor de \textit{Circuit Breaker}}
-    O \texttt{CircuitBreakerInterceptor} protege a \textbf{Gateway} contra chamadas repetidas a um \textit{outbound} em falha. O padrão de \textit{circuit breaker} é usado para lidar com falhas em serviços remotos, evitando insistir numa dependência que está indisponível e dando tempo para recuperação \cite{microsoft_circuit_breaker,itau_circuit_breaker,treinaweb_circuit_breaker}. Numa \textbf{Gateway} de IA, esta proteção é especialmente útil porque fornecedores externos podem falhar por indisponibilidade, \textit{timeouts}, quotas ou erros 5xx.
+    O \texttt{CircuitBreakerInterceptor} protege a \textbf{Gateway} contra chamadas repetidas a um \textit{outbound} em falha. O padrão de \textit{circuit breaker} é usado para lidar com falhas em serviços remotos, evitando insistir numa dependência que está indisponível e dando tempo para recuperação \cite{microsoft_circuit_breaker,itau_circuit_breaker,treinaweb_circuit_breaker}. Numa \textbf{Gateway} de IA, esta proteção é especialmente útil porque fornecedores externos podem falhar por indisponibilidade, \textit{timeouts}, quotas ou erros da gama do 5xx.
 
-    A alternativa simples seria repetir pedidos até obter sucesso. Essa abordagem é perigosa quando o fornecedor está realmente indisponível: as tentativas acumulam latência, ocupam \textit{threads} ou corrotinas, aumentam custos e podem agravar a falha no serviço externo. O \textit{circuit breaker} foi criado para evitar esse comportamento. Quando a falha ultrapassa um limiar, o circuito abre e a \textbf{Gateway} passa a falhar rapidamente aquele destino, libertando recursos e permitindo que mecanismos como \textit{fallback} escolham outro \textit{outbound}.
+    A alternativa simples seria repetir pedidos até obter sucesso. Essa abordagem é perigosa quando o fornecedor está realmente indisponível, as tentativas acumulam latência, ocupam \textit{threads} ou corrotinas, aumentam custos e podem agravar a falha no serviço externo. O \textit{circuit breaker} foi criado para evitar esse comportamento. Quando a falha ultrapassa um limiar, o circuito abre e a \textbf{Gateway} passa a falhar rapidamente aquele destino, libertando recursos e permitindo que mecanismos como \textit{fallback} escolham outro \textit{outbound}.
 
     Para cada combinação de fornecedor/modelo, o \textit{interceptor} identifica o \texttt{outbound.key} e consulta o \texttt{CircuitBreakerStore}. Se o circuito estiver \texttt{OPEN}, o pedido falha rapidamente com \texttt{ApiDownError} e o \textit{outbound} é acrescentado ao conjunto de \textit{outbounds} negados no contexto. Esta falha rápida reduz latência, evita consumo de recursos e dá ao \textit{fallback} informação para não tentar novamente o mesmo destino.
 
-    Quando a chamada prossegue, o \textit{interceptor} observa o resultado. Erros incrementam o contador de falhas; ao atingir \texttt{failureThreshold}, o circuito passa para \texttt{OPEN}. Após um período de recuperação, o estado \texttt{HALF\_OPEN} permite testar um número limitado de pedidos antes de voltar ao estado \texttt{CLOSED}, evitando inundar um fornecedor que ainda está a recuperar \cite{microsoft_circuit_breaker}. A configuração inclui \texttt{failureThreshold}, \texttt{resetTimeoutMs} e \texttt{halfOpenTestRequests}. A implementação atual cobre a abertura e fecho básico do circuito; a evolução temporal mais completa do estado \texttt{HALF\_OPEN} é uma melhoria natural.
+    Quando a chamada prossegue, o \textit{interceptor} observa o resultado. Erros incrementam o contador de falhas; ao atingir o \texttt{failureThreshold}, o circuito passa para o estado \texttt{OPEN}. Após decorrer um período de espera predefinido, o circuito transita do estado \texttt{OPEN} para \texttt{HALF\_OPEN}, permitindo testar um número limitado de pedidos. Se estes forem bem-sucedidos, o circuito regressa ao estado \texttt{CLOSED}; caso ocorram novas falhas, volta ao estado \texttt{OPEN}, evitando inundar um fornecedor que ainda se encontra em recuperação ou que está a aplicar algum tipo de \textit{rate limiting} \cite{microsoft_circuit_breaker}.
 
     \vspace{0.5em}
     \begin{lstlisting}[language=kotlin, caption={DSL de configuração do \textit{interceptor} de \textit{circuit breaker}}]
@@ -493,13 +507,13 @@ interceptors {
 
     A decisão de colocar \textit{fallback} na \textbf{Gateway}, e não nos clientes, reduz duplicação e melhora controlo operacional. Se cada aplicação cliente implementasse a sua própria lógica de \textit{fallback}, seria necessário repetir regras de prioridade, tratamento de erros, mapeamento de contratos e métricas em vários pontos. Ao centralizar a política, o \textbf{SDK} consegue manter o mesmo contrato de entrada e decidir internamente que fornecedor ou modelo alternativo deve ser tentado. Isto é particularmente útil quando o cliente usa um contrato compatível com \textbf{Anthropic} ou \textbf{OpenAI}, mas a \textbf{Gateway} pode executar a chamada noutro \textit{provider} configurado.
 
-    A implementação atual usa a lista de \textit{outbounds} disponíveis. Primeiro tenta o \textit{outbound} correspondente ao fornecedor e modelo pedidos; se falhar, acrescenta esse \textit{outbound} ao conjunto de negados e tenta alternativas. Para cada tentativa, cria um novo \texttt{GatewayContext} com os mesmos atributos, mas com \texttt{provider} e \texttt{model} atualizados para o \textit{outbound} alternativo.
+    A implementação atual usa a lista de \textit{outbounds} disponíveis. Primeiro tenta o \textit{outbound} correspondente ao fornecedor e modelo que lhe foram passados no contexto; se falhar, acrescenta esse \textit{outbound} ao conjunto de negados e tenta alternativas. Para cada tentativa, cria um novo \texttt{GatewayContext} com os mesmos atributos, mas com \texttt{provider} e \texttt{model} atualizados para o \textit{outbound} alternativo.
 
-    A integração com o \textit{circuit breaker} é feita através do conjunto partilhado de \textit{outbounds} negados. Assim, se um circuito estiver aberto, o \textit{fallback} evita esse destino e tenta outro modelo ou fornecedor. Este desenho permite construir políticas de resiliência como ``tentar \textbf{Gemini}, depois \textbf{OpenAI}-compatible via \textbf{Groq}, depois \textbf{Anthropic}'', mantendo a lógica de tentativa fora dos \textit{adapters}. Também permite distinguir degradação controlada de erro total: a resposta pode chegar por um modelo alternativo, enquanto métricas e \textit{tracing} registam que ocorreu \textit{fallback}.
+    A integração com o \textit{circuit breaker} é feita através do conjunto partilhado de \textit{outbounds} negados. Assim, se um circuito estiver aberto, o \textit{fallback} evita esse destino e tenta outro modelo ou fornecedor. Este desenho permite construir políticas de resiliência, tentando diversos fornecedores e modelos, mantendo a lógica de tentativa num componente só. Ao existir um fallback as métricas e \textit{tracing} registam que ocorreu.
 
     A evolução futura poderá acrescentar prioridades configuráveis, condições por código de erro, orçamentos de tentativa e métricas específicas de \textit{fallback}. Estas regras são importantes porque nem todo erro justifica \textit{fallback}: erros de autenticação ou autorização devem falhar imediatamente, enquanto \textit{timeouts}, 429 e 5xx podem justificar uma alternativa.
 
-    A sua ativação é extremamente simples, não requerendo configuração intrincada:
+    A sua ativação é extremamente simples, não requerendo configuração:
 
     \vspace{0.5em}
     \begin{lstlisting}[language=kotlin, caption={DSL de configuração do \textit{interceptor} de \textit{fallback}}]
@@ -508,25 +522,13 @@ interceptors {
 }
     \end{lstlisting}
 
-    \subsection{Interceptor de \textit{Logging} e \textit{Tracing}}
+    \subsection{Interceptor de \textit{Logging}}
     O \texttt{RequestLoggingInterceptor} regista fornecedor, modelo, sucesso, erro e conclusão de streams através da abstração \texttt{GatewayLogger}. No \textit{target} \textbf{JVM} pode ser ligado a \textbf{SLF4J}; no \textit{target} \textbf{JavaScript} pode usar consola ou outra integração. O objetivo é garantir visibilidade mínima mesmo quando a telemetria completa não está ativa.
 
-    O \textit{logging} foi mantido separado das métricas porque responde a perguntas diferentes. Métricas mostram tendências agregadas, como latência média ou número de erros; \textit{logs} ajudam a explicar um pedido concreto. Numa \textbf{Gateway} de IA, esta distinção também tem impacto de privacidade: o objetivo é registar metadados operacionais, e não despejar \textit{prompts}, respostas completas ou \textit{tokens} sensíveis nos \textit{logs}.
-
-    O \texttt{TracingInterceptor} envolve o pedido num \textit{span} chamado \texttt{gateway.request.process}. Quando combinado com \textbf{OpenTelemetry}, este \textit{span} permite correlacionar latência, erros, chamadas externas e métricas agregadas. Em cenários de \textit{fallback} ou \textit{circuit breaker}, \textit{tracing} é particularmente útil porque permite observar o percurso real do pedido e distinguir falhas do fornecedor, decisões da \textbf{Gateway} e erros de cliente. Também permite perceber se uma resposta lenta resulta do fornecedor principal, de uma tentativa alternativa, de validação de token ou de uma política interna.
-
-    A instalação processa-se em dois blocos da DSL, um explícito e outro decorrente da configuração de métricas:
-
     \vspace{0.5em}
-    \begin{lstlisting}[language=kotlin, caption={Instalação dos \textit{interceptors} de \textit{logging} e \textit{tracing}}]
+    \begin{lstlisting}[language=kotlin, caption={Instalação do \textit{interceptor} de \textit{logging}}]
 interceptors {
-    // Instalacao manual do Logging Interceptor
     use(RequestLoggingInterceptor(logger))
-    
-    // O TracingInterceptor e instalado automaticamente ao fornecer o tracer as metricas
-    metrics {
-        tracer = telemetryRuntime.tracer
-    }
 }
     \end{lstlisting}
 
