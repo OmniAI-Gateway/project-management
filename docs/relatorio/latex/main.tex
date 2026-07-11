@@ -120,14 +120,19 @@
 \tableofcontents
 \listoffigures
 \newpage
+\begingroup
 
 \input{capitulo1-Introducao.tex}
+% Substituímos o \let\clearpage\relax por uma redefinição inteligente:
+\renewcommand{\clearpage}{\par\vspace{1.5cm}\needspace{15\baselineskip}}
+
 \input{capitulo2-Estudo Previo.tex}
 \input{capitulo3-Arquitetura e Desenho do Sistema.tex}
 \input{capitulo4-Implementacao e Evolucao Tecnica.tex}
 \input{capitulo5-MCP Broker e Ferramentas Externas.tex}
 \input{capitulo6-Provas de Conceito PoCs e Validacao.tex}
 \input{capitulo7-Conclusoes e Trabalho Futuro.tex}
+\endgroup
 \input{apendices.tex}
 
 % ================= BIBLIOGRAFIA =================
