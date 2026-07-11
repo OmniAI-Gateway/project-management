@@ -272,7 +272,7 @@ Quando o Broker arranca, percorre uma sequência de passos bem definida antes de
 O MCP Broker suporta \textbf{hot-reload} dos ficheiros YAML em tempo de execução, sem necessidade de reiniciar. Existe uma rotina dedicada que monitoriza de forma contínua o diretório de configuração. Sempre que uma modificação é detetada pelo sistema operativo, despoleta-se um novo ciclo de recarga. O serviço reconstrói a árvore de dependências, aplica o mapeamento e atualiza a representação exposta no servidor, procedendo de maneira transparente para quem já se encontre ligado.
 
 
-\section{DSL de Configuração Programática}
+\section{DSL de Configuração}
 
 O MCP Broker expõe uma \textbf{DSL Kotlin} para ser instanciado programaticamente, através da função \texttt{mcpBroker\{\}}. Esta abordagem é útil quando o MCP Broker é integrado numa aplicação maior, como um servidor Ktor já existente:
 
