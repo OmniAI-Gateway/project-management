@@ -533,10 +533,64 @@ interceptors {
 
    \section{Distribuição Multiplataforma}
 
-Um dos objetivos do \textbf{OmniAI SDK} é permitir que a lógica central da abstração de modelos seja reutilizada em diferentes ambientes de execução. Ao desemvolvermos o \textbf{OmniAI SDK} em \textbf{Kotlin Multiplatform}\cite{kmp_ref} permite separar o código agnóstico das implementações específicas: o domínio, os contratos, as portas, os adaptadores principais, a DSL e parte dos \textit{interceptors} residem em \textit{source sets} comuns; por sua vez, os detalhes de infraestrutura como o cliente \textbf{HTTP}, a reflexão de prioridades, a integração com o servidor \textbf{Ktor} e as pontes de plataforma ficam isolados em \textit{source sets} específicos.
+    O \textbf{OmniAI SDK} foi desenvolvido com recurso a \textbf{Kotlin Multiplatform (KMP)} \cite{kmp_ref}. A escolha por esta tecnologia deve-se ao objetivo de partilhar a lógica central do sistema por diferentes plataformas sem haver duplicação de código.
 
-No \textit{target} \textbf{JVM}, o \textbf{OmniAI SDK} pode ser consumido nativamente por aplicações \textbf{Kotlin} ou Java. Este é o ambiente mais maduro no estado atual do projeto, sendo a fundação sobre a qual a nossa instância de demonstração (POC) do \textbf{OmniAI Gateway} foi construída. A implementação \textbf{JVM} inclui o cliente \textbf{HTTP} \textbf{Ktor}, a integração nativa com o servidor \textbf{Ktor}, a autenticação baseada em descoberta \textbf{OIDC}, a telemetria e a execução real dos \textit{outbounds}. A futura distribuição via \textbf{Maven} permitirá que qualquer aplicação adicione o \textbf{SDK} como uma dependência versionada clássica, eliminando a necessidade de recorrer a \textit{composite builds}.
+    Para concretizar esta ideia, a arquitetura do SDK foi estruturada em duas camadas complementares:
+    \begin{itemize}
+        \item \textbf{Módulo Comum:} Contem o código queé escrito uma única vez e partilhado por todos os ambientes de execução, garantindo a consistência das regras.
+        
+        \item \textbf{Módulos Específicos:} Lidam com as funcionalidades de infraestrutura que variam consoante o ecossistema.
+    \end{itemize}
 
-Relativamente ao \textit{target} \textbf{JavaScript}/\textbf{Node.js}, o projeto prepara a disponibilização de uma API consumível a partir do ecossistema \textbf{TypeScript}. A utilização da anotação \texttt{@JsExport} atua como uma fachada que encapsula a configuração em tipos exportáveis, garantindo que as estruturas internas do \textbf{Kotlin} não transbordam de forma inadequada para a fronteira JS. Esta camada estabelece as fundações para o consumo via \textbf{NPM}, embora ainda não apresente paridade total de funcionalidades com o ambiente \textbf{JVM}.
 
-A principal premissa desta arquitetura multiplataforma é a de que nem todos os componentes devem ser partilhados. Enquanto o domínio e os contratos devem permanecer estritamente comuns e agnósticos, as camadas de transporte \textbf{HTTP}, servidor, observabilidade e segurança podem e devem ter implementações otimizadas para cada plataforma. Esta fronteira arquitetural evita a duplicação de código sem forçar uma abstração demasiado rígida ou ineficiente. A linha de evolução natural passa por consolidar a API pública do \textbf{OmniAI SDK}, estabilizar o versionamento semântico, automatizar a publicação \textbf{Maven}/\textbf{NPM} através de \textit{Continuous Delivery} (CD) e documentar exemplos mínimos de consumo para a \textbf{JVM} e \textbf{Node.js}.
+\begin{figure}[H]
+    \centering
+    \resizebox{0.85\textwidth}{!}{%
+    \begin{tikzpicture}[
+        node distance=2.5cm,
+        % Estilos
+        sdkbox/.style={rectangle, rounded corners=8pt, draw=black, thick, minimum width=3.5cm, minimum height=2cm, align=center, font=\Large\bfseries},
+        kmpbox/.style={rectangle, draw=black, thick, minimum width=2.5cm, minimum height=2cm, align=center, font=\large\bfseries, inner sep=10pt},
+        targetbox/.style={rectangle, draw=black, thick, align=center, inner sep=0pt, minimum width=4.5cm},
+        flowarrow/.style={-{Stealth[length=3mm, width=3mm]}, line width=1.5pt, draw=black},
+        lbl/.style={fill=white, font=\bfseries, inner sep=2pt, text=black}
+    ]
+
+    % Nodos
+    \node[sdkbox] (sdk) {OmniAI-SDK};
+    
+    \node[kmpbox, right=2cm of sdk] (kmp) {Kotlin\\Multiplatform};
+    
+    \node[targetbox, right=3cm of kmp, yshift=2cm] (jvm) {
+        \begin{tabular}{c}
+            \rule{0pt}{14pt} \makebox[5.5cm][c]{\large \textbf{TARGET: JVM}} \\[4pt]
+            \hline
+            \rule{0pt}{18pt} \Large \textbf{Java / Kotlin} \\[6pt]
+        \end{tabular}
+    };
+
+    \node[targetbox, right=3cm of kmp, yshift=-2cm] (node) {
+        \begin{tabular}{c}
+            \rule{0pt}{14pt} \makebox[5.5cm][c]{\large \textbf{TARGET: NODE.JS}} \\[4pt]
+            \hline
+            \rule{0pt}{18pt} \Large \textbf{Node.js} \\[6pt]
+        \end{tabular}
+    };
+
+    % Setas
+    \draw[flowarrow] (sdk) -- (kmp);
+    \draw[flowarrow] (kmp.east) -- node[lbl, sloped] {Maven} (jvm.west);
+    \draw[flowarrow] (kmp.east) -- node[lbl, sloped] {NPM} (node.west);
+
+    \end{tikzpicture}%
+    }
+    \caption{Fluxo de distribuição do OmniAI SDK através de Kotlin Multiplatform para os ambientes JVM e Node.js.}
+    \label{fig:distribuicao-kmp}
+\end{figure}
+
+
+    Como apresenta a Figura \ref{fig:distribuicao-kmp}, esta separação permite que, a partir de uma base de código unificada, o SDK seja compilado e distribuído para ecossistemas totalmente distintos. 
+    No contexto da \textbf{JVM}, o SDK pode ser integrado diretamente em aplicações \textbf{Java} ou \textbf{Kotlin}, sendo esta a implementação utilizada na \textbf{OmniAI Gateway}.
+    Para o ambiente JavaScript/Node.js, o SDK pode ser utilizado em aplicações JavaScript e TypeScript. Nestes casos, é utilizada a anotação \texttt{@JsExport} do Kotlin, para expor o código de forma simples para JS.
+
+    Assim, a utilização de KMP permitiu construir um único SDK que pode ser consumido por diferentes \textit{targets} (\textbf{JVM} e \textbf{Node.js}), simplificando a reutilização de código e a sua integração.
