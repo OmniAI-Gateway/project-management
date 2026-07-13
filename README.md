@@ -54,3 +54,20 @@ Contem o relatorio em LaTeX (`docs/relatorio/latex/main.pdf`), imagens de arquit
 
 ## Testar o Proof of Concept
 
+Iniciar os serviços auxiliares
+Navega para a pasta do Docker e arranca os containers:
+cd OmniAiGateway/docker
+docker compose up -d
+
+Configuração (Logto e API Keys)
+Variáveis de Ambiente: É necessário exportar as chaves de API dos provedores de modelos que pretendes usar (por exemplo, export GEMINI_API_KEY="a-tua-chave" ou no Windows set GEMINI_API_KEY="a-tua-chave").
+Logto (Auth): Deves configurar a ligação ao Logto ou desativar o bloco de autorização no application.conf caso queiras ignorar o login.
+
+Arrancar a aplicação
+Volta para a diretoria de project-management e arranca a aplicação com o Gradle:
+cd ..
+./gradlew run
+
+Correr o script de teste
+Após a Gateway estar pronta a receber pedidos, volta à raiz do projeto e executa o script de teste em Python:python run_claude.py. Este script deve ter ser atualizado para ter o novo client_id e client_secret.
+
