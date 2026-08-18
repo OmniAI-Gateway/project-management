@@ -80,11 +80,6 @@ private fun Config.safeInt(
     defaultValue: Int,
 ): Int = runCatching { getInt(path) }.getOrDefault(defaultValue)
 
-private fun Config.safeBoolean(
-    path: String,
-    defaultValue: Boolean,
-): Boolean = runCatching { getBoolean(path) }.getOrDefault(defaultValue)
-
 private fun Config.firstString(
     paths: List<String>,
     defaultValue: String,
